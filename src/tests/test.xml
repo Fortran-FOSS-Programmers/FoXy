@@ -1,0 +1,7 @@
+<first x="1" y="c" z="2">lorem ipsum...</first>
+<second a1="2"/>
+<third>bye</third>
+<fourth a="3">bye</fourth>
+<fift>
+  <nested>I am not supported</nested>
+</fift>
