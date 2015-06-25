@@ -56,13 +56,33 @@ In some sense or other, the afore-mentioned Fortran libraries miss somethings.
 
 Go to [Top](#top)
 
-## How to start?
+## Status
 
-I created this repository for our group, [Fortran F/OSS programmers group](https://github.com/Fortran-FOSS-Programmers) with the hope to collaborate with all of you, but before you stop reading this bad manifest let me to explain some details:
+### Done
 
-+ The name FoXy is just the first thing coming out... do not hate me only for this :-) we can easily change it;
-+ I inserted my dirty, bad, incomplete, XML Fortran sources just to show you where I am: our project must not start with my sources, we are free to start from scratch;
-+ the copyrights is cumbersome is know, feel free to change it.
++ lint baseline code:
+  + purge doxygen, format docstrings for FORD;
+  + adopt best practice of [Rouson](http://www.cambridge.org/us/academic/subjects/engineering/engineering-general-interest/scientific-software-design-object-oriented-way?format=PB);
+  + clean the API: two modules, one main XML file object;
++ parse input string:
+  + autoparse tags:
+    + autoparse tag's name;
+    + autoparse tag's value;
+    + autoparse tag's attributes names;
+    + autoparse tag's attributes values;
++ lazy find tag value into file (once provided a tag name);
+
+### Doing
+
++ parse input file (almost done using parse input string)
++ fix bug on tag's attributes name parsing;
++ implement lazy find tag value attribute into file (once provided a tag name and attribute name);
+
+### Todo
+
++ create team of collaborators;
++ profile the parser:
+  + almost surely there are performance penalties;
 
 ## Copyrights
 
