@@ -4,6 +4,7 @@ module foxy_xml_tag
 !< FoXy XML tag class.
 !-----------------------------------------------------------------------------------------------------------------------------------
 use penf
+use stringifor, only : string
 !-----------------------------------------------------------------------------------------------------------------------------------
 
 !-----------------------------------------------------------------------------------------------------------------------------------
@@ -13,15 +14,6 @@ public :: xml_tag
 !-----------------------------------------------------------------------------------------------------------------------------------
 
 !-----------------------------------------------------------------------------------------------------------------------------------
-type :: Type_VString_Wrapper
-  !< Deferred length allocatable string wrapped for allowing array of varying strings with different lenghts.
-  character(len=:), allocatable :: vs !< Wrapped varying lenght string.
-  contains
-    generic   :: free => free_vs_wrapper
-    procedure :: free_vs_wrapper
-    final     :: finalize_vs_wrapper
-endtype Type_VString_Wrapper
-
 type :: xml_tag
   !< XML tag class.
   !<
@@ -40,8 +32,8 @@ type :: xml_tag
   private
   character(len=:),           allocatable :: tag_name    !< Tag name.
   character(len=:),           allocatable :: tag_val     !< Tag value.
-  type(Type_VString_Wrapper), allocatable :: att_name(:) !< Attributes names.
-  type(Type_VString_Wrapper), allocatable :: att_val(:)  !< Attributes values.
+  type(string), allocatable :: att_name(:) !< Attributes names.
+  type(string), allocatable :: att_val(:)  !< Attributes values.
   contains
     ! public methods
     procedure :: free
@@ -63,33 +55,6 @@ type :: xml_tag
 endtype xml_tag
 !-----------------------------------------------------------------------------------------------------------------------------------
 contains
-  ! Type_VString_Wrapper
-  elemental subroutine free_vs_wrapper(self)
-  !---------------------------------------------------------------------------------------------------------------------------------
-  !< Free dynamic memory.
-  !---------------------------------------------------------------------------------------------------------------------------------
-  class(Type_VString_Wrapper), intent(INOUT) :: self !< Wrapped varying string
-  !---------------------------------------------------------------------------------------------------------------------------------
-
-  !---------------------------------------------------------------------------------------------------------------------------------
-  if (allocated(self%vs)) deallocate(self%vs)
-  return
-  !---------------------------------------------------------------------------------------------------------------------------------
-  endsubroutine free_vs_wrapper
-
-  subroutine finalize_vs_wrapper(vstring)
-  !---------------------------------------------------------------------------------------------------------------------------------
-  !< Free dynamic memory when finalizing.
-  !---------------------------------------------------------------------------------------------------------------------------------
-  type(Type_VString_Wrapper), intent(INOUT) :: vstring !< Wrapped varying string.
-  !---------------------------------------------------------------------------------------------------------------------------------
-
-  !---------------------------------------------------------------------------------------------------------------------------------
-  call vstring%free
-  return
-  !---------------------------------------------------------------------------------------------------------------------------------
-  endsubroutine finalize_vs_wrapper
-
   ! public methods
   elemental subroutine free(self)
   !---------------------------------------------------------------------------------------------------------------------------------
@@ -218,8 +183,8 @@ contains
     if (allocated(self%att_name).and.allocated(self%att_val)) then
       if (size(self%att_name)==size(self%att_val)) then ! consistency check
         do a=1, size(self%att_name)
-          if (allocated(self%att_name(a)%vs).and.allocated(self%att_val(a)%vs)) &
-            stringed = stringed//' '//self%att_name(a)%vs//'="'//self%att_val(a)%vs//'"'
+          if (self%att_name(a)%is_allocated().and.self%att_val(a)%is_allocated()) &
+            stringed = stringed//' '//self%att_name(a)//'="'//self%att_val(a)//'"'
         enddo
       endif
     endif
@@ -327,11 +292,11 @@ contains
     if (allocated(self%att_name)) then ! parsing attributes
       call self%alloc_attributes(att_val=.true., Na=size(self%att_name, dim=1))
       do a=1, size(self%att_name, dim=1)
-        c1 = index(string=source, substring=self%att_name(a)%vs//'="') + len(self%att_name(a)%vs) + 2
-        if (c1>len(self%att_name(a)%vs) + 2) then
+        c1 = index(string=source, substring=self%att_name(a)//'="') + self%att_name(a)%len() + 2
+        if (c1>self%att_name(a)%len() + 2) then
           c2 = index(string=source(c1:), substring='"')
           if (c2>0) then
-            self%att_val(a)%vs = trim(adjustl(source(c1:c1+c2-2)))
+            self%att_val(a) = trim(adjustl(source(c1:c1+c2-2)))
           else
             call self%att_val(a)%free
           endif
@@ -416,6 +381,7 @@ contains
   character(*),   intent(in)    :: source !< String containing the input.
   character(len=:), allocatable :: att    !< Dummy string for parsing file.
   integer(I4P)                  :: c      !< Counter.
+  integer(I4P)                  :: s      !< Counter.
   integer(I4P)                  :: a      !< Counter.
   integer(I4P)                  :: Na     !< Counter.
   !---------------------------------------------------------------------------------------------------------------------------------
@@ -430,13 +396,14 @@ contains
   if (Na>0) then
     call self%alloc_attributes(att_name=.true., Na=Na)
     c = index(string=source, substring=' ')
-    att = trim(adjustl(source(c + 1:)))
+    att = source(c:)
     c = 1
     a = 1
     Att_Search: do while(c<=len(att))
       if (att(c:c)=='=') then
-        self%att_name(a)%vs = trim(adjustl(att(:c-1)))
-        att = att(c:)
+        s = max(0, index(string=att, substring=' '))
+        self%att_name(a) = trim(adjustl(att(s+1:c-1)))
+        att = att(c+1:)
         c = 1
         a = a + 1
       endif
@@ -509,13 +476,13 @@ contains
   if (allocated(rhs%att_name)) then
     if (allocated(lhs%att_name)) deallocate(lhs%att_name) ; allocate(lhs%att_name(1:size(rhs%att_name)))
     do a=1, size(rhs%att_name)
-      if (allocated(rhs%att_name(a)%vs)) lhs%att_name(a)%vs = rhs%att_name(a)%vs
+      if (rhs%att_name(a)%is_allocated()) lhs%att_name(a) = rhs%att_name(a)
     enddo
   endif
   if (allocated(rhs%att_val)) then
     if (allocated(lhs%att_val)) deallocate(lhs%att_val) ; allocate(lhs%att_val(1:size(rhs%att_val)))
     do a=1, size(rhs%att_val)
-      if (allocated(rhs%att_val(a)%vs)) lhs%att_val(a)%vs = rhs%att_val(a)%vs
+      if (rhs%att_val(a)%is_allocated()) lhs%att_val(a) = rhs%att_val(a)
     enddo
   endif
   return
