@@ -1,7 +1,33 @@
+# compiled object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# compiled dynamic libraries
+*.so
+
+# fortran module files
+*.mod
+
+# compiled static libraries
+*.la
+*.a
+*.lib
+
+# executables
+*.exe
+*.out
+*.a
+*.app
+
+# log files
 *.log
-get_automatic_changelog.sh
+
+# special directories
 doc/html/
-mod/
-obj/
-wiki/
 exe/
+wiki/
+
+# special files
+get_automatic_changelog.sh

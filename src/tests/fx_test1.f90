@@ -8,9 +8,9 @@ use foxy, only: xml_file
 
 !-----------------------------------------------------------------------------------------------------------------------------------
 implicit none
-character(len=:), allocatable :: source
-character(len=:), allocatable :: parsed
-type(xml_file)                :: xfile
+character(len=:), allocatable :: source !< String containing the source XML data.
+character(len=:), allocatable :: parsed !< String containing the parsed XML data.
+type(xml_file)                :: xfile  !< XML file handler.
 !-----------------------------------------------------------------------------------------------------------------------------------
 
 !-----------------------------------------------------------------------------------------------------------------------------------

@@ -36,22 +36,22 @@ type :: xml_tag
   type(string), allocatable :: att_val(:)  !< Attributes values.
   contains
     ! public methods
-    procedure :: free
-    final     :: finalize
-    procedure :: parse
-    procedure :: is_parsed
-    procedure :: tag_value
-    procedure :: stringify
-    generic   :: assignment(=) => assign_tag
+    procedure :: free                        !< Free dynamic memory.
+    final     :: finalize                    !< Free dynamic memory when finalizing.
+    procedure :: parse                       !< Parse the tag contained into a source string.
+    procedure :: is_parsed                   !< Check is tag is correctly parsed, i.e. its *tag_name* is allocated.
+    procedure :: tag_value                   !< Return tag value of is sefl (or its nested tags) is named *tag_name*.
+    procedure :: stringify                   !< Convert the whole tag into a string.
+    generic   :: assignment(=) => assign_tag !< Assignment operator overloading.
     ! private methods
-    procedure, private :: alloc_attributes
-    procedure, private :: get
-    procedure, private :: get_value
-    procedure, private :: get_attributes
-    procedure, private :: parse_tag_name
-    procedure, private :: parse_attributes_names
-    procedure, private :: search
-    procedure, private :: assign_tag
+    procedure, private :: alloc_attributes       !< Allocate (prepare for filling) dynamic memory of attributes.
+    procedure, private :: get                    !< Get the tag value and attributes from source.
+    procedure, private :: get_value              !< Get the tag value from source after tag_name has been set.
+    procedure, private :: get_attributes         !< Get the attributes values from source.
+    procedure, private :: parse_tag_name         !< Parse the tag name contained into a string.
+    procedure, private :: parse_attributes_names !< Parse the tag attributes names contained into a string.
+    procedure, private :: search                 !< Search tag named *tag_name* into a string.
+    procedure, private :: assign_tag             !< Assignment between two tags.
 endtype xml_tag
 !-----------------------------------------------------------------------------------------------------------------------------------
 contains
@@ -465,9 +465,9 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Assignment between two tags.
   !---------------------------------------------------------------------------------------------------------------------------------
-  class(xml_tag), intent(inout) :: lhs
-  type(xml_tag),  intent(in)    :: rhs
-  integer(I4P)                  :: a
+  class(xml_tag), intent(inout) :: lhs !< Left hand side.
+  type(xml_tag),  intent(in)    :: rhs !< Right hand side.
+  integer(I4P)                  :: a   !< Counter.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------

@@ -20,14 +20,14 @@ type, public:: xml_file
   type(xml_tag), allocatable :: tag(:) !< XML tags array.
   contains
     ! public methods
-    procedure         :: free
-    final             :: finalize
-    procedure         :: parse
-    procedure         :: tag_value
-    procedure         :: stringify
-    procedure, nopass :: load_file_as_stream
+    procedure         :: free                !< Free dynamic memory.
+    final             :: finalize            !< Free dynamic memory when finalizing.
+    procedure         :: parse               !< Parse xml data from string or file.
+    procedure         :: tag_value           !< Return tag value of tag named *tag_name*.
+    procedure         :: stringify           !< Convert the whole file data into a string.
+    procedure, nopass :: load_file_as_stream !< Load file contents and store as single characters stream.
     ! private methods
-    procedure, private :: add_tag
+    procedure, private :: add_tag !< Add tag to self%tag array.
 endtype xml_file
 !-----------------------------------------------------------------------------------------------------------------------------------
 contains
@@ -68,11 +68,12 @@ contains
   !<
   !< @note Self data are free before trying to parse new xml data: all previously parsed data are lost.
   !---------------------------------------------------------------------------------------------------------------------------------
-  class(xml_file),        intent(inout) :: self         !< XML file.
-  character(*), optional, intent(in)    :: string       !< String containing xml data.
-  character(*), optional, intent(in)    :: filename     !< File name containing xml data.
-  type(xml_tag)                         :: tag          !< Dummy xml tag.
-  integer(I4P)                          :: tstart, tend !< Counters for tracking string parsing.
+  class(xml_file),        intent(inout) :: self     !< XML file.
+  character(*), optional, intent(in)    :: string   !< String containing xml data.
+  character(*), optional, intent(in)    :: filename !< File name containing xml data.
+  type(xml_tag)                         :: tag      !< Dummy xml tag.
+  integer(I4P)                          :: tstart   !< Counter for tracking string parsing.
+  integer(I4P)                          :: tend     !< Counter for tracking string parsing.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
