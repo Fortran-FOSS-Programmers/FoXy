@@ -1,0 +1,7 @@
+*.log
+get_automatic_changelog.sh
+doc/html/
+mod/
+obj/
+wiki/
+exe/

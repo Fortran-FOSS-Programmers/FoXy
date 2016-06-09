@@ -1,14 +1,15 @@
-!< Definition of Type_XML_Tag for FoXy XML Parser.
-module Data_Type_XML_Tag
+!< FoXy XML tag class.
+module foxy_xml_tag
 !-----------------------------------------------------------------------------------------------------------------------------------
-!< Definition of Type_XML_Tag for FoXy XML Parser.
+!< FoXy XML tag class.
 !-----------------------------------------------------------------------------------------------------------------------------------
-USE IR_Precision ! Integers and reals precision definition.
+use penf
 !-----------------------------------------------------------------------------------------------------------------------------------
 
 !-----------------------------------------------------------------------------------------------------------------------------------
 implicit none
 private
+public :: xml_tag
 !-----------------------------------------------------------------------------------------------------------------------------------
 
 !-----------------------------------------------------------------------------------------------------------------------------------
@@ -21,8 +22,8 @@ type :: Type_VString_Wrapper
     final     :: finalize_vs_wrapper
 endtype Type_VString_Wrapper
 
-type, public:: Type_XML_Tag
-  !< Derived type defining Type_XML_Tag, a useful type for parsing XML file.
+type :: xml_tag
+  !< XML tag class.
   !<
   !< A valid XML tag must have the following syntax for a tag without a value (with only attributes):
   !<```xml
@@ -42,7 +43,7 @@ type, public:: Type_XML_Tag
   type(Type_VString_Wrapper), allocatable :: att_name(:) !< Attributes names.
   type(Type_VString_Wrapper), allocatable :: att_val(:)  !< Attributes values.
   contains
-    ! public type-bound procedures
+    ! public methods
     procedure :: free
     final     :: finalize
     procedure :: parse
@@ -50,7 +51,7 @@ type, public:: Type_XML_Tag
     procedure :: tag_value
     procedure :: stringify
     generic   :: assignment(=) => assign_tag
-    ! private type-bound procedures
+    ! private methods
     procedure, private :: alloc_attributes
     procedure, private :: get
     procedure, private :: get_value
@@ -59,7 +60,7 @@ type, public:: Type_XML_Tag
     procedure, private :: parse_attributes_names
     procedure, private :: search
     procedure, private :: assign_tag
-endtype Type_XML_Tag
+endtype xml_tag
 !-----------------------------------------------------------------------------------------------------------------------------------
 contains
   ! Type_VString_Wrapper
@@ -89,20 +90,25 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine finalize_vs_wrapper
 
-  ! Type_XML_Tag
-  ! public
+  ! public methods
   elemental subroutine free(self)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Free dynamic memory.
   !---------------------------------------------------------------------------------------------------------------------------------
-  class(Type_XML_Tag), intent(INOUT) :: self !< XML tag.
+  class(xml_tag), intent(inout) :: self !< XML tag.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
   if (allocated(self%tag_name)) deallocate(self%tag_name)
   if (allocated(self%tag_val )) deallocate(self%tag_val )
-  if (allocated(self%att_name)) deallocate(self%att_name)
-  if (allocated(self%att_val )) deallocate(self%att_val)
+  if (allocated(self%att_name)) then
+    call self%att_name%free
+    deallocate(self%att_name)
+  endif
+  if (allocated(self%att_val )) then
+    call self%att_val%free
+    deallocate(self%att_val)
+  endif
   return
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine free
@@ -111,7 +117,7 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Free dynamic memory when finalizing.
   !---------------------------------------------------------------------------------------------------------------------------------
-  type(Type_XML_tag), intent(INOUT) :: tag !< XML tag.
+  type(xml_tag), intent(inout) :: tag !< XML tag.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
@@ -120,20 +126,20 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine finalize
 
-  elemental subroutine parse(self, string, tstart, tend)
+  elemental subroutine parse(self, source, tstart, tend)
   !---------------------------------------------------------------------------------------------------------------------------------
-  !< Parse the tag contained into a string.
+  !< Parse the tag contained into a source string.
   !<
-  !< It is assumed that the first tag contained into the string is parsed, the others eventually present are omitted.
+  !< It is assumed that the first tag contained into the source string is parsed, the others eventually present are omitted.
   !< Valid syntax are:
   !< + `<tag_name att1="att1 val" att2="att2 val"...>...</tag_name>`
   !< + `<tag_name att1="att1 val" att2="att2 val".../>`
   !< @note Inside the attributes value the symbols `<` and `>` are not allowed.
   !---------------------------------------------------------------------------------------------------------------------------------
-  class(Type_XML_Tag),    intent(INOUT) :: self      !< XML tag.
-  character(*),           intent(IN)    :: string    !< String containing the input.
-  integer(I4P), optional, intent(OUT)   :: tstart    !< Starting index of tag inside the string.
-  integer(I4P), optional, intent(OUT)   :: tend      !< Ending index of tag inside the string.
+  class(xml_tag),         intent(inout) :: self      !< XML tag.
+  character(*),           intent(in)    :: source    !< String containing the input.
+  integer(I4P), optional, intent(out)   :: tstart    !< Starting index of tag inside the string.
+  integer(I4P), optional, intent(out)   :: tend      !< Ending index of tag inside the string.
   integer(I4P)                          :: tstartd   !< Starting index of tag inside the string.
   integer(I4P)                          :: tendd     !< Ending index of tag inside the string.
   !---------------------------------------------------------------------------------------------------------------------------------
@@ -141,12 +147,12 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
   tstartd = 0
   tendd   = 0
-  call self%parse_tag_name(string=string, tstart=tstartd, tend=tendd)
+  call self%parse_tag_name(source=source, tstart=tstartd, tend=tendd)
   if (allocated(self%tag_name)) then
-    if (index(string=string(tstartd:tendd), substring='=')>0) call self%parse_attributes_names(string=string(tstartd:tendd))
-    if (index(string=string, substring='</'//self%tag_name//'>')>0) &
-      tendd = index(string=string, substring='</'//self%tag_name//'>') + len('</'//self%tag_name//'>') - 1
-    call self%get(string=string(tstartd:tendd))
+    if (index(string=source(tstartd:tendd), substring='=')>0) call self%parse_attributes_names(source=source(tstartd:tendd))
+    if (index(string=source, substring='</'//self%tag_name//'>')>0) &
+      tendd = index(string=source, substring='</'//self%tag_name//'>') + len('</'//self%tag_name//'>') - 1
+    call self%get(source=source(tstartd:tendd))
   endif
   if (present(tstart)) tstart = tstartd
   if (present(tend  )) tend   = tendd
@@ -158,8 +164,8 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Check is tag is correctly parsed, i.e. its *tag_name* is allocated.
   !---------------------------------------------------------------------------------------------------------------------------------
-  class(Type_XML_Tag), intent(IN) :: self      !< XML tag.
-  logical                         :: is_parsed !< Result of check.
+  class(xml_tag), intent(in) :: self      !< XML tag.
+  logical                    :: is_parsed !< Result of check.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
@@ -174,10 +180,10 @@ contains
   !<
   !< @note If there is no value, the *tag_value* string is returned deallocated.
   !---------------------------------------------------------------------------------------------------------------------------------
-  class(Type_XML_Tag),           intent(IN)    :: self     !< XML tag.
-  character(*),                  intent(IN)    :: tag_name !< Searched tag name.
-  character(len=:), allocatable, intent(INOUT) :: tag_val  !< Tag value.
-  type(Type_XML_Tag)                           :: tag      !< Dummy XML tag.
+  class(xml_tag),                intent(in)    :: self     !< XML tag.
+  character(*),                  intent(in)    :: tag_name !< Searched tag name.
+  character(len=:), allocatable, intent(inout) :: tag_val  !< Tag value.
+  type(xml_tag)                                :: tag      !< Dummy XML tag.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
@@ -187,7 +193,7 @@ contains
       if (allocated(self%tag_val)) tag_val = self%tag_val
     else
       if (allocated(self%tag_val)) then
-        call tag%search(tag_name=tag_name, string=self%tag_val)
+        call tag%search(tag_name=tag_name, source=self%tag_val)
         if (allocated(tag%tag_val)) tag_val = tag%tag_val
       endif
     endif
@@ -196,125 +202,136 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine tag_value
 
-  pure function stringify(self) result(string)
+  pure function stringify(self) result(stringed)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Convert the whole tag into a string.
   !---------------------------------------------------------------------------------------------------------------------------------
-  class(Type_XML_Tag), intent(IN) :: self   !< XML tag.
-  character(len=:), allocatable   :: string !< Output string containing the whole tag.
-  integer(I4P)                    :: a      !< Counters.
+  class(xml_tag), intent(in)    :: self     !< XML tag.
+  character(len=:), allocatable :: stringed !< Output string containing the whole tag.
+  integer(I4P)                  :: a        !< Counters.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
-  string = ''
+  stringed = ''
   if (allocated(self%tag_name)) then
-    string = string//'<'//self%tag_name
+    stringed = stringed//'<'//self%tag_name
     if (allocated(self%att_name).and.allocated(self%att_val)) then
       if (size(self%att_name)==size(self%att_val)) then ! consistency check
         do a=1, size(self%att_name)
           if (allocated(self%att_name(a)%vs).and.allocated(self%att_val(a)%vs)) &
-            string = string//' '//self%att_name(a)%vs//'="'//self%att_val(a)%vs//'"'
+            stringed = stringed//' '//self%att_name(a)%vs//'="'//self%att_val(a)%vs//'"'
         enddo
       endif
     endif
     if (allocated(self%tag_val)) then
-      string = string//'>'//self%tag_val//'</'//self%tag_name//'>'
+      stringed = stringed//'>'//self%tag_val//'</'//self%tag_name//'>'
     else
-      string = string//'/>'
+      stringed = stringed//'/>'
     endif
   endif
   return
   !---------------------------------------------------------------------------------------------------------------------------------
   endfunction stringify
 
-  ! private
+  ! private methods
   elemental subroutine alloc_attributes(self, Na, att_name, att_val)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Allocate (prepare for filling) dynamic memory of attributes.
   !---------------------------------------------------------------------------------------------------------------------------------
-  class(Type_XML_Tag), intent(INOUT) :: self     !< XML tag.
-  integer(I4P),        intent(IN)    :: Na       !< Number of attributes.
-  logical, optional,   intent(IN)    :: att_name !< Flag for freeing attributes names array.
-  logical, optional,   intent(IN)    :: att_val  !< Flag for freeing attributes values array.
+  class(xml_tag),    intent(inout) :: self     !< XML tag.
+  integer(I4P),      intent(in)    :: Na       !< Number of attributes.
+  logical, optional, intent(in)    :: att_name !< Flag for freeing attributes names array.
+  logical, optional, intent(in)    :: att_val  !< Flag for freeing attributes values array.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
   if (present(att_name)) then
     if (att_name) then
-      if (allocated(self%att_name)) deallocate(self%att_name) ; allocate(self%att_name(1:Na))
+      if (allocated(self%att_name)) then
+        call self%att_name%free
+        deallocate(self%att_name)
+      endif
+      allocate(self%att_name(1:Na))
     endif
   endif
   if (present(att_val)) then
     if (att_val) then
-      if (allocated(self%att_val)) deallocate(self%att_val) ; allocate(self%att_val(1:Na))
+      if (allocated(self%att_val)) then
+        call self%att_val%free
+        deallocate(self%att_val)
+      endif
+      allocate(self%att_val(1:Na))
     endif
   endif
   return
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine alloc_attributes
 
-  elemental subroutine get(self, string)
+  elemental subroutine get(self, source)
   !---------------------------------------------------------------------------------------------------------------------------------
-  !< Get the tag value and attributes from self%string after tag_name and att_name have been set.
+  !< Get the tag value and attributes from source after tag_name and att_name have been set.
   !<
   !< @note It is worth noting that the leading and trailing white spaces of tag value and attributes are removed.
   !---------------------------------------------------------------------------------------------------------------------------------
-  class(Type_XML_Tag), intent(INOUT) :: self   !< XML tag.
-  character(*),        intent(IN)    :: string !< String containing data.
+  class(xml_tag), intent(inout) :: self   !< XML tag.
+  character(*),   intent(in)    :: source !< String containing data.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
-  call self%get_value(string=string)
-  call self%get_attributes(string=string)
+  call self%get_value(source=source)
+  call self%get_attributes(source=source)
   ! call self%get_nested()
   return
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine get
 
-  elemental subroutine get_value(self, string)
+  elemental subroutine get_value(self, source)
   !---------------------------------------------------------------------------------------------------------------------------------
-  !< Get the tag value from string after tag_name has been set.
+  !< Get the tag value from source after tag_name has been set.
   !<
   !< @note It is worth noting that the leading and trailing white spaces of tag value are removed.
   !---------------------------------------------------------------------------------------------------------------------------------
-  class(Type_XML_Tag), intent(INOUT) :: self   !< XML tag.
-  character(*),        intent(IN)    :: string !< String containing data.
-  integer                            :: c1, c2 !< Counters.
+  class(xml_tag), intent(inout) :: self   !< XML tag.
+  character(*),   intent(in)    :: source !< String containing data.
+  integer                       :: c1     !< Counter.
+  integer                       :: c2     !< Counter.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
-  if (index(string=string, substring='<'//self%tag_name)>0) then
-    c2 = index(string=string, substring='</'//self%tag_name//'>')
+  if (index(string=source, substring='<'//self%tag_name)>0) then
+    c2 = index(string=source, substring='</'//self%tag_name//'>')
     if (c2>0) then ! parsing tag value
-      c1 = index(string=string, substring='>')
-      self%tag_val = trim(adjustl(string(c1+1:c2-1)))
+      c1 = index(string=source, substring='>')
+      self%tag_val = trim(adjustl(source(c1+1:c2-1)))
     endif
   endif
   return
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine get_value
 
-  elemental subroutine get_attributes(self, string)
+  elemental subroutine get_attributes(self, source)
   !---------------------------------------------------------------------------------------------------------------------------------
-  !< Get the attributes values from string after tag_name and att_name have been set.
+  !< Get the attributes values from source after tag_name and att_name have been set.
   !<
   !< @note It is worth noting that the leading and trailing white spaces of attributes values are removed.
   !---------------------------------------------------------------------------------------------------------------------------------
-  class(Type_XML_Tag), intent(INOUT) :: self      !< XML tag.
-  character(*),        intent(IN)    :: string    !< String containing data.
-  integer                            :: a, c1, c2 !< Counters.
+  class(xml_tag), intent(inout) :: self   !< XML tag.
+  character(*),   intent(in)    :: source !< String containing data.
+  integer                       :: a      !< Counter.
+  integer                       :: c1     !< Counter.
+  integer                       :: c2     !< Counter.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
-  if (index(string=string, substring='<'//self%tag_name)>0) then
+  if (index(string=source, substring='<'//self%tag_name)>0) then
     if (allocated(self%att_name)) then ! parsing attributes
       call self%alloc_attributes(att_val=.true., Na=size(self%att_name, dim=1))
       do a=1, size(self%att_name, dim=1)
-        c1 = index(string=string, substring=self%att_name(a)%vs//'="') + len(self%att_name(a)%vs) + 2
+        c1 = index(string=source, substring=self%att_name(a)%vs//'="') + len(self%att_name(a)%vs) + 2
         if (c1>len(self%att_name(a)%vs) + 2) then
-          c2 = index(string=string(c1:), substring='"')
+          c2 = index(string=source(c1:), substring='"')
           if (c2>0) then
-            self%att_val(a)%vs = trim(adjustl(string(c1:c1+c2-2)))
+            self%att_val(a)%vs = trim(adjustl(source(c1:c1+c2-2)))
           else
             call self%att_val(a)%free
           endif
@@ -328,38 +345,39 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine get_attributes
 
-  elemental subroutine parse_tag_name(self, string, tstart, tend)
+  elemental subroutine parse_tag_name(self, source, tstart, tend)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Parse the tag name contained into a string.
   !<
-  !< It is assumed that the first tag contained into the string is parsed, the others eventually present are omitted.
+  !< It is assumed that the first tag contained into the source is parsed, the others eventually present are omitted.
   !< Valid syntax are:
   !< + `<tag_name att1="att1 val" att2="att2 val"...>...</tag_name>`
   !< + `<tag_name att1="att1 val" att2="att2 val".../>`
   !< @note Inside the attributes value the symbols `<` and `>` are not allowed.
   !---------------------------------------------------------------------------------------------------------------------------------
-  class(Type_XML_Tag),    intent(INOUT) :: self    !< XML tag.
-  character(*),           intent(IN)    :: string  !< String containing the input.
-  integer(I4P), optional, intent(OUT)   :: tstart  !< Starting index of tag inside the string.
-  integer(I4P), optional, intent(OUT)   :: tend    !< Ending index of tag inside the string.
-  integer(I4P)                          :: tstartd !< Starting index of tag inside the string.
-  integer(I4P)                          :: tendd   !< Ending index of tag inside the string.
+  class(xml_tag),         intent(inout) :: self    !< XML tag.
+  character(*),           intent(in)    :: source  !< String containing the input.
+  integer(I4P), optional, intent(out)   :: tstart  !< Starting index of tag inside the source.
+  integer(I4P), optional, intent(out)   :: tend    !< Ending index of tag inside the source.
+  integer(I4P)                          :: tstartd !< Starting index of tag inside the source.
+  integer(I4P)                          :: tendd   !< Ending index of tag inside the source.
   character(len=1)                      :: c1      !< Dummy string for parsing file.
   character(len=:), allocatable         :: c2      !< Dummy string for parsing file.
-  integer(I4P)                          :: c, s    !< Counters.
+  integer(I4P)                          :: c       !< Counter.
+  integer(I4P)                          :: s       !< Counter.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
   tstartd = 0
   tendd   = 0
   c = 1
-  Tag_Search: do while(c<=len(string))
-    c1 = string(c:c)
+  Tag_Search: do while(c<=len(source))
+    c1 = source(c:c)
     if (c1=='<') then
       tstartd = c
       c2 = c1
-      Tag_Name: do while(c<len(string))
-        c = c + 1 ; c1 = string(c:c)
+      Tag_Name: do while(c<len(source))
+        c = c + 1 ; c1 = source(c:c)
         c2 = c2//c1
         if (c1=='>') then
           tendd = c
@@ -386,7 +404,7 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine parse_tag_name
 
-  elemental subroutine parse_attributes_names(self, string)
+  elemental subroutine parse_attributes_names(self, source)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Parse the tag attributes names contained into a string.
   !<
@@ -394,23 +412,25 @@ contains
   !< + `att1="att1 val" att2="att2 val"...`
   !< @note Inside the attributes value the symbols `<` and `>` are not allowed.
   !---------------------------------------------------------------------------------------------------------------------------------
-  class(Type_XML_Tag), intent(INOUT) :: self     !< XML tag.
-  character(*),        intent(IN)    :: string   !< String containing the input.
-  character(len=:), allocatable      :: att      !< Dummy string for parsing file.
-  integer(I4P)                       :: c, a, Na !< Counters.
+  class(xml_tag), intent(inout) :: self   !< XML tag.
+  character(*),   intent(in)    :: source !< String containing the input.
+  character(len=:), allocatable :: att    !< Dummy string for parsing file.
+  integer(I4P)                  :: c      !< Counter.
+  integer(I4P)                  :: a      !< Counter.
+  integer(I4P)                  :: Na     !< Counter.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
   Na = 0
   c = 1
-  Att_Count: do while(c<=len(string))
-    if (string(c:c)=='=') Na = Na + 1
+  Att_Count: do while(c<=len(source))
+    if (source(c:c)=='=') Na = Na + 1
     c = c + 1
   enddo Att_Count
   if (Na>0) then
     call self%alloc_attributes(att_name=.true., Na=Na)
-    c = index(string=string, substring=' ')
-    att = trim(adjustl(string(c + 1:)))
+    c = index(string=source, substring=' ')
+    att = trim(adjustl(source(c + 1:)))
     c = 1
     a = 1
     Att_Search: do while(c<=len(att))
@@ -427,20 +447,20 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine parse_attributes_names
 
-  elemental subroutine search(self, tag_name, string, tstart, tend)
+  elemental subroutine search(self, tag_name, source, tstart, tend)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Search tag named *tag_name* into a string and, in case it is found, store into self.
   !<
   !< @note If *tag_name* is not found, self is returned empty.
   !---------------------------------------------------------------------------------------------------------------------------------
-  class(Type_XML_Tag),    intent(INOUT) :: self     !< XML tag.
-  character(*),           intent(IN)    :: tag_name !< Searched tag name.
-  character(*),           intent(IN)    :: string   !< String containing the input.
-  integer(I4P), optional, intent(OUT)   :: tstart   !< Starting index of tag inside the string.
-  integer(I4P), optional, intent(OUT)   :: tend     !< Ending index of tag inside the string.
-  type(Type_XML_Tag)                    :: tag      !< Dummy XML tag.
-  integer(I4P)                          :: tstartd  !< Starting index of tag inside the string.
-  integer(I4P)                          :: tendd    !< Ending index of tag inside the string.
+  class(xml_tag),         intent(inout) :: self     !< XML tag.
+  character(*),           intent(in)    :: tag_name !< Searched tag name.
+  character(*),           intent(in)    :: source   !< String containing the input.
+  integer(I4P), optional, intent(out)   :: tstart   !< Starting index of tag inside the source.
+  integer(I4P), optional, intent(out)   :: tend     !< Ending index of tag inside the source.
+  type(xml_tag)                         :: tag      !< Dummy XML tag.
+  integer(I4P)                          :: tstartd  !< Starting index of tag inside the source.
+  integer(I4P)                          :: tendd    !< Ending index of tag inside the source.
   logical                               :: found    !< Flag for inquiring search result.
   !---------------------------------------------------------------------------------------------------------------------------------
 
@@ -450,8 +470,8 @@ contains
   tstartd = 1
   tendd   = 0
   found = .false.
-  Tag_Search: do while ((.not.found).or.(len(string(tendd + 1:))<len(self%tag_name)))
-    call tag%parse(string=string(tendd + 1:), tstart=tstartd, tend=tendd)
+  Tag_Search: do while ((.not.found).or.(len(source(tendd + 1:))<len(self%tag_name)))
+    call tag%parse(source=source(tendd + 1:), tstart=tstartd, tend=tendd)
     if (tstartd==0.and.tendd==0) then
       exit Tag_Search ! no tag found
     else
@@ -476,11 +496,11 @@ contains
   ! assignment (=)
   elemental subroutine assign_tag(lhs, rhs)
   !---------------------------------------------------------------------------------------------------------------------------------
-  !< Assignment between two selfs.
+  !< Assignment between two tags.
   !---------------------------------------------------------------------------------------------------------------------------------
-  class(Type_XML_Tag), intent(INOUT) :: lhs
-  type(Type_XML_Tag),  intent(IN)    :: rhs
-  integer(I4P)                       :: a
+  class(xml_tag), intent(inout) :: lhs
+  type(xml_tag),  intent(in)    :: rhs
+  integer(I4P)                  :: a
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
@@ -501,4 +521,4 @@ contains
   return
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine assign_tag
-endmodule Data_Type_XML_Tag
+endmodule foxy_xml_tag

@@ -1,8 +1,8 @@
 [modes]
-modes = fx_test1-gnu
-        fx_test1-gnu-debug
-        fx_test1-intel
-        fx_test1-intel-debug
+modes = tests-gnu
+        tests-gnu-debug
+        tests-intel
+        tests-intel-debug
 
 [common-variables]
 $CSHARED_GNU = -DGNU -cpp -c -fPIC -frealloc-lhs
@@ -13,82 +13,87 @@ $CSTATIC_INT = -cpp -c -assume realloc_lhs
 $DEBUG_GNU   = -DGNU -O0 -g3 -Warray-bounds -Wcharacter-truncation -Wline-truncation -Wimplicit-interface -Wimplicit-procedure -Wunderflow -fcheck=all -fmodule-private -ffree-line-length-132 -fimplicit-none -fbacktrace -fdump-core -finit-real=nan -std=f2008 -fall-intrinsics
 $DEBUG_INT   = -O0 -debug all -check all -warn all -extend-source 132 -traceback -gen-interfaces#-fpe-all=0 -fp-stack-check -fstack-protector-all -ftrapuv -no-ftz -std08
 $OPTIMIZE    = -O2
+$EXDIRS      = ./src/third_party/PENF/
 
 # main modes
 # GNU
-[fx_test1-gnu]
+[tests-gnu]
 template  = template-static-gnu
-target    = src/tests/fx_test1.f90
-build_dir = ./tests/
+build_dir = exe
 
-[fx_test1-gnu-debug]
+[tests-gnu-debug]
 template  = template-static-gnu-debug
-target    = src/tests/fx_test1.f90
-build_dir = ./tests/
+build_dir = exe
 
 # Intel
-[fx_test1-intel]
+[tests-intel]
 template  = template-static-intel
-target    = src/tests/fx_test1.f90
-build_dir = ./tests/
+build_dir = exe
 
-[fx_test1-intel-debug]
+[tests-intel-debug]
 template  = template-static-intel-debug
-target    = src/tests/fx_test1.f90
-build_dir = ./tests/
+build_dir = exe
 
 #templates
 [template-static-gnu]
-compiler = gnu
-cflags   = $CSTATIC_GNU $OPTIMIZE
-mod_dir  = ./mod/
-obj_dir  = ./obj/
-src      = ./src/
-colors   = True
-quiet    = False
-log      = True
-jobs     = 10
+compiler        = gnu
+cflags          = $CSTATIC_GNU $OPTIMIZE
+cflags_heritage = True
+exclude_dirs    = $EXDIRS
+mod_dir         = ./mod/
+obj_dir         = ./obj/
+src             = ./src/
+colors          = True
+quiet           = False
+log             = True
+jobs            = 10
 
 [template-static-gnu-debug]
-compiler = gnu
-cflags   = $CSTATIC_GNU $DEBUG_GNU
-lflags   = $DEBUG_GNU
-mod_dir  = ./mod/
-obj_dir  = ./obj/
-src      = ./src/
-colors   = True
-quiet    = False
-log      = True
-jobs     = 10
+compiler        = gnu
+cflags          = $CSTATIC_GNU $DEBUG_GNU
+lflags          = $DEBUG_GNU
+cflags_heritage = True
+exclude_dirs    = $EXDIRS
+mod_dir         = ./mod/
+obj_dir         = ./obj/
+src             = ./src/
+colors          = True
+quiet           = False
+log             = True
+jobs            = 10
 
 [template-static-intel]
-compiler = intel
-cflags   = $CSTATIC_INT $OPTIMIZE
-lflags   = $OPTIMIZE
-mod_dir  = ./mod/
-obj_dir  = ./obj/
-src      = ./src/
-colors   = True
-quiet    = False
-log      = True
-jobs     = 10
+compiler        = intel
+cflags          = $CSTATIC_INT $OPTIMIZE
+lflags          = $OPTIMIZE
+cflags_heritage = True
+exclude_dirs    = $EXDIRS
+mod_dir         = ./mod/
+obj_dir         = ./obj/
+src             = ./src/
+colors          = True
+quiet           = False
+log             = True
+jobs            = 10
 
 [template-static-intel-debug]
-compiler = intel
-cflags   = $CSTATIC_INT $DEBUG_INT
-lflags   = $DEBUG_INT
-mod_dir  = ./mod/
-obj_dir  = ./obj/
-src      = ./src/
-colors   = True
-quiet    = False
-log      = True
-jobs     = 10
+compiler        = intel
+cflags          = $CSTATIC_INT $DEBUG_INT
+lflags          = $DEBUG_INT
+cflags_heritage = True
+exclude_dirs    = $EXDIRS
+mod_dir         = ./mod/
+obj_dir         = ./obj/
+src             = ./src/
+colors          = True
+quiet           = False
+log             = True
+jobs            = 10
 
 [rule-makedoc]
 help   = Rule for building documentation from source files
 rule_1 = rm -rf doc/html/*
-rule_2 = ford doc/main_page.md
+rule_2 = ford doc/main_page.md --debug
 rule_3 = cp -r doc/html/publish/* doc/html/
 
 [rule-deldoc]
@@ -101,16 +106,16 @@ rule = tar -czf FoXy.tar.gz *
 
 [rule-makecoverage]
 help   = Rule for performing coverage analysis
-rule_1 = FoBiS.py clean -mode fx_test1-gnu
-rule_2 = FoBiS.py build -mode fx_test1-gnu -coverage
-rule_3 = ./tests/fx_test1
-rule_4 = gcov -o tests/obj/ src/lib/Lib_XML_Parser.f90
+rule_1 = FoBiS.py clean -mode tests-gnu
+rule_2 = FoBiS.py build -mode tests-gnu -coverage
+rule_3 = ./exe/fx_test1
+rule_4 = gcov -o exe/obj/ src/lib/foxy*
 
 [rule-coverage-analysis]
 help   = Rule for performing coverage analysis and saving reports in markdown
-rule_1 = FoBiS.py clean -mode fx_test1-gnu
-rule_2 = FoBiS.py build -mode fx_test1-gnu -coverage
-rule_3 = ./tests/fx_test1
-rule_4 = gcov -o tests/obj/ src/lib/*
+rule_1 = FoBiS.py clean -mode tests-gnu
+rule_2 = FoBiS.py build -mode tests-gnu -coverage
+rule_3 = ./exe/fx_test1
+rule_4 = gcov -o exe/obj/ src/lib/*
 rule_5 = FoBiS.py rule -gcov_analyzer wiki/ Coverage-Analysis
 rule_6 = rm -f *.gcov

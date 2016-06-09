@@ -1,10 +1,10 @@
-!< Definition of Type_XML_File for FoXy XML Parser.
-module Data_Type_XML_File
+!< FoXy XML file class.
+module foxy_xml_file
 !-----------------------------------------------------------------------------------------------------------------------------------
-!< Definition of Type_XML_File for FoXy XML Parser.
+!< FoXy XML file class.
 !-----------------------------------------------------------------------------------------------------------------------------------
-USE IR_Precision      ! Integers and reals precision definition.
-USE Data_Type_XML_Tag ! Definition of Type_XML_Tag.
+use foxy_xml_tag
+use penf
 !-----------------------------------------------------------------------------------------------------------------------------------
 
 !-----------------------------------------------------------------------------------------------------------------------------------
@@ -13,22 +13,22 @@ private
 !-----------------------------------------------------------------------------------------------------------------------------------
 
 !-----------------------------------------------------------------------------------------------------------------------------------
-type, public:: Type_XML_File
-  !< Derived type defining Type_XML_File, the base type of FoXy XML parser.
+type, public:: xml_file
+  !< XML file class.
   private
-  integer(I4P)                    :: Nt = 0 !< Number of XML tags.
-  type(Type_XML_Tag), allocatable :: tag(:) !< XML tags array.
+  integer(I4P)               :: Nt = 0 !< Number of XML tags.
+  type(xml_tag), allocatable :: tag(:) !< XML tags array.
   contains
-    ! public type-bound procedures
+    ! public methods
     procedure         :: free
     final             :: finalize
     procedure         :: parse
     procedure         :: tag_value
     procedure         :: stringify
     procedure, nopass :: load_file_as_stream
-    ! private type-bound procedures
+    ! private methods
     procedure, private :: add_tag
-endtype Type_XML_File
+endtype xml_file
 !-----------------------------------------------------------------------------------------------------------------------------------
 contains
   ! public
@@ -36,15 +36,12 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Free dynamic memory.
   !---------------------------------------------------------------------------------------------------------------------------------
-  class(Type_XML_File), intent(INOUT) :: self !< XML file.
-  integer(I4P)                        :: t    !< Counter.
+  class(xml_file), intent(inout) :: self !< XML file.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
-  if (self%Nt>0) then
-    do t=1, self%Nt
-      call self%tag(t)%free
-    enddo
+  if (allocated(self%tag)) then
+    call self%tag%free
     deallocate(self%tag)
     self%Nt = 0
   endif
@@ -52,15 +49,15 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine free
 
-  subroutine finalize(xml_file)
+  subroutine finalize(file)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Free dynamic memory when finalizing.
   !---------------------------------------------------------------------------------------------------------------------------------
-  type(Type_XML_File), intent(INOUT) :: xml_file !< XML file.
+  type(xml_file), intent(INOUT) :: file !< XML file.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
-  call xml_file%free
+  call file%free
   return
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine finalize
@@ -71,10 +68,10 @@ contains
   !<
   !< @note Self data are free before trying to parse new xml data: all previously parsed data are lost.
   !---------------------------------------------------------------------------------------------------------------------------------
-  class(Type_XML_File),   intent(INOUT) :: self         !< XML file.
-  character(*), optional, intent(IN)    :: string       !< String containing xml data.
-  character(*), optional, intent(IN)    :: filename     !< File name containing xml data.
-  type(Type_XML_Tag)                    :: tag          !< Dummy xml tag.
+  class(xml_file),        intent(inout) :: self         !< XML file.
+  character(*), optional, intent(in)    :: string       !< String containing xml data.
+  character(*), optional, intent(in)    :: filename     !< File name containing xml data.
+  type(xml_tag)                         :: tag          !< Dummy xml tag.
   integer(I4P)                          :: tstart, tend !< Counters for tracking string parsing.
   !---------------------------------------------------------------------------------------------------------------------------------
 
@@ -85,7 +82,7 @@ contains
     tend = 0
     do while(tstart<len(string))
       call tag%free
-      call tag%parse(string=string(tstart:), tend=tend)
+      call tag%parse(source=string(tstart:), tend=tend)
       if (tend==0) exit
       if (tag%is_parsed()) call self%add_tag(tag)
       tstart = tstart + tend
@@ -102,9 +99,9 @@ contains
   !<
   !< @note If there is no value, the *tag_value* string is returned deallocated.
   !---------------------------------------------------------------------------------------------------------------------------------
-  class(Type_XML_File),          intent(IN)    :: self     !< XML file.
-  character(*),                  intent(IN)    :: tag_name !< Tag name.
-  character(len=:), allocatable, intent(INOUT) :: tag_val  !< Tag value.
+  class(xml_file),               intent(in)    :: self     !< XML file.
+  character(*),                  intent(in)    :: tag_name !< Tag name.
+  character(len=:), allocatable, intent(inout) :: tag_val  !< Tag value.
   integer(I4P)                                 :: t        !< Counter.
   !---------------------------------------------------------------------------------------------------------------------------------
 
@@ -124,10 +121,10 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Convert the whole file data into a string.
   !---------------------------------------------------------------------------------------------------------------------------------
-  class(Type_XML_File), intent(IN) :: self       !< XML file.
-  character(len=:), allocatable    :: string     !< Output string containing the whole xml file.
-  character(len=:), allocatable    :: tag_string !< Output string containing the current tag.
-  integer(I4P)                     :: t          !< Counter.
+  class(xml_file), intent(in)   :: self       !< XML file.
+  character(len=:), allocatable :: string     !< Output string containing the whole xml file.
+  character(len=:), allocatable :: tag_string !< Output string containing the current tag.
+  integer(I4P)                  :: t          !< Counter.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
@@ -144,16 +141,16 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
   endfunction stringify
 
-  function load_file_as_stream(iostat, iomsg, delimiter_start, delimiter_end, fast_read, filename) result(stream)
+  function load_file_as_stream(filename, delimiter_start, delimiter_end, fast_read, iostat, iomsg) result(stream)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Load file contents and store as single characters stream.
   !---------------------------------------------------------------------------------------------------------------------------------
-  integer(I4P), optional, intent(OUT) :: iostat          !< IO error.
-  character(*), optional, intent(OUT) :: iomsg           !< IO error message.
-  character(*), optional, intent(IN)  :: delimiter_start !< Delimiter from which start the stream.
-  character(*), optional, intent(IN)  :: delimiter_end   !< Delimiter to which end the stream.
-  logical,      optional, intent(IN)  :: fast_read       !< Flag for activating efficient reading with one single read.
-  character(*),           intent(IN)  :: filename        !< File name.
+  character(*),           intent(in)  :: filename        !< File name.
+  character(*), optional, intent(in)  :: delimiter_start !< Delimiter from which start the stream.
+  character(*), optional, intent(in)  :: delimiter_end   !< Delimiter to which end the stream.
+  logical,      optional, intent(in)  :: fast_read       !< Flag for activating efficient reading with one single read.
+  integer(I4P), optional, intent(out) :: iostat          !< IO error.
+  character(*), optional, intent(out) :: iomsg           !< IO error message.
   character(len=:), allocatable       :: stream          !< Output string containing the file data as a single stream.
   logical                             :: is_file         !< Flag for inquiring the presence of the file.
   integer(I4P)                        :: unit            !< Unit file.
@@ -257,9 +254,9 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Add tag to self%tag array.
   !---------------------------------------------------------------------------------------------------------------------------------
-  class(Type_XML_File),   intent(INOUT) :: self       !< XML file.
-  type(Type_XML_Tag),     intent(IN)    :: tag        !< XML tag.
-  type(Type_XML_Tag), allocatable       :: tag_new(:) !< New (extended) tags array.
+  class(xml_file), intent(inout) :: self       !< XML file.
+  type(xml_tag),   intent(in)    :: tag        !< XML tag.
+  type(xml_tag), allocatable     :: tag_new(:) !< New (extended) tags array.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
@@ -277,4 +274,4 @@ contains
   return
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine add_tag
-endmodule Data_Type_XML_File
+endmodule foxy_xml_file
