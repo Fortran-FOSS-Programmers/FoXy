@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+	 
+	 <meta name="description" content="Fortran XML parser for poor people">
+    
+    <meta name="author" content="Chris MacMackin" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>penf &ndash; FoXy</title>
+
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <link href="../css/font-awesome.min.css" rel="stylesheet">
+    <link href="../css/local.css" rel="stylesheet">
+    
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    
+    <script src="../js/jquery-2.1.3.min.js"></script>
+    <script src="../js/svg-pan-zoom.min.js"></script>
+
+    
+    <script src="../tipuesearch/tipuesearch_content.js"></script>
+    <link  href="../tipuesearch/tipuesearch.css" rel="stylesheet">
+    <script src="../tipuesearch/tipuesearch_set.js"></script>
+    <script src="../tipuesearch/tipuesearch.js"></script>
+    
+
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../index.html">FoXy </a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+				
+                
+            <li><a href="../lists/files.html">Source Files</a></li>
+				
+				
+            <li><a href="../lists/modules.html">Modules</a></li>
+				
+				
+            <li><a href="../lists/procedures.html">Procedures</a></li>
+				
+								
+            <li><a href="../lists/types.html">Derived Types</a></li>
+				
+				
+            <li><a href="../program/fx_test1.html">Program</a></li>
+				
+          </ul>
+        
+        <form action="../search.html" class="navbar-form navbar-right" role="search">
+        <div class="form-group">
+          <input type="text" class="form-control" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+        </div>
+<!--
+        <button type="submit" class="btn btn-default">Submit</button>
+-->
+        </form>
+        
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+
+    <div class="container">
+    
+  
+  <div class="row">
+    <h1>penf 
+    <small>Module</small>
+    
+    </h1>
+	 
+<div class="row">
+<div class="col-lg-12">
+<div class="well well-sm">
+  <ul class="list-inline" style="margin-bottom:0px;display:inline">
+     
+     
+     
+     
+    
+    
+    <li><i class="fa fa-code"></i><a href="../src/penf.F90"> Source File</a></li>
+     
+  </ul>
+  <ol class="breadcrumb in-well text-right">
+  
+     <li><a href='../sourcefile/penf.f90.html'>penf.F90</a></li>
+  
+     <li class="active">penf</li>
+  </ol>
+</div>
+</div>
+</div>
+    
+  </div>
+  
+  <div class="row">
+    <div class="col-lg-3">
+    
+<div id="sidebar">
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <div class="panel panel-primary">
+    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#inters">Interfaces</a></h3></div>
+    <div id="inters" class="panel-collapse collapse">
+        <div class="list-group">
+          
+          <a class="list-group-item" href="../module/penf.html#interface-digit">digit</a>
+          
+        </div>
+    </div>
+  </div>
+  
+  
+  
+  
+  
+  <div class="panel panel-primary">
+    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#funcs">Functions</a></h3></div>
+    <div id="funcs" class="panel-collapse collapse">
+        <div class="list-group">
+          
+          <a class="list-group-item" href="../module/penf.html#proc-digit_i8">digit_I8</a>
+          
+          <a class="list-group-item" href="../module/penf.html#proc-digit_i4">digit_I4</a>
+          
+          <a class="list-group-item" href="../module/penf.html#proc-digit_i2">digit_I2</a>
+          
+          <a class="list-group-item" href="../module/penf.html#proc-digit_i1">digit_I1</a>
+          
+        </div>
+    </div>
+  </div>
+  
+  
+  
+  <div class="panel panel-primary">
+    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#subs">Subroutines</a></h3></div>
+    <div class="list-group">
+        <div id="subs" class="panel-collapse collapse">
+          
+          <a class="list-group-item" href="../module/penf.html#proc-check_endian">check_endian</a>
+          
+          <a class="list-group-item" href="../module/penf.html#proc-penf_init">penf_init</a>
+          
+          <a class="list-group-item" href="../module/penf.html#proc-penf_print">penf_print</a>
+          
+        </div>
+    </div>
+  </div>
+  
+  
+  
+  
+  
+  
+  
+  
+  <hr>
+  
+  <div class="panel panel-default">
+    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#allmods">All Modules</a></h3></div>
+    <div id="allmods" class="panel-collapse collapse">
+        <div class="list-group">
+          
+          <a class="list-group-item" href="../module/befor64.html">befor64</a>
+          
+          <a class="list-group-item" href="../module/befor64_pack_data_m.html">befor64_pack_data_m</a>
+          
+          <a class="list-group-item" href="../module/foxy.html">foxy</a>
+          
+          <a class="list-group-item" href="../module/foxy_xml_file.html">foxy_xml_file</a>
+          
+          <a class="list-group-item" href="../module/foxy_xml_tag.html">foxy_xml_tag</a>
+          
+          <a class="list-group-item" href="../module/penf.html">penf</a>
+          
+          <a class="list-group-item" href="../module/penf_b_size.html">penf_b_size</a>
+          
+          <a class="list-group-item" href="../module/penf_global_parameters_variables.html">penf_global_parameters_variables</a>
+          
+          <a class="list-group-item" href="../module/penf_stringify.html">penf_stringify</a>
+          
+          <a class="list-group-item" href="../module/stringifor.html">stringifor</a>
+          
+          <a class="list-group-item" href="../module/stringifor_string_t.html">stringifor_string_t</a>
+          
+        </div>
+    </div>
+  </div>
+  
+</div>
+
+    </div>
+    
+    <div class="col-lg-9" id='text'>
+    
+    
+  
+    <ul class="list-inline">
+      <li><h4>Uses:</h4></li>
+      
+      <li><a href='../module/penf_global_parameters_variables.html'>penf_global_parameters_variables</a></li>
+      
+      <li><a href='../module/penf_b_size.html'>penf_b_size</a></li>
+      
+      <li><a href='../module/penf_stringify.html'>penf_stringify</a></li>
+      
+    </ul>
+  
+
+    
+                <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.38.0 (20140413.2041)
+ -->
+<!-- Title: module~~penf~~UsesGraph Pages: 1 -->
+<svg id="modulepenfUsesGraph" width="511pt" height="140pt"
+ viewBox="0.00 0.00 511.00 140.28" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~penf~~UsesGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 136.276)">
+<title>module~~penf~~UsesGraph</title>
+<polygon fill="white" stroke="none" points="-4,4 -4,-136.276 507,-136.276 507,4 -4,4"/>
+<!-- module~penf -->
+<g id="module~~penf~~UsesGraph_node1" class="node"><title>module~penf</title>
+<polygon fill="none" stroke="black" points="503,-124 449,-124 449,-100 503,-100 503,-124"/>
+<text text-anchor="middle" x="476" y="-109.6" font-family="Helvetica,sans-Serif" font-size="10.50">penf</text>
+</g>
+<!-- module~penf_b_size -->
+<g id="module~~penf~~UsesGraph_node2" class="node"><title>module~penf_b_size</title>
+<g id="a_module~~penf~~UsesGraph_node2"><a xlink:href="../module/penf_b_size.html" xlink:title="penf_b_size">
+<polygon fill="#337ab7" stroke="#337ab7" points="292.5,-104 222.5,-104 222.5,-80 292.5,-80 292.5,-104"/>
+<text text-anchor="middle" x="257.5" y="-89.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">penf_b_size</text>
+</a>
+</g>
+</g>
+<!-- module~penf_b_size&#45;&gt;module~penf -->
+<g id="module~~penf~~UsesGraph_edge5" class="edge"><title>module~penf_b_size&#45;&gt;module~penf</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M279.46,-104.185C302.046,-116.121 339.414,-132.465 374,-132"/>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M376,-132C397.155,-131.716 420.36,-127.256 438.984,-122.621"/>
+<polygon fill="#000000" stroke="#000000" points="440.026,-125.966 448.817,-120.053 438.257,-119.194 440.026,-125.966"/>
+</g>
+<!-- module~penf_stringify -->
+<g id="module~~penf~~UsesGraph_node4" class="node"><title>module~penf_stringify</title>
+<g id="a_module~~penf~~UsesGraph_node4"><a xlink:href="../module/penf_stringify.html" xlink:title="penf_stringify">
+<polygon fill="#337ab7" stroke="#337ab7" points="413,-84 337,-84 337,-60 413,-60 413,-84"/>
+<text text-anchor="middle" x="375" y="-69.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">penf_stringify</text>
+</a>
+</g>
+</g>
+<!-- module~penf_b_size&#45;&gt;module~penf_stringify -->
+<g id="module~~penf~~UsesGraph_edge4" class="edge"><title>module~penf_b_size&#45;&gt;module~penf_stringify</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M292.529,-86.1075C303.337,-84.236 315.487,-82.1322 327.039,-80.1318"/>
+<polygon fill="#000000" stroke="#000000" points="327.732,-83.5639 336.988,-78.4089 326.538,-76.6665 327.732,-83.5639"/>
+</g>
+<!-- module~penf_global_parameters_variables -->
+<g id="module~~penf~~UsesGraph_node3" class="node"><title>module~penf_global_parameters_variables</title>
+<g id="a_module~~penf~~UsesGraph_node3"><a xlink:href="../module/penf_global_parameters_variables.html" xlink:title="penf_global_parameters_variables">
+<polygon fill="#337ab7" stroke="#337ab7" points="178,-104 1.42109e-14,-104 1.42109e-14,-80 178,-80 178,-104"/>
+<text text-anchor="middle" x="89" y="-89.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">penf_global_parameters_variables</text>
+</a>
+</g>
+</g>
+<!-- module~penf_global_parameters_variables&#45;&gt;module~penf -->
+<g id="module~~penf~~UsesGraph_edge6" class="edge"><title>module~penf_global_parameters_variables&#45;&gt;module~penf</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M141.261,-104.044C197.903,-116.22 291.975,-133.103 374,-132"/>
+</g>
+<!-- module~penf_global_parameters_variables&#45;&gt;module~penf_b_size -->
+<g id="module~~penf~~UsesGraph_edge1" class="edge"><title>module~penf_global_parameters_variables&#45;&gt;module~penf_b_size</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M178.125,-92C189.943,-92 201.629,-92 212.227,-92"/>
+<polygon fill="#000000" stroke="#000000" points="212.427,-95.5001 222.426,-92 212.426,-88.5001 212.427,-95.5001"/>
+</g>
+<!-- module~penf_global_parameters_variables&#45;&gt;module~penf_stringify -->
+<g id="module~~penf~~UsesGraph_edge3" class="edge"><title>module~penf_global_parameters_variables&#45;&gt;module~penf_stringify</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M148.718,-79.9805C169.272,-76.3261 192.569,-72.8019 214,-71 252.531,-67.7604 262.334,-70.7352 301,-71 309.29,-71.0568 318.109,-71.1498 326.646,-71.2569"/>
+<polygon fill="#000000" stroke="#000000" points="326.818,-74.7594 336.864,-71.393 326.912,-67.76 326.818,-74.7594"/>
+</g>
+<!-- module~penf_stringify&#45;&gt;module~penf -->
+<g id="module~~penf~~UsesGraph_edge7" class="edge"><title>module~penf_stringify&#45;&gt;module~penf</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M405.703,-84.0013C416.276,-88.273 428.29,-93.1274 439.312,-97.5807"/>
+<polygon fill="#000000" stroke="#000000" points="438.098,-100.865 448.681,-101.366 440.72,-94.3747 438.098,-100.865"/>
+</g>
+<!-- iso_fortran_env -->
+<g id="module~~penf~~UsesGraph_node5" class="node"><title>iso_fortran_env</title>
+<g id="a_module~~penf~~UsesGraph_node5"><a xlink:href="https://gcc.gnu.org/onlinedocs/gfortran/ISO_005fFORTRAN_005fENV.html" xlink:title="iso_fortran_env">
+<polygon fill="#337ab7" stroke="#337ab7" points="301,-24 214,-24 214,-0 301,-0 301,-24"/>
+<text text-anchor="middle" x="257.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">iso_fortran_env</text>
+</a>
+</g>
+</g>
+<!-- iso_fortran_env&#45;&gt;module~penf_stringify -->
+<g id="module~~penf~~UsesGraph_edge2" class="edge"><title>iso_fortran_env&#45;&gt;module~penf_stringify</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M281.873,-24.1419C299.094,-33.0878 322.727,-45.3646 341.745,-55.244"/>
+<polygon fill="#000000" stroke="#000000" points="340.174,-58.3721 350.662,-59.8762 343.401,-52.1603 340.174,-58.3721"/>
+</g>
+</g>
+</svg>
+</div>
+                <div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div>
+                <div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog">
+                  <div class="modal-dialog modal-lg" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                      </div>
+                      <div class="modal-body">
+                        
+Nodes of different colours represent the following:
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.38.0 (20140413.2041)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="26pt"
+ viewBox="0.00 0.00 641.00 25.98" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.811906 0.811906) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="none" points="-4,4 -4,-28 785.5,-28 785.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node"><title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,-0 54,-0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node"><title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="139.5,-24 72.5,-24 72.5,-0 139.5,-0 139.5,-24"/>
+<text text-anchor="middle" x="106" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Type -->
+<g id="node3" class="node"><title>Type</title>
+<polygon fill="#5cb85c" stroke="#5cb85c" points="212,-24 158,-24 158,-0 212,-0 212,-24"/>
+<text text-anchor="middle" x="185" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type</text>
+</g>
+<!-- Subroutine -->
+<g id="node4" class="node"><title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="294,-24 230,-24 230,-0 294,-0 294,-24"/>
+<text text-anchor="middle" x="262" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node5" class="node"><title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="366,-24 312,-24 312,-0 366,-0 366,-24"/>
+<text text-anchor="middle" x="339" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node6" class="node"><title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="439.5,-24 384.5,-24 384.5,-0 439.5,-0 439.5,-24"/>
+<text text-anchor="middle" x="412" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node7" class="node"><title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="594,-24 458,-24 458,-0 594,-0 594,-24"/>
+<text text-anchor="middle" x="526" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node8" class="node"><title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="666,-24 612,-24 612,-0 666,-0 666,-24"/>
+<text text-anchor="middle" x="639" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node9" class="node"><title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="781.5,-24 684.5,-24 684.5,-0 781.5,-0 781.5,-24"/>
+<text text-anchor="middle" x="733" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+Where possible, edges connecting nodes are given different colours to make them
+easier to distinguish in large graphs.
+<h5>Module Graph</h5>
+<p>Solid arrows point from a parent (sub)module to the submodule which is
+descended from it. Dashed arrows point from a module being used to the
+module using it.</p>
+<h5>Type Graph</h5>
+<p>Solid arrows point from one derived type to another which extends
+(inherits from) it. Dashed arrows point from a derived type to another
+type containing it as a components, with a label listing the name(s) of
+said component(s).</p>
+<h5>Call Graph</h5>
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.</p>
+
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+    
+    <p>Portability Environment for Fortran poor people.
+<a name="top"></a></p>
+<h1 id="penf"><a class="toclink" href="#penf">PENF <a href=""><img alt="GitHub tag" src="https://img.shields.io/github/tag/szaghi/PENF.svg"></a></a></h1>
+<p><a href=""><img alt="License" src="https://img.shields.io/badge/license-GNU%20GeneraL%20Public%20License%20v3%20,%20GPLv3-blue.svg"></a>
+<a href=""><img alt="License" src="https://img.shields.io/badge/license-BSD2-red.svg"></a>
+<a href=""><img alt="License" src="https://img.shields.io/badge/license-BSD3-red.svg"></a>
+<a href=""><img alt="License" src="https://img.shields.io/badge/license-MIT-red.svg"></a></p>
+<p><a href=""><img alt="Status" src="https://img.shields.io/badge/status-stable-brightgreen.svg"></a>
+<a href="https://travis-ci.org/szaghi/PENF"><img alt="Build Status" src="https://travis-ci.org/szaghi/PENF.svg?branch=master"></a>
+<a href="http://codecov.io/github/szaghi/PENF?branch=master"><img alt="Coverage Status" src="https://img.shields.io/codecov/c/github/szaghi/PENF.svg"></a></p>
+<h3 id="penf-portability-environment-for-fortran-poor-people"><a class="toclink" href="#penf-portability-environment-for-fortran-poor-people">PENF, Portability Environment for Fortran poor people</a></h3>
+<p>A KISS library for exploiting codes portability for modern (2003+) Fortran projects.</p>
+<ul>
+<li>PENF is a pure Fortran (KISS) library for achieving portable codes for modern Fortran projects;</li>
+<li>PENF provides many number-to-string and <code>viceversa</code> facilities;</li>
+<li>PENF is Fortran 2003+ standard compliant;</li>
+<li>PENF is a Free, Open Source Project.</li>
+</ul>
+<h4 id="table-of-contents"><a class="toclink" href="#table-of-contents">Table of Contents</a></h4>
+<ul>
+<li><a href="#what-is-penf?">What is PENF?</a></li>
+<li><a href="#main-features">Main features</a></li>
+<li><a href="#copyrights">Copyrights</a></li>
+<li><a href="#documentation">Documentation</a><ul>
+<li><a href="#a-taste-of-penf">A Taste of PENF</a></li>
+</ul>
+</li>
+</ul>
+<h4 id="issues"><a class="toclink" href="#issues">Issues</a></h4>
+<p><a href=""><img alt="GitHub issues" src="https://img.shields.io/github/issues/szaghi/PENF.svg"></a>
+<a href="https://waffle.io/szaghi/PENF"><img alt="Ready in backlog" src="https://badge.waffle.io/szaghi/PENF.png?label=ready&amp;title=Ready"></a>
+<a href="https://waffle.io/szaghi/PENF"><img alt="In Progress" src="https://badge.waffle.io/szaghi/PENF.png?label=in%20progress&amp;title=In%20Progress"></a>
+<a href="https://waffle.io/szaghi/PENF"><img alt="Open bugs" src="https://badge.waffle.io/szaghi/PENF.png?label=bug&amp;title=Open%20Bugs"></a></p>
+<h4 id="compiler-support"><a class="toclink" href="#compiler-support">Compiler Support</a></h4>
+<p><a href=""><img alt="Compiler" src="https://img.shields.io/badge/GNU-v4.9.2+-brightgreen.svg"></a>
+<a href=""><img alt="Compiler" src="https://img.shields.io/badge/Intel-v12.x+-brightgreen.svg"></a>
+<a href=""><img alt="Compiler" src="https://img.shields.io/badge/IBM%20XL-not%20tested-yellow.svg"></a>
+<a href=""><img alt="Compiler" src="https://img.shields.io/badge/g95-not%20tested-yellow.svg"></a>
+<a href=""><img alt="Compiler" src="https://img.shields.io/badge/NAG-not%20tested-yellow.svg"></a>
+<a href=""><img alt="Compiler" src="https://img.shields.io/badge/PGI-not%20tested-yellow.svg"></a></p>
+<h2 id="what-is-penf"><a class="toclink" href="#what-is-penf">What is PENF?</a></h2>
+<p>Fortran is the most popular programming language for scientific computing. With Fortran it is quite simple obtain fast code and manage large multidimensional array. Because Fortran permits the achievement of high performance it is also used on great range of different computer-architectures, and often on the fastest supercomputer in the world. Therefore Fortran programs must be <em>portable</em>: portability means that the code will give the same results on every different computer-architectures. One of the most important goal of the numeric code is to control the numeric error due to finite precision of numerical operations. Fortran uses the <strong>IEEE</strong> representations. Integers and reals (floating point) are represented with a finite precision. So when the code computes an operation it has a truncation error due to the truncation of the numerical finite representations. For numerical and more in general scientific applications this source of errors must be controlled. The programmer must know which is the precision associated to the code variables. Before the standard Fortran 90/95 there are not any way to select the precision of the numerical variables in a portable fashion.</p>
+<p>Modern Fortran standards (2003+) have introduced better support for codes portability. With the possibility to specify a kind parameter for variables, the standard Fortran 90+ makes available useful functions to select the kind precision in a portable parametric way. Using these functions the programmer can accurately control the precision of its own variables in a portable manner.</p>
+<p>PENF module provides an effective KISS library to achieve portability and concurrently it provides many tools to handles parametrized numbers.</p>
+<p>Go to <a href="#top">Top</a></p>
+<h2 id="main-features"><a class="toclink" href="#main-features">Main features</a></h2>
+<p>The library provides portable kind-parameters and many useful procedures to deal with them:</p>
+<ul class="checklist">
+<li><input type="checkbox" disabled checked> integer and reals parameters for 1,2,4,8,16 bytes-like representations;</li>
+<li><input type="checkbox" disabled checked> integer and real formats definitions for all parameters;</li>
+<li><input type="checkbox" disabled checked> integer and real minimum maximum representable numbers;</li>
+<li><input type="checkbox" disabled checked> number-to-string and string-to-number casting procedures;</li>
+<li><input type="checkbox" disabled checked> endianism procedures checking.</li>
+</ul>
+<p>Any feature request is welcome.</p>
+<p>Go to <a href="#top">Top</a></p>
+<h2 id="copyrights"><a class="toclink" href="#copyrights">Copyrights</a></h2>
+<p>PENF is an open source project, it is distributed under a multi-licensing system:</p>
+<ul>
+<li>for FOSS projects:</li>
+<li><a href="http://www.gnu.org/licenses/gpl-3.0.html">GPL v3</a>;</li>
+<li>for closed source/commercial projects:</li>
+<li><a href="http://opensource.org/licenses/BSD-2-Clause">BSD 2-Clause</a>;</li>
+<li><a href="http://opensource.org/licenses/BSD-3-Clause">BSD 3-Clause</a>;</li>
+<li><a href="http://opensource.org/licenses/MIT">MIT</a>.</li>
+</ul>
+<p>Anyone is interest to use, to develop or to contribute to PENF is welcome, feel free to select the license that best matches your soul!</p>
+<p>More details can be found on <a href="https://github.com/szaghi/PENF/wiki/Copyrights">wiki</a>.</p>
+<p>Go to <a href="#top">Top</a></p>
+<h2 id="documentation"><a class="toclink" href="#documentation">Documentation</a></h2>
+<p>Besides this README file the PENF documentation is contained into its own <a href="https://github.com/szaghi/PENF/wiki">wiki</a>. Detailed documentation of the API is contained into the <a href="http://szaghi.github.io/PENF/index.html">GitHub Pages</a> that can also be created locally by means of <a href="https://github.com/cmacmackin/ford">ford tool</a>.</p>
+<h3 id="a-taste-of-penf"><a class="toclink" href="#a-taste-of-penf">A Taste of PENF</a></h3>
+<p>To be written.</p>
+<p>Go to <a href="#top">Top</a></p>
+    
+    
+    <h3>Used By</h3>
+    
+                <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.38.0 (20140413.2041)
+ -->
+<!-- Title: module~~penf~~UsedByGraph Pages: 1 -->
+<svg id="modulepenfUsedByGraph" width="641pt" height="139pt"
+ viewBox="0.00 0.00 641.00 138.56" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~penf~~UsedByGraph" class="graph" transform="scale(0.688507 0.688507) rotate(0) translate(4 197.243)">
+<title>module~~penf~~UsedByGraph</title>
+<polygon fill="white" stroke="none" points="-4,4 -4,-197.243 927,-197.243 927,4 -4,4"/>
+<!-- module~penf -->
+<g id="module~~penf~~UsedByGraph_node1" class="node"><title>module~penf</title>
+<polygon fill="none" stroke="black" points="54,-164 0,-164 0,-140 54,-140 54,-164"/>
+<text text-anchor="middle" x="27" y="-149.6" font-family="Helvetica,sans-Serif" font-size="10.50">penf</text>
+</g>
+<!-- module~stringifor_string_t -->
+<g id="module~~penf~~UsedByGraph_node2" class="node"><title>module~stringifor_string_t</title>
+<g id="a_module~~penf~~UsedByGraph_node2"><a xlink:href="../module/stringifor_string_t.html" xlink:title="stringifor_string_t">
+<polygon fill="#337ab7" stroke="#337ab7" points="431,-164 336,-164 336,-140 431,-140 431,-164"/>
+<text text-anchor="middle" x="383.5" y="-149.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">stringifor_string_t</text>
+</a>
+</g>
+</g>
+<!-- module~penf&#45;&gt;module~stringifor_string_t -->
+<g id="module~~penf~~UsedByGraph_edge8" class="edge"><title>module~penf&#45;&gt;module~stringifor_string_t</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M151,-192C215.787,-196.973 289.591,-180.266 336.1,-166.936"/>
+<polygon fill="#000000" stroke="#000000" points="337.272,-170.24 345.882,-164.066 335.301,-163.523 337.272,-170.24"/>
+</g>
+<!-- module~befor64 -->
+<g id="module~~penf~~UsedByGraph_node3" class="node"><title>module~befor64</title>
+<g id="a_module~~penf~~UsedByGraph_node3"><a xlink:href="../module/befor64.html" xlink:title="befor64">
+<polygon fill="#337ab7" stroke="#337ab7" points="300,-164 246,-164 246,-140 300,-140 300,-164"/>
+<text text-anchor="middle" x="273" y="-149.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">befor64</text>
+</a>
+</g>
+</g>
+<!-- module~penf&#45;&gt;module~befor64 -->
+<g id="module~~penf~~UsedByGraph_edge9" class="edge"><title>module~penf&#45;&gt;module~befor64</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M52.7524,-164.127C76.7027,-174.899 114.366,-189.341 149,-192"/>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M151,-192C183.523,-194.497 218.717,-180.851 242.719,-168.828"/>
+<polygon fill="#000000" stroke="#000000" points="244.406,-171.896 251.653,-164.168 241.168,-165.69 244.406,-171.896"/>
+</g>
+<!-- module~befor64_pack_data_m -->
+<g id="module~~penf~~UsedByGraph_node4" class="node"><title>module~befor64_pack_data_m</title>
+<g id="a_module~~penf~~UsedByGraph_node4"><a xlink:href="../module/befor64_pack_data_m.html" xlink:title="befor64_pack_data_m">
+<polygon fill="#337ab7" stroke="#337ab7" points="210,-164 90,-164 90,-140 210,-140 210,-164"/>
+<text text-anchor="middle" x="150" y="-149.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">befor64_pack_data_m</text>
+</a>
+</g>
+</g>
+<!-- module~penf&#45;&gt;module~befor64_pack_data_m -->
+<g id="module~~penf~~UsedByGraph_edge10" class="edge"><title>module~penf&#45;&gt;module~befor64_pack_data_m</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M54.2552,-152C61.8303,-152 70.4733,-152 79.3864,-152"/>
+<polygon fill="#000000" stroke="#000000" points="79.5219,-155.5 89.5219,-152 79.5219,-148.5 79.5219,-155.5"/>
+</g>
+<!-- module~stringifor -->
+<g id="module~~penf~~UsedByGraph_node5" class="node"><title>module~stringifor</title>
+<g id="a_module~~penf~~UsedByGraph_node5"><a xlink:href="../module/stringifor.html" xlink:title="stringifor">
+<polygon fill="#337ab7" stroke="#337ab7" points="521,-124 467,-124 467,-100 521,-100 521,-124"/>
+<text text-anchor="middle" x="494" y="-109.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">stringifor</text>
+</a>
+</g>
+</g>
+<!-- module~penf&#45;&gt;module~stringifor -->
+<g id="module~~penf~~UsedByGraph_edge11" class="edge"><title>module~penf&#45;&gt;module~stringifor</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M384.5,-112C408.414,-109.853 435.413,-109.844 456.496,-110.376"/>
+<polygon fill="#000000" stroke="#000000" points="456.53,-113.879 466.632,-110.685 456.743,-106.882 456.53,-113.879"/>
+</g>
+<!-- module~foxy_xml_tag -->
+<g id="module~~penf~~UsedByGraph_node6" class="node"><title>module~foxy_xml_tag</title>
+<g id="a_module~~penf~~UsedByGraph_node6"><a xlink:href="../module/foxy_xml_tag.html" xlink:title="foxy_xml_tag">
+<polygon fill="#337ab7" stroke="#337ab7" points="633,-84 557,-84 557,-60 633,-60 633,-84"/>
+<text text-anchor="middle" x="595" y="-69.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">foxy_xml_tag</text>
+</a>
+</g>
+</g>
+<!-- module~penf&#45;&gt;module~foxy_xml_tag -->
+<g id="module~~penf~~UsedByGraph_edge12" class="edge"><title>module~penf&#45;&gt;module~foxy_xml_tag</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M495,-72C511.455,-67.4211 530.053,-66.3971 546.65,-66.8581"/>
+<polygon fill="#000000" stroke="#000000" points="546.539,-70.3566 556.689,-67.3185 546.86,-63.3639 546.539,-70.3566"/>
+</g>
+<!-- module~foxy_xml_file -->
+<g id="module~~penf~~UsedByGraph_node7" class="node"><title>module~foxy_xml_file</title>
+<g id="a_module~~penf~~UsedByGraph_node7"><a xlink:href="../module/foxy_xml_file.html" xlink:title="foxy_xml_file">
+<polygon fill="#337ab7" stroke="#337ab7" points="743,-44 669,-44 669,-20 743,-20 743,-44"/>
+<text text-anchor="middle" x="706" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">foxy_xml_file</text>
+</a>
+</g>
+</g>
+<!-- module~penf&#45;&gt;module~foxy_xml_file -->
+<g id="module~~penf~~UsedByGraph_edge13" class="edge"><title>module~penf&#45;&gt;module~foxy_xml_file</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M596,-32C616.147,-26.2574 639.252,-25.4814 658.99,-26.4504"/>
+<polygon fill="#000000" stroke="#000000" points="658.765,-29.9431 668.971,-27.0991 659.219,-22.9578 658.765,-29.9431"/>
+</g>
+<!-- module~foxy -->
+<g id="module~~penf~~UsedByGraph_node8" class="node"><title>module~foxy</title>
+<g id="a_module~~penf~~UsedByGraph_node8"><a xlink:href="../module/foxy.html" xlink:title="foxy">
+<polygon fill="#337ab7" stroke="#337ab7" points="833,-24 779,-24 779,-0 833,-0 833,-24"/>
+<text text-anchor="middle" x="806" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">foxy</text>
+</a>
+</g>
+</g>
+<!-- module~penf&#45;&gt;module~foxy -->
+<g id="module~~penf~~UsedByGraph_edge14" class="edge"><title>module~penf&#45;&gt;module~foxy</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M54.1348,-141.452C65.0448,-137.497 77.9606,-133.387 90,-131 217.787,-105.665 252.748,-123.648 382.5,-112"/>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M384.5,-112C435.598,-106.48 443.486,-85.7782 493,-72"/>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M495,-72C540.719,-59.2779 548.362,-45.0087 594,-32"/>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M596,-32C628.467,-22.7455 635.57,-15.7128 669,-11 701.567,-6.40882 710.112,-10.7348 743,-11 751.25,-11.0665 760.118,-11.1829 768.493,-11.3132"/>
+<polygon fill="#000000" stroke="#000000" points="768.699,-14.817 778.755,-11.4831 768.815,-7.81794 768.699,-14.817"/>
+</g>
+<!-- module~stringifor_string_t&#45;&gt;module~stringifor -->
+<g id="module~~penf~~UsedByGraph_edge1" class="edge"><title>module~stringifor_string_t&#45;&gt;module~stringifor</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M417.054,-139.999C429.688,-135.341 444.202,-129.99 457.135,-125.222"/>
+<polygon fill="#000000" stroke="#000000" points="458.487,-128.454 466.659,-121.711 456.066,-121.886 458.487,-128.454"/>
+</g>
+<!-- module~befor64&#45;&gt;module~stringifor_string_t -->
+<g id="module~~penf~~UsedByGraph_edge2" class="edge"><title>module~befor64&#45;&gt;module~stringifor_string_t</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M300.265,-152C308.011,-152 316.806,-152 325.693,-152"/>
+<polygon fill="#000000" stroke="#000000" points="325.714,-155.5 335.714,-152 325.714,-148.5 325.714,-155.5"/>
+</g>
+<!-- module~befor64_pack_data_m&#45;&gt;module~befor64 -->
+<g id="module~~penf~~UsedByGraph_edge3" class="edge"><title>module~befor64_pack_data_m&#45;&gt;module~befor64</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M210.082,-152C218.842,-152 227.641,-152 235.745,-152"/>
+<polygon fill="#000000" stroke="#000000" points="235.936,-155.5 245.936,-152 235.936,-148.5 235.936,-155.5"/>
+</g>
+<!-- module~stringifor&#45;&gt;module~foxy_xml_tag -->
+<g id="module~~penf~~UsedByGraph_edge4" class="edge"><title>module~stringifor&#45;&gt;module~foxy_xml_tag</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M521.011,-101.49C531.305,-97.3312 543.364,-92.4591 554.68,-87.8868"/>
+<polygon fill="#000000" stroke="#000000" points="555.996,-91.1301 563.957,-84.1387 553.374,-84.6399 555.996,-91.1301"/>
+</g>
+<!-- module~foxy_xml_tag&#45;&gt;module~foxy_xml_file -->
+<g id="module~~penf~~UsedByGraph_edge5" class="edge"><title>module~foxy_xml_tag&#45;&gt;module~foxy_xml_file</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M628.704,-59.9987C639.277,-56.1186 651.16,-51.7577 662.345,-47.6533"/>
+<polygon fill="#000000" stroke="#000000" points="663.761,-50.862 671.943,-44.1311 661.349,-44.2905 663.761,-50.862"/>
+</g>
+<!-- module~foxy_xml_file&#45;&gt;module~foxy -->
+<g id="module~~penf~~UsedByGraph_edge6" class="edge"><title>module~foxy_xml_file&#45;&gt;module~foxy</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M743.213,-24.6096C751.586,-22.9008 760.495,-21.0827 768.864,-19.3747"/>
+<polygon fill="#000000" stroke="#000000" points="769.636,-22.7894 778.734,-17.3605 768.236,-15.9308 769.636,-22.7894"/>
+</g>
+<!-- program~fx_test1 -->
+<g id="module~~penf~~UsedByGraph_node9" class="node"><title>program~fx_test1</title>
+<g id="a_module~~penf~~UsedByGraph_node9"><a xlink:href="../program/fx_test1.html" xlink:title="fx_test1">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="923,-24 869,-24 869,-0 923,-0 923,-24"/>
+<text text-anchor="middle" x="896" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fx_test1</text>
+</a>
+</g>
+</g>
+<!-- module~foxy&#45;&gt;program~fx_test1 -->
+<g id="module~~penf~~UsedByGraph_edge7" class="edge"><title>module~foxy&#45;&gt;program~fx_test1</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M833.403,-12C841.393,-12 850.311,-12 858.824,-12"/>
+<polygon fill="#000000" stroke="#000000" points="858.919,-15.5001 868.919,-12 858.919,-8.5001 858.919,-15.5001"/>
+</g>
+</g>
+</svg>
+</div>
+                <script>var panmodulepenfUsedByGraph = svgPanZoom('#modulepenfUsedByGraph', {
+                    zoomEnabled: true,
+                    controlIconsEnabled: true,
+                    fit: true,
+                    center: true,});
+                    </script>
+                <div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div>
+                <div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog">
+                  <div class="modal-dialog modal-lg" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                      </div>
+                      <div class="modal-body">
+                        
+Nodes of different colours represent the following:
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.38.0 (20140413.2041)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="26pt"
+ viewBox="0.00 0.00 641.00 25.98" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.811906 0.811906) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="none" points="-4,4 -4,-28 785.5,-28 785.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node"><title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,-0 54,-0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node"><title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="139.5,-24 72.5,-24 72.5,-0 139.5,-0 139.5,-24"/>
+<text text-anchor="middle" x="106" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Type -->
+<g id="node3" class="node"><title>Type</title>
+<polygon fill="#5cb85c" stroke="#5cb85c" points="212,-24 158,-24 158,-0 212,-0 212,-24"/>
+<text text-anchor="middle" x="185" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type</text>
+</g>
+<!-- Subroutine -->
+<g id="node4" class="node"><title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="294,-24 230,-24 230,-0 294,-0 294,-24"/>
+<text text-anchor="middle" x="262" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node5" class="node"><title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="366,-24 312,-24 312,-0 366,-0 366,-24"/>
+<text text-anchor="middle" x="339" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node6" class="node"><title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="439.5,-24 384.5,-24 384.5,-0 439.5,-0 439.5,-24"/>
+<text text-anchor="middle" x="412" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node7" class="node"><title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="594,-24 458,-24 458,-0 594,-0 594,-24"/>
+<text text-anchor="middle" x="526" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node8" class="node"><title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="666,-24 612,-24 612,-0 666,-0 666,-24"/>
+<text text-anchor="middle" x="639" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node9" class="node"><title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="781.5,-24 684.5,-24 684.5,-0 781.5,-0 781.5,-24"/>
+<text text-anchor="middle" x="733" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+Where possible, edges connecting nodes are given different colours to make them
+easier to distinguish in large graphs.
+<h5>Module Graph</h5>
+<p>Solid arrows point from a parent (sub)module to the submodule which is
+descended from it. Dashed arrows point from a module being used to the
+module using it.</p>
+<h5>Type Graph</h5>
+<p>Solid arrows point from one derived type to another which extends
+(inherits from) it. Dashed arrows point from a derived type to another
+type containing it as a components, with a label listing the name(s) of
+said component(s).</p>
+<h5>Call Graph</h5>
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.</p>
+
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+    <br>
+    
+
+    
+    
+    
+    
+    
+    <section>
+	 <h2>Interfaces</h2>
+	 
+	   
+<div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="interface-digit"></span><h3>public interface <a href='../interface/digit.html'>digit</a>
+    
+  </h3></div>
+  
+  <div class="panel-body">
+    
+    <p>Compute the number of digits in decimal base of the input integer.</p>
+  </div>
+  
+  <ul class="list-group">
+  
+  
+  
+    <li class="list-group-item">
+    
+    
+    <h3>
+private elemental function <a href='../proc/digit_i8.html'>digit_I8</a>(n) result(digit)
+    
+    
+    
+</h3>
+    
+    <h4>Arguments</h4>
+    
+      
+      
+<table class="table table-striped varlist">
+<thead><tr><th>Type</th>
+<th>Intent</th><th>Optional</th>
+<th>Attributes</th><th></th><th>Name</th><th></th></thead>
+
+
+
+<tbody>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>integer(kind=I8P),</td>
+  <td>intent(in)</td>
+  <td></td>
+  
+  <td></td><td>::</td>
+  <td><strong>n</strong></td><td><p>Input integer.</p></td>
+  
+</tr>
+
+</tbody>
+</table>
+
+      
+    
+    
+
+  
+  
+  
+  
+     <h4>Return Value <small>integer(kind=I4P)
+  </small></h4>
+  <p>Number of digits.</p>
+    
+    
+    <h4>Description</h4>
+       
+       
+
+
+       
+       <p>Compute the number of digits in decimal base of the input integer.</p>
+        
+
+    </li>
+  
+    <li class="list-group-item">
+    
+    
+    <h3>
+private elemental function <a href='../proc/digit_i4.html'>digit_I4</a>(n) result(digit)
+    
+    
+    
+</h3>
+    
+    <h4>Arguments</h4>
+    
+      
+      
+<table class="table table-striped varlist">
+<thead><tr><th>Type</th>
+<th>Intent</th><th>Optional</th>
+<th>Attributes</th><th></th><th>Name</th><th></th></thead>
+
+
+
+<tbody>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>integer(kind=I4P),</td>
+  <td>intent(in)</td>
+  <td></td>
+  
+  <td></td><td>::</td>
+  <td><strong>n</strong></td><td><p>Input integer.</p></td>
+  
+</tr>
+
+</tbody>
+</table>
+
+      
+    
+    
+
+  
+  
+  
+  
+     <h4>Return Value <small>integer(kind=I4P)
+  </small></h4>
+  <p>Number of digits.</p>
+    
+    
+    <h4>Description</h4>
+       
+       
+
+
+       
+       <p>Compute the number of digits in decimal base of the input integer.</p>
+        
+
+    </li>
+  
+    <li class="list-group-item">
+    
+    
+    <h3>
+private elemental function <a href='../proc/digit_i2.html'>digit_I2</a>(n) result(digit)
+    
+    
+    
+</h3>
+    
+    <h4>Arguments</h4>
+    
+      
+      
+<table class="table table-striped varlist">
+<thead><tr><th>Type</th>
+<th>Intent</th><th>Optional</th>
+<th>Attributes</th><th></th><th>Name</th><th></th></thead>
+
+
+
+<tbody>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>integer(kind=I2P),</td>
+  <td>intent(in)</td>
+  <td></td>
+  
+  <td></td><td>::</td>
+  <td><strong>n</strong></td><td><p>Input integer.</p></td>
+  
+</tr>
+
+</tbody>
+</table>
+
+      
+    
+    
+
+  
+  
+  
+  
+     <h4>Return Value <small>integer(kind=I4P)
+  </small></h4>
+  <p>Number of digits.</p>
+    
+    
+    <h4>Description</h4>
+       
+       
+
+
+       
+       <p>Compute the number of digits in decimal base of the input integer.</p>
+        
+
+    </li>
+  
+    <li class="list-group-item">
+    
+    
+    <h3>
+private elemental function <a href='../proc/digit_i1.html'>digit_I1</a>(n) result(digit)
+    
+    
+    
+</h3>
+    
+    <h4>Arguments</h4>
+    
+      
+      
+<table class="table table-striped varlist">
+<thead><tr><th>Type</th>
+<th>Intent</th><th>Optional</th>
+<th>Attributes</th><th></th><th>Name</th><th></th></thead>
+
+
+
+<tbody>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>integer(kind=I1P),</td>
+  <td>intent(in)</td>
+  <td></td>
+  
+  <td></td><td>::</td>
+  <td><strong>n</strong></td><td><p>Input integer.</p></td>
+  
+</tr>
+
+</tbody>
+</table>
+
+      
+    
+    
+
+  
+  
+  
+  
+     <h4>Return Value <small>integer(kind=I4P)
+  </small></h4>
+  <p>Number of digits.</p>
+    
+    
+    <h4>Description</h4>
+       
+       
+
+
+       
+       <p>Compute the number of digits in decimal base of the input integer.</p>
+        
+
+    </li>
+  
+  
+  </ul>
+</div>
+
+    
+    </section>
+	<br>
+    
+
+    
+    
+    
+    
+     
+    <section>
+    <h2>Functions</h2>
+    
+    
+  <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="proc-digit_i8"></span><h3>
+private elemental function <a href='../proc/digit_i8.html'>digit_I8</a>(n) result(digit)
+    
+    
+    
+</h3></div>
+  <div class="panel-body">
+       
+    
+    <h4>Arguments</h4>
+    
+      
+      
+<table class="table table-striped varlist">
+<thead><tr><th>Type</th>
+<th>Intent</th><th>Optional</th>
+<th>Attributes</th><th></th><th>Name</th><th></th></thead>
+
+
+
+<tbody>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>integer(kind=I8P),</td>
+  <td>intent(in)</td>
+  <td></td>
+  
+  <td></td><td>::</td>
+  <td><strong>n</strong></td><td><p>Input integer.</p></td>
+  
+</tr>
+
+</tbody>
+</table>
+
+      
+    
+    
+
+  
+  
+  
+  
+     <h4>Return Value <small>integer(kind=I4P)
+  </small></h4>
+  <p>Number of digits.</p>
+    
+    
+    <h4>Description</h4>
+       
+       
+
+
+       
+       <p>Compute the number of digits in decimal base of the input integer.</p>
+        
+
+  </div>
+  </div>
+
+    
+    
+  <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="proc-digit_i4"></span><h3>
+private elemental function <a href='../proc/digit_i4.html'>digit_I4</a>(n) result(digit)
+    
+    
+    
+</h3></div>
+  <div class="panel-body">
+       
+    
+    <h4>Arguments</h4>
+    
+      
+      
+<table class="table table-striped varlist">
+<thead><tr><th>Type</th>
+<th>Intent</th><th>Optional</th>
+<th>Attributes</th><th></th><th>Name</th><th></th></thead>
+
+
+
+<tbody>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>integer(kind=I4P),</td>
+  <td>intent(in)</td>
+  <td></td>
+  
+  <td></td><td>::</td>
+  <td><strong>n</strong></td><td><p>Input integer.</p></td>
+  
+</tr>
+
+</tbody>
+</table>
+
+      
+    
+    
+
+  
+  
+  
+  
+     <h4>Return Value <small>integer(kind=I4P)
+  </small></h4>
+  <p>Number of digits.</p>
+    
+    
+    <h4>Description</h4>
+       
+       
+
+
+       
+       <p>Compute the number of digits in decimal base of the input integer.</p>
+        
+
+  </div>
+  </div>
+
+    
+    
+  <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="proc-digit_i2"></span><h3>
+private elemental function <a href='../proc/digit_i2.html'>digit_I2</a>(n) result(digit)
+    
+    
+    
+</h3></div>
+  <div class="panel-body">
+       
+    
+    <h4>Arguments</h4>
+    
+      
+      
+<table class="table table-striped varlist">
+<thead><tr><th>Type</th>
+<th>Intent</th><th>Optional</th>
+<th>Attributes</th><th></th><th>Name</th><th></th></thead>
+
+
+
+<tbody>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>integer(kind=I2P),</td>
+  <td>intent(in)</td>
+  <td></td>
+  
+  <td></td><td>::</td>
+  <td><strong>n</strong></td><td><p>Input integer.</p></td>
+  
+</tr>
+
+</tbody>
+</table>
+
+      
+    
+    
+
+  
+  
+  
+  
+     <h4>Return Value <small>integer(kind=I4P)
+  </small></h4>
+  <p>Number of digits.</p>
+    
+    
+    <h4>Description</h4>
+       
+       
+
+
+       
+       <p>Compute the number of digits in decimal base of the input integer.</p>
+        
+
+  </div>
+  </div>
+
+    
+    
+  <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="proc-digit_i1"></span><h3>
+private elemental function <a href='../proc/digit_i1.html'>digit_I1</a>(n) result(digit)
+    
+    
+    
+</h3></div>
+  <div class="panel-body">
+       
+    
+    <h4>Arguments</h4>
+    
+      
+      
+<table class="table table-striped varlist">
+<thead><tr><th>Type</th>
+<th>Intent</th><th>Optional</th>
+<th>Attributes</th><th></th><th>Name</th><th></th></thead>
+
+
+
+<tbody>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>integer(kind=I1P),</td>
+  <td>intent(in)</td>
+  <td></td>
+  
+  <td></td><td>::</td>
+  <td><strong>n</strong></td><td><p>Input integer.</p></td>
+  
+</tr>
+
+</tbody>
+</table>
+
+      
+    
+    
+
+  
+  
+  
+  
+     <h4>Return Value <small>integer(kind=I4P)
+  </small></h4>
+  <p>Number of digits.</p>
+    
+    
+    <h4>Description</h4>
+       
+       
+
+
+       
+       <p>Compute the number of digits in decimal base of the input integer.</p>
+        
+
+  </div>
+  </div>
+
+    
+    </section>
+    <br>
+    
+
+    
+    <section>
+    <h2>Subroutines</h2>
+    
+    
+  <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="proc-check_endian"></span><h3>
+public subroutine <a href='../proc/check_endian.html'>check_endian</a>()
+    
+    
+    
+</h3></div>
+  <div class="panel-body">
+       
+    
+    <h4>Arguments</h4>
+    
+      <em>None</em>
+    
+    
+    
+    <h4>Description</h4>
+       
+       
+
+
+       
+       <p>Check the type of bit ordering (big or little endian) of the running architecture.</p>
+        
+
+  </div>
+  </div>
+
+    
+    
+  <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="proc-penf_init"></span><h3>
+public subroutine <a href='../proc/penf_init.html'>penf_init</a>()
+    
+    
+    
+</h3></div>
+  <div class="panel-body">
+       
+    
+    <h4>Arguments</h4>
+    
+      <em>None</em>
+    
+    
+    
+    <h4>Description</h4>
+       
+       
+
+
+       
+       <p>Initialize PENF's variables that are not initialized into the definition specification.</p>
+        
+
+  </div>
+  </div>
+
+    
+    
+  <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="proc-penf_print"></span><h3>
+public subroutine <a href='../proc/penf_print.html'>penf_print</a>(unit, pref, iostat, iomsg)
+    
+    
+    
+</h3></div>
+  <div class="panel-body">
+       
+    
+    <h4>Arguments</h4>
+    
+      
+      
+<table class="table table-striped varlist">
+<thead><tr><th>Type</th>
+<th>Intent</th><th>Optional</th>
+<th>Attributes</th><th></th><th>Name</th><th></th></thead>
+
+
+
+<tbody>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>integer(kind=I4P),</td>
+  <td>intent(in)</td>
+  <td></td>
+  
+  <td></td><td>::</td>
+  <td><strong>unit</strong></td><td><p>Logic unit.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>character(len=*),</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>pref</strong></td><td><p>Prefixing string.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>integer(kind=I4P),</td>
+  <td>intent(out),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>iostat</strong></td><td><p>IO error.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>character(len=*),</td>
+  <td>intent(out),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>iomsg</strong></td><td><p>IO error message.</p></td>
+  
+</tr>
+
+</tbody>
+</table>
+
+      
+    
+    
+    
+    <h4>Description</h4>
+       
+       
+
+
+       
+       <p>Print to the specified unit the PENF's environment data.</p>
+        
+
+  </div>
+  </div>
+
+    
+    </section>    
+    <br>
+    
+    
+    
+    </div>
+  </div>
+
+    <hr>
+    <footer>
+      <div class="row">
+        <div class="col-md-4">&copy; 2016 </div>
+        <div class="col-md-4"><span class="text-center"> FoXy was developed by Fortran-FOSS-Programmers Group</span></div>
+        <div class="col-md-4">
+          <span class="pull-right">
+            Documentation generated by 
+            <a href="https://github.com/cmacmackin/ford">FORD</a>
+            
+          </span>
+        </div>
+      </div>
+      <br>
+    </footer>
+    </div> <!-- /container -->
+
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+<!--
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+-->
+    <script src="../js/bootstrap.min.js"></script>
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <script src="../js/ie10-viewport-bug-workaround.js"></script>
+
+    <!-- MathJax JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } },
+        jax: ['input/TeX','input/MathML','output/HTML-CSS'],
+        extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js'],
+        'HTML-CSS': { 
+           styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: '#000000 ! important'} }
+        }
+      });
+    </script>
+    <script src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+  </body>
+</html>
