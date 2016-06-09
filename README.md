@@ -7,6 +7,10 @@
 [![License](https://img.shields.io/badge/license-BSD3-red.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-red.svg)]()
 
+[![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)]()
+[![Build Status](https://travis-ci.org/Fortran-FOSS-Programmers/FoXy.svg?branch=master)](https://travis-ci.org/Fortran-FOSS-Programmers/FoXy)
+[![Coverage Status](https://img.shields.io/codecov/c/github/Fortran-FOSS-Programmers/FoXy.svg)](http://codecov.io/github/Fortran-FOSS-Programmers/FoXy?branch=master)
+
 ### FoXy, Fortran XML parser for poor people
 
 A KISS pure Fortran Library for parsing XML files
@@ -16,12 +20,20 @@ A KISS pure Fortran Library for parsing XML files
 - FoXy is OOP designed;
 - FoXy is a Free, Open Source Project.
 
-#### Table of Contents
+#### Compiler Support
 
-- [What is FoXy?](#what-is-foxy)
-- [Aims](#Aims)
-- [How to start?](#how-to-start)
-- [Copyrights](#copyrights)
+[![Compiler](https://img.shields.io/badge/GNU-v5.3.0+-orange.svg)]()
+[![Compiler](https://img.shields.io/badge/Intel-v16.x+-brightgreen.svg)]()
+[![Compiler](https://img.shields.io/badge/IBM%20XL-not%20tested-yellow.svg)]()
+[![Compiler](https://img.shields.io/badge/g95-not%20tested-yellow.svg)]()
+[![Compiler](https://img.shields.io/badge/NAG-not%20tested-yellow.svg)]()
+[![Compiler](https://img.shields.io/badge/PGI-not%20tested-yellow.svg)]()
+
+---
+
+[What is FoXy?](#what-is-foxy) | [Aims](#Aims) | [Status](#status) | [Documentation](#documentation) | [Copyrights](#copyrights)
+
+---
 
 ## What is FoXy?
 
@@ -83,6 +95,14 @@ Go to [Top](#top)
 + create team of collaborators;
 + profile the parser:
   + almost surely there are performance penalties;
+
+Go to [Top](#top)
+
+## Documentation
+
+Besides this README file the FoXy documentation is contained into its own [wiki](https://github.com/Fortran-FOSS-Programmers/FoXy/wiki). Detailed documentation of the API is contained into the [GitHub Pages](http://Fortran-FOSS-Programmers.github.io/FoXy/index.html) that can also be created locally by means of [ford tool](https://github.com/cmacmackin/ford).
+
+Go to [Top](#top)
 
 ## Copyrights
 
