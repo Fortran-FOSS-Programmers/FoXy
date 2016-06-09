@@ -108,14 +108,14 @@ rule = tar -czf FoXy.tar.gz *
 help   = Rule for performing coverage analysis
 rule_1 = FoBiS.py clean -mode tests-gnu
 rule_2 = FoBiS.py build -mode tests-gnu -coverage
-rule_3 = ./exe/fx_test1
+rule_3 = ./run_tests.sh
 rule_4 = gcov -o exe/obj/ src/lib/foxy*
 
 [rule-coverage-analysis]
 help   = Rule for performing coverage analysis and saving reports in markdown
 rule_1 = FoBiS.py clean -mode tests-gnu
 rule_2 = FoBiS.py build -mode tests-gnu -coverage
-rule_3 = ./exe/fx_test1
+rule_3 = ./run_tests.sh
 rule_4 = gcov -o exe/obj/ src/lib/*
 rule_5 = FoBiS.py rule -gcov_analyzer wiki/ Coverage-Analysis
 rule_6 = rm -f *.gcov
