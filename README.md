@@ -83,12 +83,12 @@ Go to [Top](#top)
     + autoparse tag's attributes names;
     + autoparse tag's attributes values;
 + lazy find tag value into file (once provided a tag name);
++ parse input file;
++ fix bug on tag's attributes name parsing.
 
 ### Doing
 
-+ parse input file (almost done using parse input string)
-+ fix bug on tag's attributes name parsing;
-+ implement lazy find tag value attribute into file (once provided a tag name and attribute name);
++ implement lazy find tag value attribute into file (once provided a tag name and attribute name).
 
 ### Todo
 
