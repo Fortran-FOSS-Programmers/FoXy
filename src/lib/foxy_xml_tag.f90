@@ -10,6 +10,7 @@ use stringifor, only : string
 !-----------------------------------------------------------------------------------------------------------------------------------
 implicit none
 private
+public :: tag
 public :: xml_tag
 !-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -30,20 +31,24 @@ type :: xml_tag
   !< by '="' without any additional white spaces and its value must be termined by '"'. Each attribute is separated by a white
   !< space. If the string member does not contain the tag_name no attributes are parsed.
   private
-  character(len=:),           allocatable :: tag_name    !< Tag name.
-  character(len=:),           allocatable :: tag_val     !< Tag value.
-  type(string), allocatable :: att_name(:) !< Attributes names.
-  type(string), allocatable :: att_val(:)  !< Attributes values.
+  type(string)              :: tag_name            !< Tag name.
+  type(string)              :: tag_val             !< Tag value.
+  type(string), allocatable :: att_name(:)         !< Attributes names.
+  type(string), allocatable :: att_val(:)          !< Attributes values.
+  integer(I4P), public      :: attributes_number=0 !< Number of defined attributes.
   contains
     ! public methods
     procedure :: free                        !< Free dynamic memory.
     final     :: finalize                    !< Free dynamic memory when finalizing.
+    procedure :: set                         !< Set tag data.
     procedure :: parse                       !< Parse the tag contained into a source string.
     procedure :: is_parsed                   !< Check is tag is correctly parsed, i.e. its *tag_name* is allocated.
     procedure :: tag_value                   !< Return tag value of is sefl (or its nested tags) is named *tag_name*.
     procedure :: stringify                   !< Convert the whole tag into a string.
     generic   :: assignment(=) => assign_tag !< Assignment operator overloading.
     ! private methods
+    procedure, private :: add_attribute          !< Add one attribute name/value pair.
+    procedure, private :: add_attributes         !< Add list of attributes name/value pairs.
     procedure, private :: alloc_attributes       !< Allocate (prepare for filling) dynamic memory of attributes.
     procedure, private :: get                    !< Get the tag value and attributes from source.
     procedure, private :: get_value              !< Get the tag value from source after tag_name has been set.
@@ -55,6 +60,23 @@ type :: xml_tag
 endtype xml_tag
 !-----------------------------------------------------------------------------------------------------------------------------------
 contains
+  ! public procedure
+  pure function tag(name, attribute, attributes, value)
+  !---------------------------------------------------------------------------------------------------------------------------------
+  !< Return an instance of xml tag.
+  !---------------------------------------------------------------------------------------------------------------------------------
+  character(*), intent(in)           :: name              !< Tag name.
+  character(*), intent(in), optional :: attribute(1:)     !< Attribute name/value pair [1:2].
+  character(*), intent(in), optional :: attributes(1:,1:) !< Attributes list of name/value pairs [1:2,1:].
+  character(*), intent(in), optional :: value             !< Tag value.
+  type(xml_tag)                      :: tag               !< XML tag.
+  !---------------------------------------------------------------------------------------------------------------------------------
+
+  !---------------------------------------------------------------------------------------------------------------------------------
+  call tag%set(name=name, attribute=attribute, attributes=attributes, value=value)
+  !---------------------------------------------------------------------------------------------------------------------------------
+  endfunction tag
+
   ! public methods
   elemental subroutine free(self)
   !---------------------------------------------------------------------------------------------------------------------------------
@@ -64,8 +86,8 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
-  if (allocated(self%tag_name)) deallocate(self%tag_name)
-  if (allocated(self%tag_val )) deallocate(self%tag_val )
+  call self%tag_name%free
+  call self%tag_val%free
   if (allocated(self%att_name)) then
     call self%att_name%free
     deallocate(self%att_name)
@@ -74,11 +96,11 @@ contains
     call self%att_val%free
     deallocate(self%att_val)
   endif
-  return
+  self%attributes_number = 0
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine free
 
-  subroutine finalize(tag)
+  elemental subroutine finalize(tag)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Free dynamic memory when finalizing.
   !---------------------------------------------------------------------------------------------------------------------------------
@@ -87,9 +109,84 @@ contains
 
   !---------------------------------------------------------------------------------------------------------------------------------
   call tag%free
-  return
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine finalize
+
+  pure subroutine set(self, name, attribute, attributes, value)
+  !---------------------------------------------------------------------------------------------------------------------------------
+  !< Set tag data.
+  !---------------------------------------------------------------------------------------------------------------------------------
+  class(xml_tag), intent(inout)        :: self              !< XML tag.
+  character(*),   intent(in), optional :: name              !< Tag name.
+  character(*),   intent(in), optional :: attribute(1:)     !< Attribute name/value pair [1:2].
+  character(*),   intent(in), optional :: attributes(1:,1:) !< Attributes list of name/value pairs [1:2,1:].
+  character(*),   intent(in), optional :: value             !< Tag value.
+  !---------------------------------------------------------------------------------------------------------------------------------
+
+  !---------------------------------------------------------------------------------------------------------------------------------
+  if (present(name)) self%tag_name = name
+  if (present(attribute)) call self%add_attribute(attribute=attribute)
+  if (present(attributes)) call self%add_attributes(attributes=attributes)
+  if (present(value)) self%tag_val = value
+  !---------------------------------------------------------------------------------------------------------------------------------
+  endsubroutine set
+
+  pure subroutine add_attribute(self, attribute)
+  !---------------------------------------------------------------------------------------------------------------------------------
+  !< Add one attribute name/value pair.
+  !---------------------------------------------------------------------------------------------------------------------------------
+  class(xml_tag), intent(inout) :: self          !< XML tag.
+  character(*),   intent(in)    :: attribute(1:) !< Attribute name/value pair [1:2].
+  type(string), allocatable     :: att_name(:)   !< Temporary storage of previous attributes names.
+  type(string), allocatable     :: att_val(:)    !< Temporary storage of previous attributes values.
+  logical                       :: is_updated    !< Flag to check if the attribute has been updeted.
+  integer(I4P)                  :: a             !< Counter.
+  !---------------------------------------------------------------------------------------------------------------------------------
+
+  !---------------------------------------------------------------------------------------------------------------------------------
+  if (self%attributes_number>0) then
+    is_updated = .false.
+    update_if_already_present: do a=1, self%attributes_number
+      if (self%att_name(a)==attribute(1)) then
+        self%att_val = attribute(2)
+        is_updated = .true.
+        exit update_if_already_present
+      endif
+    enddo update_if_already_present
+    if (.not.is_updated) then
+      allocate(att_name(1:self%attributes_number+1))
+      allocate(att_val(1:self%attributes_number+1))
+      att_name(1:self%attributes_number) = self%att_name
+      att_val(1:self%attributes_number) = self%att_val
+      att_name(self%attributes_number+1) = attribute(1)
+      att_val(self%attributes_number+1) = attribute(2)
+      call move_alloc(from=att_name, to=self%att_name)
+      call move_alloc(from=att_val, to=self%att_val)
+      self%attributes_number = self%attributes_number + 1
+    endif
+  else
+    call self%alloc_attributes(Na=1, att_name=.true., att_val=.true.)
+    self%att_name(1) = attribute(1)
+    self%att_val(1) = attribute(2)
+  endif
+  !---------------------------------------------------------------------------------------------------------------------------------
+  endsubroutine add_attribute
+
+  pure subroutine add_attributes(self, attributes)
+  !---------------------------------------------------------------------------------------------------------------------------------
+  !< Add list of attributes name/value pairs.
+  !---------------------------------------------------------------------------------------------------------------------------------
+  class(xml_tag), intent(inout) :: self              !< XML tag.
+  character(*),   intent(in)    :: attributes(1:,1:) !< Attribute name/value pair list [1:2,1:].
+  integer(I4P)                  :: a                 !< Counter.
+  !---------------------------------------------------------------------------------------------------------------------------------
+
+  !---------------------------------------------------------------------------------------------------------------------------------
+  do a=1, size(attributes, dim=2)
+    call self%add_attribute(attribute=attributes(1:,a)) ! not efficient: many reallocation, but safe
+  enddo
+  !---------------------------------------------------------------------------------------------------------------------------------
+  endsubroutine add_attributes
 
   elemental subroutine parse(self, source, tstart, tend)
   !---------------------------------------------------------------------------------------------------------------------------------
@@ -113,7 +210,7 @@ contains
   tstartd = 0
   tendd   = 0
   call self%parse_tag_name(source=source, tstart=tstartd, tend=tendd)
-  if (allocated(self%tag_name)) then
+  if (self%tag_name%is_allocated()) then
     if (index(string=source(tstartd:tendd), substring='=')>0) call self%parse_attributes_names(source=source(tstartd:tendd))
     if (index(string=source, substring='</'//self%tag_name//'>')>0) &
       tendd = index(string=source, substring='</'//self%tag_name//'>') + len('</'//self%tag_name//'>') - 1
@@ -134,7 +231,7 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
-  is_parsed = allocated(self%tag_name)
+  is_parsed = self%tag_name%is_allocated()
   return
   !---------------------------------------------------------------------------------------------------------------------------------
   endfunction is_parsed
@@ -153,13 +250,13 @@ contains
 
   !---------------------------------------------------------------------------------------------------------------------------------
   if (allocated(tag_val)) deallocate(tag_val)
-  if (allocated(self%tag_name)) then
+  if (self%tag_name%is_allocated()) then
     if (self%tag_name==tag_name) then
-      if (allocated(self%tag_val)) tag_val = self%tag_val
+      if (self%tag_val%is_allocated()) tag_val = self%tag_val%chars()
     else
-      if (allocated(self%tag_val)) then
-        call tag%search(tag_name=tag_name, source=self%tag_val)
-        if (allocated(tag%tag_val)) tag_val = tag%tag_val
+      if (self%tag_val%is_allocated()) then
+        call tag%search(tag_name=tag_name, source=self%tag_val%chars())
+        if (tag%tag_val%is_allocated()) tag_val = tag%tag_val%chars()
       endif
     endif
   endif
@@ -178,17 +275,17 @@ contains
 
   !---------------------------------------------------------------------------------------------------------------------------------
   stringed = ''
-  if (allocated(self%tag_name)) then
+  if (self%tag_name%is_allocated()) then
     stringed = stringed//'<'//self%tag_name
-    if (allocated(self%att_name).and.allocated(self%att_val)) then
-      if (size(self%att_name)==size(self%att_val)) then ! consistency check
+    if (self%attributes_number>0) then
+      if (size(self%att_name, dim=1)==size(self%att_val, dim=1)) then ! consistency check
         do a=1, size(self%att_name)
           if (self%att_name(a)%is_allocated().and.self%att_val(a)%is_allocated()) &
             stringed = stringed//' '//self%att_name(a)//'="'//self%att_val(a)//'"'
         enddo
       endif
     endif
-    if (allocated(self%tag_val)) then
+    if (self%tag_val%is_allocated()) then
       stringed = stringed//'>'//self%tag_val//'</'//self%tag_name//'>'
     else
       stringed = stringed//'/>'
@@ -228,6 +325,7 @@ contains
       allocate(self%att_val(1:Na))
     endif
   endif
+  self%attributes_number = Na
   return
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine alloc_attributes
@@ -437,12 +535,12 @@ contains
   tstartd = 1
   tendd   = 0
   found = .false.
-  Tag_Search: do while ((.not.found).or.(len(source(tendd + 1:))<len(self%tag_name)))
+  Tag_Search: do while ((.not.found).or.(len(source(tendd + 1:))<self%tag_name%len()))
     call tag%parse(source=source(tendd + 1:), tstart=tstartd, tend=tendd)
     if (tstartd==0.and.tendd==0) then
       exit Tag_Search ! no tag found
     else
-      if (allocated(tag%tag_name)) then
+      if (tag%tag_name%is_allocated()) then
         if (tag%tag_name==self%tag_name) then
           found = .true.
         endif
@@ -471,8 +569,8 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
-  if (allocated(rhs%tag_name)) lhs%tag_name = rhs%tag_name
-  if (allocated(rhs%tag_val )) lhs%tag_val  = rhs%tag_val
+  if (rhs%tag_name%is_allocated()) lhs%tag_name = rhs%tag_name
+  if (rhs%tag_val%is_allocated()) lhs%tag_val = rhs%tag_val
   if (allocated(rhs%att_name)) then
     if (allocated(lhs%att_name)) deallocate(lhs%att_name) ; allocate(lhs%att_name(1:size(rhs%att_name)))
     do a=1, size(rhs%att_name)
@@ -485,6 +583,7 @@ contains
       if (rhs%att_val(a)%is_allocated()) lhs%att_val(a) = rhs%att_val(a)
     enddo
   endif
+  lhs%attributes_number = rhs%attributes_number
   return
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine assign_tag
