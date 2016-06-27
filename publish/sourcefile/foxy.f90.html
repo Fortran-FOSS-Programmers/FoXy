@@ -66,7 +66,7 @@
             <li><a href="../lists/types.html">Derived Types</a></li>
 				
 				
-            <li><a href="../program/fx_test1.html">Program</a></li>
+            <li><a href="../lists/programs.html">Programs</a></li>
 				
           </ul>
         
@@ -168,13 +168,17 @@
           
           <a class="list-group-item" href="../sourcefile/befor64_pack_data_m.f90.html">befor64_pack_data_m.F90</a>
           
+          <a class="list-group-item" href="../sourcefile/create_tag.f90.html">create_tag.f90</a>
+          
           <a class="list-group-item" href="../sourcefile/foxy.f90.html">foxy.f90</a>
           
           <a class="list-group-item" href="../sourcefile/foxy_xml_file.f90.html">foxy_xml_file.f90</a>
           
           <a class="list-group-item" href="../sourcefile/foxy_xml_tag.f90.html">foxy_xml_tag.f90</a>
           
-          <a class="list-group-item" href="../sourcefile/fx_test1.f90.html">fx_test1.f90</a>
+          <a class="list-group-item" href="../sourcefile/parse_file_simple.f90.html">parse_file_simple.f90</a>
+          
+          <a class="list-group-item" href="../sourcefile/parse_string_simple.f90.html">parse_string_simple.f90</a>
           
           <a class="list-group-item" href="../sourcefile/penf.f90.html">penf.F90</a>
           
@@ -200,16 +204,19 @@
 <a name="ln-4"></a><span class="c">!&lt; FoXy, Fortran XML parser for poor people</span>
 <a name="ln-5"></a><span class="c">!-----------------------------------------------------------------------------------------------------------------------------------</span>
 <a name="ln-6"></a><span class="k">use </span><span class="n">foxy_xml_file</span><span class="p">,</span> <span class="n">only</span> <span class="p">:</span> <span class="n">xml_file</span>
-<a name="ln-7"></a><span class="k">use </span><span class="n">penf</span>
-<a name="ln-8"></a><span class="c">!-----------------------------------------------------------------------------------------------------------------------------------</span>
-<a name="ln-9"></a>
-<a name="ln-10"></a><span class="c">!-----------------------------------------------------------------------------------------------------------------------------------</span>
-<a name="ln-11"></a><span class="k">implicit none</span>
-<a name="ln-12"></a><span class="k">private</span>
-<a name="ln-13"></a><span class="k">public</span> <span class="kd">::</span> <span class="n">I1P</span><span class="p">,</span> <span class="n">I2P</span><span class="p">,</span> <span class="n">I4P</span><span class="p">,</span> <span class="n">I8P</span><span class="p">,</span> <span class="n">R4P</span><span class="p">,</span> <span class="n">R8P</span>
-<a name="ln-14"></a><span class="k">public</span> <span class="kd">::</span> <span class="n">xml_file</span>
-<a name="ln-15"></a><span class="c">!-----------------------------------------------------------------------------------------------------------------------------------</span>
-<a name="ln-16"></a><span class="n">endmodule</span> <span class="n">foxy</span>
+<a name="ln-7"></a><span class="k">use </span><span class="n">foxy_xml_tag</span><span class="p">,</span> <span class="n">only</span> <span class="p">:</span> <span class="n">tag</span><span class="p">,</span> <span class="n">xml_tag</span>
+<a name="ln-8"></a><span class="k">use </span><span class="n">penf</span>
+<a name="ln-9"></a><span class="c">!-----------------------------------------------------------------------------------------------------------------------------------</span>
+<a name="ln-10"></a>
+<a name="ln-11"></a><span class="c">!-----------------------------------------------------------------------------------------------------------------------------------</span>
+<a name="ln-12"></a><span class="k">implicit none</span>
+<a name="ln-13"></a><span class="k">private</span>
+<a name="ln-14"></a><span class="k">public</span> <span class="kd">::</span> <span class="n">I1P</span><span class="p">,</span> <span class="n">I2P</span><span class="p">,</span> <span class="n">I4P</span><span class="p">,</span> <span class="n">I8P</span><span class="p">,</span> <span class="n">R4P</span><span class="p">,</span> <span class="n">R8P</span>
+<a name="ln-15"></a><span class="k">public</span> <span class="kd">::</span> <span class="n">tag</span>
+<a name="ln-16"></a><span class="k">public</span> <span class="kd">::</span> <span class="n">xml_file</span>
+<a name="ln-17"></a><span class="k">public</span> <span class="kd">::</span> <span class="n">xml_tag</span>
+<a name="ln-18"></a><span class="c">!-----------------------------------------------------------------------------------------------------------------------------------</span>
+<a name="ln-19"></a><span class="n">endmodule</span> <span class="n">foxy</span>
 </pre></div>
 
     </section>
@@ -257,6 +264,6 @@
         }
       });
     </script>
-    <script src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
   </body>
 </html>

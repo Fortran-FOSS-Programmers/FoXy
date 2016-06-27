@@ -66,7 +66,7 @@
             <li><a href="../lists/types.html">Derived Types</a></li>
 				
 				
-            <li><a href="../program/fx_test1.html">Program</a></li>
+            <li><a href="../lists/programs.html">Programs</a></li>
 				
           </ul>
         
@@ -131,7 +131,7 @@
     <div id="vars" class="panel-collapse collapse">
       <div class="list-group">
         
-        <a class="list-group-item" href="../proc/assign_tag.html#variable-a%7E4">a</a>
+        <a class="list-group-item" href="../proc/assign_tag.html#variable-a%7E5">a</a>
         
       </div>
     </div>
@@ -284,6 +284,8 @@
           <a class="list-group-item" href="../proc/bctor_r8p.html">bctor_R8P</a>
           
           <a class="list-group-item" href="../interface/bit_size.html">bit_size</a>
+          
+          <a class="list-group-item" href="../interface/bit_size%7E2.html">bit_size</a>
           
           <a class="list-group-item" href="../proc/bit_size_chr.html">bit_size_chr</a>
           
@@ -523,6 +525,8 @@
           
           <a class="list-group-item" href="../proc/parse_attributes_names.html">parse_attributes_names</a>
           
+          <a class="list-group-item" href="../proc/parse_from_string.html">parse_from_string</a>
+          
           <a class="list-group-item" href="../proc/parse_tag_name.html">parse_tag_name</a>
           
           <a class="list-group-item" href="../proc/partition.html">partition</a>
@@ -574,6 +578,8 @@
           <a class="list-group-item" href="../proc/search.html">search</a>
           
           <a class="list-group-item" href="../proc/search%7E2.html">search</a>
+          
+          <a class="list-group-item" href="../proc/set.html">set</a>
           
           <a class="list-group-item" href="../proc/sindex_character_string.html">sindex_character_string</a>
           
@@ -723,6 +729,8 @@
           
           <a class="list-group-item" href="../proc/swapcase.html">swapcase</a>
           
+          <a class="list-group-item" href="../proc/tag.html">tag</a>
+          
           <a class="list-group-item" href="../proc/tag_value.html">tag_value</a>
           
           <a class="list-group-item" href="../proc/tag_value%7E2.html">tag_value</a>
@@ -856,7 +864,7 @@ private elemental subroutine assign_tag(lhs, rhs)
   
 <tr>
   
-  <td><span class="anchor" id="variable-a%7E4"></span>integer(kind=I4P),</td>
+  <td><span class="anchor" id="variable-a%7E5"></span>integer(kind=I4P),</td>
   
   <td>public</td>
   <td></td><td>::</td>
@@ -897,8 +905,8 @@ private elemental subroutine assign_tag(lhs, rhs)
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
 
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
-  <span class="k">if</span> <span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">rhs</span><span class="p">%</span><span class="n">tag_name</span><span class="p">))</span> <span class="n">lhs</span><span class="p">%</span><span class="n">tag_name</span> <span class="o">=</span> <span class="n">rhs</span><span class="p">%</span><span class="n">tag_name</span>
-  <span class="k">if</span> <span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">rhs</span><span class="p">%</span><span class="n">tag_val</span> <span class="p">))</span> <span class="n">lhs</span><span class="p">%</span><span class="n">tag_val</span>  <span class="o">=</span> <span class="n">rhs</span><span class="p">%</span><span class="n">tag_val</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">rhs</span><span class="p">%</span><span class="n">tag_name</span><span class="p">%</span><span class="n">is_allocated</span><span class="p">())</span> <span class="n">lhs</span><span class="p">%</span><span class="n">tag_name</span> <span class="o">=</span> <span class="n">rhs</span><span class="p">%</span><span class="n">tag_name</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">rhs</span><span class="p">%</span><span class="n">tag_val</span><span class="p">%</span><span class="n">is_allocated</span><span class="p">())</span> <span class="n">lhs</span><span class="p">%</span><span class="n">tag_val</span> <span class="o">=</span> <span class="n">rhs</span><span class="p">%</span><span class="n">tag_val</span>
   <span class="k">if</span> <span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">rhs</span><span class="p">%</span><span class="n">att_name</span><span class="p">))</span> <span class="k">then</span>
 <span class="k">    if</span> <span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">lhs</span><span class="p">%</span><span class="n">att_name</span><span class="p">))</span> <span class="k">deallocate</span><span class="p">(</span><span class="n">lhs</span><span class="p">%</span><span class="n">att_name</span><span class="p">)</span> <span class="p">;</span> <span class="k">allocate</span><span class="p">(</span><span class="n">lhs</span><span class="p">%</span><span class="n">att_name</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">size</span><span class="p">(</span><span class="n">rhs</span><span class="p">%</span><span class="n">att_name</span><span class="p">)))</span>
     <span class="k">do </span><span class="n">a</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">size</span><span class="p">(</span><span class="n">rhs</span><span class="p">%</span><span class="n">att_name</span><span class="p">)</span>
@@ -964,6 +972,6 @@ private elemental subroutine assign_tag(lhs, rhs)
         }
       });
     </script>
-    <script src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
   </body>
 </html>

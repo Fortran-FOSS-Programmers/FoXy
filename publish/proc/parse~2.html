@@ -66,7 +66,7 @@
             <li><a href="../lists/types.html">Derived Types</a></li>
 				
 				
-            <li><a href="../program/fx_test1.html">Program</a></li>
+            <li><a href="../lists/programs.html">Programs</a></li>
 				
           </ul>
         
@@ -286,6 +286,8 @@
           <a class="list-group-item" href="../proc/bctor_r8p.html">bctor_R8P</a>
           
           <a class="list-group-item" href="../interface/bit_size.html">bit_size</a>
+          
+          <a class="list-group-item" href="../interface/bit_size%7E2.html">bit_size</a>
           
           <a class="list-group-item" href="../proc/bit_size_chr.html">bit_size_chr</a>
           
@@ -525,6 +527,8 @@
           
           <a class="list-group-item" href="../proc/parse_attributes_names.html">parse_attributes_names</a>
           
+          <a class="list-group-item" href="../proc/parse_from_string.html">parse_from_string</a>
+          
           <a class="list-group-item" href="../proc/parse_tag_name.html">parse_tag_name</a>
           
           <a class="list-group-item" href="../proc/partition.html">partition</a>
@@ -576,6 +580,8 @@
           <a class="list-group-item" href="../proc/search.html">search</a>
           
           <a class="list-group-item" href="../proc/search%7E2.html">search</a>
+          
+          <a class="list-group-item" href="../proc/set.html">set</a>
           
           <a class="list-group-item" href="../proc/sindex_character_string.html">sindex_character_string</a>
           
@@ -725,6 +731,8 @@
           
           <a class="list-group-item" href="../proc/swapcase.html">swapcase</a>
           
+          <a class="list-group-item" href="../proc/tag.html">tag</a>
+          
           <a class="list-group-item" href="../proc/tag_value.html">tag_value</a>
           
           <a class="list-group-item" href="../proc/tag_value%7E2.html">tag_value</a>
@@ -803,7 +811,7 @@ private elemental subroutine parse(self, source, tstart, tend)
   
 <tr>
   
-  <td><span class="anchor" id="variable-self%7E9"></span>class(<a href='../type/xml_tag.html'>xml_tag</a>),</td>
+  <td><span class="anchor" id="variable-self%7E11"></span>class(<a href='../type/xml_tag.html'>xml_tag</a>),</td>
   <td>intent(inout)</td>
   <td></td>
   
@@ -818,7 +826,7 @@ private elemental subroutine parse(self, source, tstart, tend)
   
 <tr>
   
-  <td><span class="anchor" id="variable-source"></span>character(len=*),</td>
+  <td><span class="anchor" id="variable-source%7E2"></span>character(len=*),</td>
   <td>intent(in)</td>
   <td></td>
   
@@ -960,7 +968,7 @@ private elemental subroutine parse(self, source, tstart, tend)
   <span class="n">tstartd</span> <span class="o">=</span> <span class="mi">0</span>
   <span class="n">tendd</span>   <span class="o">=</span> <span class="mi">0</span>
   <span class="k">call </span><span class="n">self</span><span class="p">%</span><span class="n">parse_tag_name</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span> <span class="n">tstart</span><span class="o">=</span><span class="n">tstartd</span><span class="p">,</span> <span class="n">tend</span><span class="o">=</span><span class="n">tendd</span><span class="p">)</span>
-  <span class="k">if</span> <span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">self</span><span class="p">%</span><span class="n">tag_name</span><span class="p">))</span> <span class="k">then</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">self</span><span class="p">%</span><span class="n">tag_name</span><span class="p">%</span><span class="n">is_allocated</span><span class="p">())</span> <span class="k">then</span>
 <span class="k">    if</span> <span class="p">(</span><span class="nb">index</span><span class="p">(</span><span class="n">string</span><span class="o">=</span><span class="n">source</span><span class="p">(</span><span class="n">tstartd</span><span class="p">:</span><span class="n">tendd</span><span class="p">),</span> <span class="n">substring</span><span class="o">=</span><span class="s1">&#39;=&#39;</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">)</span> <span class="k">call </span><span class="n">self</span><span class="p">%</span><span class="n">parse_attributes_names</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">(</span><span class="n">tstartd</span><span class="p">:</span><span class="n">tendd</span><span class="p">))</span>
     <span class="k">if</span> <span class="p">(</span><span class="nb">index</span><span class="p">(</span><span class="n">string</span><span class="o">=</span><span class="n">source</span><span class="p">,</span> <span class="n">substring</span><span class="o">=</span><span class="s1">&#39;&lt;/&#39;</span><span class="o">//</span><span class="n">self</span><span class="p">%</span><span class="n">tag_name</span><span class="o">//</span><span class="s1">&#39;&gt;&#39;</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">)</span> <span class="p">&amp;</span>
       <span class="n">tendd</span> <span class="o">=</span> <span class="nb">index</span><span class="p">(</span><span class="n">string</span><span class="o">=</span><span class="n">source</span><span class="p">,</span> <span class="n">substring</span><span class="o">=</span><span class="s1">&#39;&lt;/&#39;</span><span class="o">//</span><span class="n">self</span><span class="p">%</span><span class="n">tag_name</span><span class="o">//</span><span class="s1">&#39;&gt;&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="s1">&#39;&lt;/&#39;</span><span class="o">//</span><span class="n">self</span><span class="p">%</span><span class="n">tag_name</span><span class="o">//</span><span class="s1">&#39;&gt;&#39;</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
@@ -1021,6 +1029,6 @@ private elemental subroutine parse(self, source, tstart, tend)
         }
       });
     </script>
-    <script src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
   </body>
 </html>
