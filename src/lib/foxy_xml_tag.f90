@@ -31,17 +31,10 @@ type :: xml_tag
   !< by '="' without any additional white spaces and its value must be termined by '"'. Each attribute is separated by a white
   !< space. If the string member does not contain the tag_name no attributes are parsed.
   private
-<<<<<<< HEAD
   type(string)              :: tag_name    !< Tag name.
   type(string)              :: tag_val     !< Tag value.
   type(string), allocatable :: att_name(:) !< Attributes names.
   type(string), allocatable :: att_val(:)  !< Attributes values.
-=======
-  character(len=:), allocatable :: tag_name    !< Tag name.
-  character(len=:), allocatable :: tag_val     !< Tag value.
-  type(string),     allocatable :: att_name(:) !< Attributes names.
-  type(string),     allocatable :: att_val(:)  !< Attributes values.
->>>>>>> 71f8719c413423e5cf4063b5befe6628f9c8d160
   contains
     ! public methods
     procedure :: free                        !< Free dynamic memory.
