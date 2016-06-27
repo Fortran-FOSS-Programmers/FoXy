@@ -31,11 +31,12 @@ type :: xml_tag
   !< by '="' without any additional white spaces and its value must be termined by '"'. Each attribute is separated by a white
   !< space. If the string member does not contain the tag_name no attributes are parsed.
   private
-  type(string)              :: tag_name            !< Tag name.
-  type(string)              :: tag_val             !< Tag value.
-  type(string), allocatable :: att_name(:)         !< Attributes names.
-  type(string), allocatable :: att_val(:)          !< Attributes values.
-  integer(I4P), public      :: attributes_number=0 !< Number of defined attributes.
+  type(string)              :: tag_name                !< Tag name.
+  type(string)              :: tag_val                 !< Tag value.
+  type(string), allocatable :: att_name(:)             !< Attributes names.
+  type(string), allocatable :: att_val(:)              !< Attributes values.
+  integer(I4P)              :: attributes_number=0     !< Number of defined attributes.
+  logical                   :: is_self_closing=.false. !< Self closing tag flag.
   contains
     ! public methods
     procedure :: free                        !< Free dynamic memory.
@@ -61,7 +62,7 @@ endtype xml_tag
 !-----------------------------------------------------------------------------------------------------------------------------------
 contains
   ! public procedure
-  pure function tag(name, attribute, attributes, value)
+  pure function tag(name, attribute, attributes, value, is_self_closing)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Return an instance of xml tag.
   !---------------------------------------------------------------------------------------------------------------------------------
@@ -69,11 +70,12 @@ contains
   character(*), intent(in), optional :: attribute(1:)     !< Attribute name/value pair [1:2].
   character(*), intent(in), optional :: attributes(1:,1:) !< Attributes list of name/value pairs [1:2,1:].
   character(*), intent(in), optional :: value             !< Tag value.
+  logical,      intent(in), optional :: is_self_closing   !< The tag is self closing.
   type(xml_tag)                      :: tag               !< XML tag.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
-  call tag%set(name=name, attribute=attribute, attributes=attributes, value=value)
+  call tag%set(name=name, attribute=attribute, attributes=attributes, value=value, is_self_closing=is_self_closing)
   !---------------------------------------------------------------------------------------------------------------------------------
   endfunction tag
 
@@ -97,6 +99,7 @@ contains
     deallocate(self%att_val)
   endif
   self%attributes_number = 0
+  self%is_self_closing = .false.
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine free
 
@@ -112,7 +115,7 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine finalize
 
-  pure subroutine set(self, name, attribute, attributes, value)
+  pure subroutine set(self, name, attribute, attributes, value, is_self_closing)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Set tag data.
   !---------------------------------------------------------------------------------------------------------------------------------
@@ -121,6 +124,7 @@ contains
   character(*),   intent(in), optional :: attribute(1:)     !< Attribute name/value pair [1:2].
   character(*),   intent(in), optional :: attributes(1:,1:) !< Attributes list of name/value pairs [1:2,1:].
   character(*),   intent(in), optional :: value             !< Tag value.
+  logical,        intent(in), optional :: is_self_closing   !< The tag is self closing.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
@@ -128,6 +132,7 @@ contains
   if (present(attribute)) call self%add_attribute(attribute=attribute)
   if (present(attributes)) call self%add_attributes(attributes=attributes)
   if (present(value)) self%tag_val = value
+  if (present(is_self_closing)) self%is_self_closing = is_self_closing
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine set
 
@@ -285,10 +290,14 @@ contains
         enddo
       endif
     endif
-    if (self%tag_val%is_allocated()) then
-      stringed = stringed//'>'//self%tag_val//'</'//self%tag_name//'>'
-    else
+    if (self%is_self_closing) then
       stringed = stringed//'/>'
+    else
+      if (self%tag_val%is_allocated()) then
+        stringed = stringed//'>'//self%tag_val//'</'//self%tag_name//'>'
+      else
+        stringed = stringed//'></'//self%tag_name//'>'
+      endif
     endif
   endif
   return
@@ -361,11 +370,15 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
+  call self%tag_val%free
+  self%is_self_closing = .false.
   if (index(string=source, substring='<'//self%tag_name)>0) then
     c2 = index(string=source, substring='</'//self%tag_name//'>')
     if (c2>0) then ! parsing tag value
       c1 = index(string=source, substring='>')
-      self%tag_val = trim(adjustl(source(c1+1:c2-1)))
+      if (c1+1<c2-1) self%tag_val = trim(adjustl(source(c1+1:c2-1)))
+    else
+      self%is_self_closing = .true.
     endif
   endif
   return
@@ -569,6 +582,7 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
+  call lhs%free
   if (rhs%tag_name%is_allocated()) lhs%tag_name = rhs%tag_name
   if (rhs%tag_val%is_allocated()) lhs%tag_val = rhs%tag_val
   if (allocated(rhs%att_name)) then
@@ -584,6 +598,7 @@ contains
     enddo
   endif
   lhs%attributes_number = rhs%attributes_number
+  lhs%is_self_closing = rhs%is_self_closing
   return
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine assign_tag
