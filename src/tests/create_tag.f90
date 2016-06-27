@@ -22,7 +22,7 @@ source = '<first x="1" y="c" z="2">lorem ipsum...</first>'
 print "(A)", source
 
 print "(A)", 'Create tag'
-a_tag = tag(tag_name='first', tag_value='lorem ipsum...', attributes_name=['x', 'y', 'z'], attributes_value=['1', 'c', '2'])
+a_tag = tag(name='first', value='lorem ipsum...', attributes=reshape([['x', '1'], ['y', 'c'], ['z', '2']], [2,3]))
 print "(A)", 'Parsed data'
 parsed = a_tag%stringify()
 print "(A)", parsed
