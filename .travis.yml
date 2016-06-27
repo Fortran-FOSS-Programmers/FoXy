@@ -22,7 +22,7 @@ addons:
 env:
   global:
     - MAKECOVERAGE="FoBiS.py rule -ex makecoverage"
-    - MAKEDOC="./makedoc.sh Fortran-FOSS-Programmers/FOODiE"
+    - MAKEDOC="./makedoc.sh Fortran-FOSS-Programmers/FoXy"
 
 before_install:
   - git submodule update --init --recursive
