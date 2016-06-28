@@ -173,6 +173,10 @@
     <div id="allprocs" class="panel-collapse collapse">
         <div class="list-group">
           
+          <a class="list-group-item" href="../proc/add_multiple_attributes.html">add_multiple_attributes</a>
+          
+          <a class="list-group-item" href="../proc/add_single_attribute.html">add_single_attribute</a>
+          
           <a class="list-group-item" href="../proc/add_tag.html">add_tag</a>
           
           <a class="list-group-item" href="../interface/adjustl.html">adjustl</a>
@@ -357,6 +361,10 @@
           
           <a class="list-group-item" href="../proc/check_endian.html">check_endian</a>
           
+          <a class="list-group-item" href="../proc/content.html">content</a>
+          
+          <a class="list-group-item" href="../proc/content%7E2.html">content</a>
+          
           <a class="list-group-item" href="../interface/count.html">count</a>
           
           <a class="list-group-item" href="../proc/count_substring.html">count_substring</a>
@@ -380,6 +388,14 @@
           <a class="list-group-item" href="../proc/decode.html">decode</a>
           
           <a class="list-group-item" href="../proc/decode_bits.html">decode_bits</a>
+          
+          <a class="list-group-item" href="../proc/delete_content.html">delete_content</a>
+          
+          <a class="list-group-item" href="../proc/delete_multiple_attributes.html">delete_multiple_attributes</a>
+          
+          <a class="list-group-item" href="../proc/delete_single_attribute.html">delete_single_attribute</a>
+          
+          <a class="list-group-item" href="../proc/delete_tag.html">delete_tag</a>
           
           <a class="list-group-item" href="../interface/digit.html">digit</a>
           
@@ -460,6 +476,8 @@
           <a class="list-group-item" href="../proc/load_file_as_stream.html">load_file_as_stream</a>
           
           <a class="list-group-item" href="../proc/lower.html">lower</a>
+          
+          <a class="list-group-item" href="../proc/name.html">name</a>
           
           <a class="list-group-item" href="../interface/pack_data.html">pack_data</a>
           
@@ -735,9 +753,7 @@
           
           <a class="list-group-item" href="../proc/tag.html">tag</a>
           
-          <a class="list-group-item" href="../proc/tag_value.html">tag_value</a>
-          
-          <a class="list-group-item" href="../proc/tag_value%7E2.html">tag_value</a>
+          <a class="list-group-item" href="../proc/tag_nested.html">tag_nested</a>
           
           <a class="list-group-item" href="../proc/to_integer_i1p.html">to_integer_I1P</a>
           
@@ -813,7 +829,7 @@ private subroutine parse_from_string(self, source_string)
   
 <tr>
   
-  <td><span class="anchor" id="variable-self%7E6"></span>class(<a href='../type/xml_file.html'>xml_file</a>),</td>
+  <td><span class="anchor" id="variable-self%7E7"></span>class(<a href='../type/xml_file.html'>xml_file</a>),</td>
   <td>intent(inout)</td>
   <td></td>
   
@@ -948,7 +964,6 @@ private subroutine parse_from_string(self, source_string)
 <span class="k">    if</span> <span class="p">(</span><span class="n">tag</span><span class="p">%</span><span class="n">is_parsed</span><span class="p">())</span> <span class="k">call </span><span class="n">self</span><span class="p">%</span><span class="n">add_tag</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
     <span class="n">tstart</span> <span class="o">=</span> <span class="n">tstart</span> <span class="o">+</span> <span class="n">tend</span>
   <span class="n">enddo</span>
-  <span class="k">return</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
   <span class="n">endsubroutine</span> <span class="n">parse_from_string</span>
 </pre></div>

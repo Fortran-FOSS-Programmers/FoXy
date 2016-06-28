@@ -10,7 +10,7 @@
     <meta name="author" content="Chris MacMackin" >
     <link rel="icon" href="../favicon.png">
 
-    <title>tag_value &ndash; FoXy</title>
+    <title>add_single_attribute &ndash; FoXy</title>
 
     <link href="../css/bootstrap.min.css" rel="stylesheet">
     <link href="../css/pygments.css" rel="stylesheet">
@@ -87,7 +87,7 @@
     
   
   <div class="row">
-    <h1>tag_value
+    <h1>add_single_attribute
     <small>Subroutine</small>
     
     </h1>
@@ -102,16 +102,16 @@
      
     
     
-    <li><i class="fa fa-code"></i><a href="../src/foxy_xml_file.f90"> Source File</a></li>
+    <li><i class="fa fa-code"></i><a href="../src/foxy_xml_tag.f90"> Source File</a></li>
      
   </ul>
   <ol class="breadcrumb in-well text-right">
   
-     <li><a href='../sourcefile/foxy_xml_file.f90.html'>foxy_xml_file.f90</a></li>
+     <li><a href='../sourcefile/foxy_xml_tag.f90.html'>foxy_xml_tag.f90</a></li>
   
-     <li><a href='../module/foxy_xml_file.html'>foxy_xml_file</a></li>
+     <li><a href='../module/foxy_xml_tag.html'>foxy_xml_tag</a></li>
   
-     <li class="active">tag_value</li>
+     <li class="active">add_single_attribute</li>
   </ol>
 </div>
 </div>
@@ -131,7 +131,11 @@
     <div id="vars" class="panel-collapse collapse">
       <div class="list-group">
         
-        <a class="list-group-item" href="../proc/tag_value.html#variable-t%7E2">t</a>
+        <a class="list-group-item" href="../proc/add_single_attribute.html#variable-new_attribute">new_attribute</a>
+        
+        <a class="list-group-item" href="../proc/add_single_attribute.html#variable-is_updated">is_updated</a>
+        
+        <a class="list-group-item" href="../proc/add_single_attribute.html#variable-a%7E2">a</a>
         
       </div>
     </div>
@@ -158,7 +162,7 @@
   <div class="panel panel-primary">
     <div class="panel-heading text-left"><h3 class="panel-title">Source Code</h3></div>
     <div class="list-group">
-      <a class="list-group-item" href="../proc/tag_value.html#src">tag_value</a>
+      <a class="list-group-item" href="../proc/add_single_attribute.html#src">add_single_attribute</a>
     </div>
   </div>
   
@@ -168,6 +172,10 @@
     <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#allprocs">All Procedures</a></h3></div>
     <div id="allprocs" class="panel-collapse collapse">
         <div class="list-group">
+          
+          <a class="list-group-item" href="../proc/add_multiple_attributes.html">add_multiple_attributes</a>
+          
+          <a class="list-group-item" href="../proc/add_single_attribute.html">add_single_attribute</a>
           
           <a class="list-group-item" href="../proc/add_tag.html">add_tag</a>
           
@@ -353,6 +361,10 @@
           
           <a class="list-group-item" href="../proc/check_endian.html">check_endian</a>
           
+          <a class="list-group-item" href="../proc/content.html">content</a>
+          
+          <a class="list-group-item" href="../proc/content%7E2.html">content</a>
+          
           <a class="list-group-item" href="../interface/count.html">count</a>
           
           <a class="list-group-item" href="../proc/count_substring.html">count_substring</a>
@@ -376,6 +388,14 @@
           <a class="list-group-item" href="../proc/decode.html">decode</a>
           
           <a class="list-group-item" href="../proc/decode_bits.html">decode_bits</a>
+          
+          <a class="list-group-item" href="../proc/delete_content.html">delete_content</a>
+          
+          <a class="list-group-item" href="../proc/delete_multiple_attributes.html">delete_multiple_attributes</a>
+          
+          <a class="list-group-item" href="../proc/delete_single_attribute.html">delete_single_attribute</a>
+          
+          <a class="list-group-item" href="../proc/delete_tag.html">delete_tag</a>
           
           <a class="list-group-item" href="../interface/digit.html">digit</a>
           
@@ -456,6 +476,8 @@
           <a class="list-group-item" href="../proc/load_file_as_stream.html">load_file_as_stream</a>
           
           <a class="list-group-item" href="../proc/lower.html">lower</a>
+          
+          <a class="list-group-item" href="../proc/name.html">name</a>
           
           <a class="list-group-item" href="../interface/pack_data.html">pack_data</a>
           
@@ -731,9 +753,7 @@
           
           <a class="list-group-item" href="../proc/tag.html">tag</a>
           
-          <a class="list-group-item" href="../proc/tag_value.html">tag_value</a>
-          
-          <a class="list-group-item" href="../proc/tag_value%7E2.html">tag_value</a>
+          <a class="list-group-item" href="../proc/tag_nested.html">tag_nested</a>
           
           <a class="list-group-item" href="../proc/to_integer_i1p.html">to_integer_I1P</a>
           
@@ -781,7 +801,7 @@
     
     <div class="col-lg-9" id='text'>
     <h2>
-private pure subroutine tag_value(self, tag_name, tag_val)
+private pure subroutine add_single_attribute(self, attribute)
     
     
     
@@ -809,12 +829,12 @@ private pure subroutine tag_value(self, tag_name, tag_val)
   
 <tr>
   
-  <td><span class="anchor" id="variable-self%7E4"></span>class(<a href='../type/xml_file.html'>xml_file</a>),</td>
-  <td>intent(in)</td>
+  <td><span class="anchor" id="variable-self%7E15"></span>class(<a href='../type/xml_tag.html'>xml_tag</a>),</td>
+  <td>intent(inout)</td>
   <td></td>
   
   <td></td><td>::</td>
-  <td><strong>self</strong></td><td><p>XML file.</p></td>
+  <td><strong>self</strong></td><td><p>XML tag.</p></td>
   
 </tr>
 
@@ -824,27 +844,12 @@ private pure subroutine tag_value(self, tag_name, tag_val)
   
 <tr>
   
-  <td><span class="anchor" id="variable-tag_name%7E2"></span>character(len=*),</td>
+  <td><span class="anchor" id="variable-attribute%7E5"></span>character(len=*),</td>
   <td>intent(in)</td>
   <td></td>
   
   <td></td><td>::</td>
-  <td><strong>tag_name</strong></td><td><p>Tag name.</p></td>
-  
-</tr>
-
-  
-  
-  
-  
-<tr>
-  
-  <td><span class="anchor" id="variable-tag_val%7E2"></span>character(len=:),</td>
-  <td>intent(inout),</td>
-  <td></td>
-  
-  <td>allocatable</td><td>::</td>
-  <td><strong>tag_val</strong></td><td><p>Tag value.</p></td>
+  <td><strong>attribute</strong>(1:)</td><td><p>Attribute name/value pair [1:2].</p></td>
   
 </tr>
 
@@ -855,8 +860,7 @@ private pure subroutine tag_value(self, tag_name, tag_val)
     
     
     <h3>Description</h3>
-    <p>Return tag value of tag named <em>tag_name</em>.</p>
-<p></p><div class="alert alert-info" role="alert"><h4>Note</h4>If there is no value, the <em>tag_value</em> string is returned deallocated.</div>
+    <p>Add one attribute name/value pair.</p>
     
     
      
@@ -880,11 +884,39 @@ private pure subroutine tag_value(self, tag_name, tag_val)
   
 <tr>
   
-  <td><span class="anchor" id="variable-t%7E2"></span>integer(kind=I4P),</td>
+  <td><span class="anchor" id="variable-new_attribute"></span>type(<a href='../type/string.html'>string</a>),</td>
+  
+  <td>public,</td>
+  <td>allocatable</td><td>::</td>
+  <td><strong>new_attribute</strong>(:,:)</td><td></td><td></td><td><p>Temporary storage for attributes.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" id="variable-is_updated"></span>logical,</td>
   
   <td>public</td>
   <td></td><td>::</td>
-  <td><strong>t</strong></td><td></td><td></td><td><p>Counter.</p></td>
+  <td><strong>is_updated</strong></td><td></td><td></td><td><p>Flag to check if the attribute has been updeted.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" id="variable-a%7E2"></span>integer(kind=I4P),</td>
+  
+  <td>public</td>
+  <td></td><td>::</td>
+  <td><strong>a</strong></td><td></td><td></td><td><p>Counter.</p></td>
   
 </tr>
 
@@ -911,29 +943,40 @@ private pure subroutine tag_value(self, tag_name, tag_val)
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="highlight"><pre><span></span>  <span class="k">pure subroutine </span><span class="n">tag_value</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">tag_name</span><span class="p">,</span> <span class="n">tag_val</span><span class="p">)</span>
+    <div class="highlight"><pre><span></span>  <span class="k">pure subroutine </span><span class="n">add_single_attribute</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">attribute</span><span class="p">)</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
-  <span class="c">!&lt; Return tag value of tag named *tag_name*.</span>
-  <span class="c">!&lt;</span>
-  <span class="c">!&lt; @note If there is no value, the *tag_value* string is returned deallocated.</span>
+  <span class="c">!&lt; Add one attribute name/value pair.</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
-  <span class="k">class</span><span class="p">(</span><span class="n">xml_file</span><span class="p">),</span>               <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span>    <span class="kd">::</span> <span class="n">self</span>     <span class="c">!&lt; XML file.</span>
-  <span class="kt">character</span><span class="p">(</span><span class="o">*</span><span class="p">),</span>                  <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span>    <span class="kd">::</span> <span class="n">tag_name</span> <span class="c">!&lt; Tag name.</span>
-  <span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span> <span class="k">allocatable</span><span class="p">,</span> <span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span> <span class="kd">::</span> <span class="n">tag_val</span>  <span class="c">!&lt; Tag value.</span>
-  <span class="kt">integer</span><span class="p">(</span><span class="n">I4P</span><span class="p">)</span>                                 <span class="kd">::</span> <span class="n">t</span>        <span class="c">!&lt; Counter.</span>
+  <span class="k">class</span><span class="p">(</span><span class="n">xml_tag</span><span class="p">),</span> <span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span> <span class="kd">::</span> <span class="n">self</span>               <span class="c">!&lt; XML tag.</span>
+  <span class="kt">character</span><span class="p">(</span><span class="o">*</span><span class="p">),</span>   <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span>    <span class="kd">::</span> <span class="n">attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">:)</span>      <span class="c">!&lt; Attribute name/value pair [1:2].</span>
+  <span class="k">type</span><span class="p">(</span><span class="n">string</span><span class="p">),</span> <span class="k">allocatable</span>     <span class="kd">::</span> <span class="n">new_attribute</span><span class="p">(:,:)</span> <span class="c">!&lt; Temporary storage for attributes.</span>
+  <span class="kt">logical</span>                       <span class="kd">::</span> <span class="n">is_updated</span>         <span class="c">!&lt; Flag to check if the attribute has been updeted.</span>
+  <span class="kt">integer</span><span class="p">(</span><span class="n">I4P</span><span class="p">)</span>                  <span class="kd">::</span> <span class="n">a</span>                  <span class="c">!&lt; Counter.</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
 
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
-  <span class="k">if</span> <span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">tag_val</span><span class="p">))</span> <span class="k">deallocate</span><span class="p">(</span><span class="n">tag_val</span><span class="p">)</span>
-  <span class="k">if</span> <span class="p">(</span><span class="n">self</span><span class="p">%</span><span class="n">Nt</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">)</span> <span class="k">then</span>
-<span class="k">    do </span><span class="n">t</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">self</span><span class="p">%</span><span class="n">Nt</span>
-      <span class="k">call </span><span class="n">self</span><span class="p">%</span><span class="n">tag</span><span class="p">(</span><span class="n">t</span><span class="p">)%</span><span class="n">tag_value</span><span class="p">(</span><span class="n">tag_name</span><span class="o">=</span><span class="n">tag_name</span><span class="p">,</span> <span class="n">tag_val</span><span class="o">=</span><span class="n">tag_val</span><span class="p">)</span>
-      <span class="k">if</span> <span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">tag_val</span><span class="p">))</span> <span class="k">exit</span>
-<span class="k">    </span><span class="n">enddo</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">self</span><span class="p">%</span><span class="n">attributes_number</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">)</span> <span class="k">then</span>
+<span class="k">    </span><span class="n">is_updated</span> <span class="o">=</span> <span class="p">.</span><span class="n">false</span><span class="p">.</span>
+    <span class="n">update_if_already_present</span><span class="p">:</span> <span class="k">do </span><span class="n">a</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">self</span><span class="p">%</span><span class="n">attributes_number</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">self</span><span class="p">%</span><span class="n">attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span><span class="o">==</span><span class="n">attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="k">then</span>
+<span class="k">        </span><span class="n">self</span><span class="p">%</span><span class="n">attribute</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span> <span class="o">=</span> <span class="n">attribute</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">is_updated</span> <span class="o">=</span> <span class="p">.</span><span class="n">true</span><span class="p">.</span>
+        <span class="k">exit </span><span class="n">update_if_already_present</span>
+      <span class="n">endif</span>
+    <span class="n">enddo</span> <span class="n">update_if_already_present</span>
+    <span class="k">if</span> <span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="n">is_updated</span><span class="p">)</span> <span class="k">then</span>
+<span class="k">      allocate</span><span class="p">(</span><span class="n">new_attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="n">self</span><span class="p">%</span><span class="n">attributes_number</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+      <span class="n">new_attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="n">self</span><span class="p">%</span><span class="n">attributes_number</span><span class="p">)</span> <span class="o">=</span> <span class="n">self</span><span class="p">%</span><span class="n">attribute</span>
+      <span class="n">new_attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span> <span class="n">self</span><span class="p">%</span><span class="n">attributes_number</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">=</span> <span class="n">attribute</span>
+      <span class="k">call </span><span class="nb">move_alloc</span><span class="p">(</span><span class="n">from</span><span class="o">=</span><span class="n">new_attribute</span><span class="p">,</span> <span class="n">to</span><span class="o">=</span><span class="n">self</span><span class="p">%</span><span class="n">attribute</span><span class="p">)</span>
+      <span class="n">self</span><span class="p">%</span><span class="n">attributes_number</span> <span class="o">=</span> <span class="n">self</span><span class="p">%</span><span class="n">attributes_number</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">endif</span>
+  <span class="k">else</span>
+<span class="k">    call </span><span class="n">self</span><span class="p">%</span><span class="n">alloc_attributes</span><span class="p">(</span><span class="n">Na</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">self</span><span class="p">%</span><span class="n">attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">=</span> <span class="n">attribute</span>
   <span class="n">endif</span>
-  <span class="k">return</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
-  <span class="n">endsubroutine</span> <span class="n">tag_value</span>
+  <span class="n">endsubroutine</span> <span class="n">add_single_attribute</span>
 </pre></div>
 
     </section>

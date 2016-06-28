@@ -131,7 +131,9 @@
     <div id="vars" class="panel-collapse collapse">
       <div class="list-group">
         
-        <a class="list-group-item" href="../proc/stringify%7E2.html#variable-a%7E2">a</a>
+        <a class="list-group-item" href="../proc/stringify%7E2.html#variable-is_value_indented_">is_value_indented_</a>
+        
+        <a class="list-group-item" href="../proc/stringify%7E2.html#variable-a">a</a>
         
       </div>
     </div>
@@ -168,6 +170,10 @@
     <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#allprocs">All Procedures</a></h3></div>
     <div id="allprocs" class="panel-collapse collapse">
         <div class="list-group">
+          
+          <a class="list-group-item" href="../proc/add_multiple_attributes.html">add_multiple_attributes</a>
+          
+          <a class="list-group-item" href="../proc/add_single_attribute.html">add_single_attribute</a>
           
           <a class="list-group-item" href="../proc/add_tag.html">add_tag</a>
           
@@ -353,6 +359,10 @@
           
           <a class="list-group-item" href="../proc/check_endian.html">check_endian</a>
           
+          <a class="list-group-item" href="../proc/content.html">content</a>
+          
+          <a class="list-group-item" href="../proc/content%7E2.html">content</a>
+          
           <a class="list-group-item" href="../interface/count.html">count</a>
           
           <a class="list-group-item" href="../proc/count_substring.html">count_substring</a>
@@ -376,6 +386,14 @@
           <a class="list-group-item" href="../proc/decode.html">decode</a>
           
           <a class="list-group-item" href="../proc/decode_bits.html">decode_bits</a>
+          
+          <a class="list-group-item" href="../proc/delete_content.html">delete_content</a>
+          
+          <a class="list-group-item" href="../proc/delete_multiple_attributes.html">delete_multiple_attributes</a>
+          
+          <a class="list-group-item" href="../proc/delete_single_attribute.html">delete_single_attribute</a>
+          
+          <a class="list-group-item" href="../proc/delete_tag.html">delete_tag</a>
           
           <a class="list-group-item" href="../interface/digit.html">digit</a>
           
@@ -456,6 +474,8 @@
           <a class="list-group-item" href="../proc/load_file_as_stream.html">load_file_as_stream</a>
           
           <a class="list-group-item" href="../proc/lower.html">lower</a>
+          
+          <a class="list-group-item" href="../proc/name.html">name</a>
           
           <a class="list-group-item" href="../interface/pack_data.html">pack_data</a>
           
@@ -731,9 +751,7 @@
           
           <a class="list-group-item" href="../proc/tag.html">tag</a>
           
-          <a class="list-group-item" href="../proc/tag_value.html">tag_value</a>
-          
-          <a class="list-group-item" href="../proc/tag_value%7E2.html">tag_value</a>
+          <a class="list-group-item" href="../proc/tag_nested.html">tag_nested</a>
           
           <a class="list-group-item" href="../proc/to_integer_i1p.html">to_integer_I1P</a>
           
@@ -781,7 +799,7 @@
     
     <div class="col-lg-9" id='text'>
     <h2>
-private pure function stringify(self) result(stringed)
+private pure function stringify(self, is_value_indented) result(stringed)
     
     
     
@@ -809,12 +827,27 @@ private pure function stringify(self) result(stringed)
   
 <tr>
   
-  <td><span class="anchor" id="variable-self%7E8"></span>class(<a href='../type/xml_tag.html'>xml_tag</a>),</td>
+  <td><span class="anchor" id="variable-self%7E11"></span>class(<a href='../type/xml_tag.html'>xml_tag</a>),</td>
   <td>intent(in)</td>
   <td></td>
   
   <td></td><td>::</td>
   <td><strong>self</strong></td><td><p>XML tag.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" id="variable-is_value_indented%7E3"></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>is_value_indented</strong></td><td><p>Activate value indentation.</p></td>
   
 </tr>
 
@@ -858,11 +891,25 @@ private pure function stringify(self) result(stringed)
   
 <tr>
   
-  <td><span class="anchor" id="variable-a%7E2"></span>integer(kind=I4P),</td>
+  <td><span class="anchor" id="variable-is_value_indented_"></span>logical,</td>
   
   <td>public</td>
   <td></td><td>::</td>
-  <td><strong>a</strong></td><td></td><td></td><td><p>Counters.</p></td>
+  <td><strong>is_value_indented_</strong></td><td></td><td></td><td><p>Activate value indentation.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" id="variable-a"></span>integer(kind=I4P),</td>
+  
+  <td>public</td>
+  <td></td><td>::</td>
+  <td><strong>a</strong></td><td></td><td></td><td><p>Counter.</p></td>
   
 </tr>
 
@@ -889,34 +936,42 @@ private pure function stringify(self) result(stringed)
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="highlight"><pre><span></span>  <span class="k">pure function </span><span class="n">stringify</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="k">result</span><span class="p">(</span><span class="n">stringed</span><span class="p">)</span>
+    <div class="highlight"><pre><span></span>  <span class="k">pure function </span><span class="n">stringify</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">is_value_indented</span><span class="p">)</span> <span class="k">result</span><span class="p">(</span><span class="n">stringed</span><span class="p">)</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
   <span class="c">!&lt; Convert the whole tag into a string.</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
-  <span class="k">class</span><span class="p">(</span><span class="n">xml_tag</span><span class="p">),</span> <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span>    <span class="kd">::</span> <span class="n">self</span>     <span class="c">!&lt; XML tag.</span>
-  <span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span> <span class="k">allocatable</span> <span class="kd">::</span> <span class="n">stringed</span> <span class="c">!&lt; Output string containing the whole tag.</span>
-  <span class="kt">integer</span><span class="p">(</span><span class="n">I4P</span><span class="p">)</span>                  <span class="kd">::</span> <span class="n">a</span>        <span class="c">!&lt; Counters.</span>
+  <span class="k">class</span><span class="p">(</span><span class="n">xml_tag</span><span class="p">),</span> <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span>           <span class="kd">::</span> <span class="n">self</span>               <span class="c">!&lt; XML tag.</span>
+  <span class="kt">logical</span><span class="p">,</span>        <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span> <span class="k">optional</span> <span class="kd">::</span> <span class="n">is_value_indented</span>  <span class="c">!&lt; Activate value indentation.</span>
+  <span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span> <span class="k">allocatable</span>        <span class="kd">::</span> <span class="n">stringed</span>           <span class="c">!&lt; Output string containing the whole tag.</span>
+  <span class="kt">logical</span>                              <span class="kd">::</span> <span class="n">is_value_indented_</span> <span class="c">!&lt; Activate value indentation.</span>
+  <span class="kt">integer</span><span class="p">(</span><span class="n">I4P</span><span class="p">)</span>                         <span class="kd">::</span> <span class="n">a</span>                  <span class="c">!&lt; Counter.</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
 
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
+  <span class="n">is_value_indented_</span> <span class="o">=</span> <span class="p">.</span><span class="n">false</span><span class="p">.</span> <span class="p">;</span> <span class="k">if</span> <span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">is_value_indented</span><span class="p">))</span> <span class="n">is_value_indented_</span> <span class="o">=</span> <span class="n">is_value_indented</span>
   <span class="n">stringed</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
   <span class="k">if</span> <span class="p">(</span><span class="n">self</span><span class="p">%</span><span class="n">tag_name</span><span class="p">%</span><span class="n">is_allocated</span><span class="p">())</span> <span class="k">then</span>
 <span class="k">    </span><span class="n">stringed</span> <span class="o">=</span> <span class="n">stringed</span><span class="o">//</span><span class="s1">&#39;&lt;&#39;</span><span class="o">//</span><span class="n">self</span><span class="p">%</span><span class="n">tag_name</span>
-    <span class="k">if</span> <span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">self</span><span class="p">%</span><span class="n">att_name</span><span class="p">).</span><span class="nb">and</span><span class="p">.</span><span class="nb">allocated</span><span class="p">(</span><span class="n">self</span><span class="p">%</span><span class="n">att_val</span><span class="p">))</span> <span class="k">then</span>
-<span class="k">      if</span> <span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">self</span><span class="p">%</span><span class="n">att_name</span><span class="p">)</span><span class="o">==</span><span class="n">size</span><span class="p">(</span><span class="n">self</span><span class="p">%</span><span class="n">att_val</span><span class="p">))</span> <span class="k">then</span> <span class="c">! consistency check</span>
-        <span class="k">do </span><span class="n">a</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">size</span><span class="p">(</span><span class="n">self</span><span class="p">%</span><span class="n">att_name</span><span class="p">)</span>
-          <span class="k">if</span> <span class="p">(</span><span class="n">self</span><span class="p">%</span><span class="n">att_name</span><span class="p">(</span><span class="n">a</span><span class="p">)%</span><span class="n">is_allocated</span><span class="p">().</span><span class="nb">and</span><span class="p">.</span><span class="n">self</span><span class="p">%</span><span class="n">att_val</span><span class="p">(</span><span class="n">a</span><span class="p">)%</span><span class="n">is_allocated</span><span class="p">())</span> <span class="p">&amp;</span>
-            <span class="n">stringed</span> <span class="o">=</span> <span class="n">stringed</span><span class="o">//</span><span class="s1">&#39; &#39;</span><span class="o">//</span><span class="n">self</span><span class="p">%</span><span class="n">att_name</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39;=&quot;&#39;</span><span class="o">//</span><span class="n">self</span><span class="p">%</span><span class="n">att_val</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39;&quot;&#39;</span>
-        <span class="n">enddo</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">self</span><span class="p">%</span><span class="n">attributes_number</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">)</span> <span class="k">then</span>
+<span class="k">      do </span><span class="n">a</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">self</span><span class="p">%</span><span class="n">attributes_number</span>
+        <span class="n">stringed</span> <span class="o">=</span> <span class="n">stringed</span><span class="o">//</span><span class="s1">&#39; &#39;</span><span class="o">//</span><span class="n">self</span><span class="p">%</span><span class="n">attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39;=&quot;&#39;</span><span class="o">//</span><span class="n">self</span><span class="p">%</span><span class="n">attribute</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39;&quot;&#39;</span>
+      <span class="n">enddo</span>
+    <span class="n">endif</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">self</span><span class="p">%</span><span class="n">is_self_closing</span><span class="p">)</span> <span class="k">then</span>
+<span class="k">      </span><span class="n">stringed</span> <span class="o">=</span> <span class="n">stringed</span><span class="o">//</span><span class="s1">&#39;/&gt;&#39;</span>
+    <span class="k">else</span>
+<span class="k">      if</span> <span class="p">(</span><span class="n">self</span><span class="p">%</span><span class="n">tag_content</span><span class="p">%</span><span class="n">is_allocated</span><span class="p">())</span> <span class="k">then</span>
+<span class="k">        if</span> <span class="p">(</span><span class="n">is_value_indented_</span><span class="p">)</span> <span class="k">then</span>
+<span class="k">          </span><span class="n">stringed</span> <span class="o">=</span> <span class="n">stringed</span><span class="o">//</span><span class="s1">&#39;&gt;&#39;</span><span class="o">//</span><span class="nb">new_line</span><span class="p">(</span><span class="s1">&#39;a&#39;</span><span class="p">)</span><span class="o">//</span><span class="nb">repeat</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="n">self</span><span class="p">%</span><span class="n">indent</span><span class="o">+</span><span class="mi">2</span><span class="p">)</span><span class="o">//</span><span class="p">&amp;</span>
+                     <span class="n">self</span><span class="p">%</span><span class="n">tag_content</span><span class="o">//</span><span class="nb">new_line</span><span class="p">(</span><span class="s1">&#39;a&#39;</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39;&lt;/&#39;</span><span class="o">//</span><span class="n">self</span><span class="p">%</span><span class="n">tag_name</span><span class="o">//</span><span class="s1">&#39;&gt;&#39;</span>
+        <span class="k">else</span>
+<span class="k">          </span><span class="n">stringed</span> <span class="o">=</span> <span class="n">stringed</span><span class="o">//</span><span class="s1">&#39;&gt;&#39;</span><span class="o">//</span><span class="n">self</span><span class="p">%</span><span class="n">tag_content</span><span class="o">//</span><span class="s1">&#39;&lt;/&#39;</span><span class="o">//</span><span class="n">self</span><span class="p">%</span><span class="n">tag_name</span><span class="o">//</span><span class="s1">&#39;&gt;&#39;</span>
+        <span class="n">endif</span>
+      <span class="k">else</span>
+<span class="k">        </span><span class="n">stringed</span> <span class="o">=</span> <span class="n">stringed</span><span class="o">//</span><span class="s1">&#39;&gt;&lt;/&#39;</span><span class="o">//</span><span class="n">self</span><span class="p">%</span><span class="n">tag_name</span><span class="o">//</span><span class="s1">&#39;&gt;&#39;</span>
       <span class="n">endif</span>
     <span class="n">endif</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">self</span><span class="p">%</span><span class="n">tag_val</span><span class="p">%</span><span class="n">is_allocated</span><span class="p">())</span> <span class="k">then</span>
-<span class="k">      </span><span class="n">stringed</span> <span class="o">=</span> <span class="n">stringed</span><span class="o">//</span><span class="s1">&#39;&gt;&#39;</span><span class="o">//</span><span class="n">self</span><span class="p">%</span><span class="n">tag_val</span><span class="o">//</span><span class="s1">&#39;&lt;/&#39;</span><span class="o">//</span><span class="n">self</span><span class="p">%</span><span class="n">tag_name</span><span class="o">//</span><span class="s1">&#39;&gt;&#39;</span>
-    <span class="k">else</span>
-<span class="k">      </span><span class="n">stringed</span> <span class="o">=</span> <span class="n">stringed</span><span class="o">//</span><span class="s1">&#39;/&gt;&#39;</span>
-    <span class="n">endif</span>
   <span class="n">endif</span>
-  <span class="k">return</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
   <span class="n">endfunction</span> <span class="n">stringify</span>
 </pre></div>

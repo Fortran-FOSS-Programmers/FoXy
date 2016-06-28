@@ -129,13 +129,13 @@
     <div id="vars" class="panel-collapse collapse">
       <div class="list-group">
         
-        <a class="list-group-item" href="../program/create_tag.html#variable-source%7E9">source</a>
+        <a class="list-group-item" href="../program/create_tag.html#variable-source%7E10">source</a>
         
-        <a class="list-group-item" href="../program/create_tag.html#variable-parsed">parsed</a>
+        <a class="list-group-item" href="../program/create_tag.html#variable-parsed%7E2">parsed</a>
         
-        <a class="list-group-item" href="../program/create_tag.html#variable-a_tag">a_tag</a>
+        <a class="list-group-item" href="../program/create_tag.html#variable-a_tag%7E2">a_tag</a>
         
-        <a class="list-group-item" href="../program/create_tag.html#variable-test_passed">test_passed</a>
+        <a class="list-group-item" href="../program/create_tag.html#variable-test_passed%7E2">test_passed</a>
         
       </div>
     </div>
@@ -173,7 +173,15 @@
     <div id="allprogs" class="panel-collapse collapse">
         <div class="list-group">
           
+          <a class="list-group-item" href="../program/add_tag.html">add_tag</a>
+          
           <a class="list-group-item" href="../program/create_tag.html">create_tag</a>
+          
+          <a class="list-group-item" href="../program/delete_attributes.html">delete_attributes</a>
+          
+          <a class="list-group-item" href="../program/delete_content.html">delete_content</a>
+          
+          <a class="list-group-item" href="../program/delete_tag.html">delete_tag</a>
           
           <a class="list-group-item" href="../program/parse_file_simple.html">parse_file_simple</a>
           
@@ -665,7 +673,7 @@ implementation in a submodule of an interface in a parent module.</p>
   
 <tr>
   
-  <td><span class="anchor" id="variable-source%7E9"></span>character(len=:),</td>
+  <td><span class="anchor" id="variable-source%7E10"></span>character(len=:),</td>
   
   
   <td>allocatable</td><td>::</td>
@@ -679,7 +687,7 @@ implementation in a submodule of an interface in a parent module.</p>
   
 <tr>
   
-  <td><span class="anchor" id="variable-parsed"></span>character(len=:),</td>
+  <td><span class="anchor" id="variable-parsed%7E2"></span>character(len=:),</td>
   
   
   <td>allocatable</td><td>::</td>
@@ -693,7 +701,7 @@ implementation in a submodule of an interface in a parent module.</p>
   
 <tr>
   
-  <td><span class="anchor" id="variable-a_tag"></span>type(<a href='../type/xml_tag.html'>xml_tag</a>)</td>
+  <td><span class="anchor" id="variable-a_tag%7E2"></span>type(<a href='../type/xml_tag.html'>xml_tag</a>)</td>
   
   
   <td></td><td>::</td>
@@ -707,11 +715,11 @@ implementation in a submodule of an interface in a parent module.</p>
   
 <tr>
   
-  <td><span class="anchor" id="variable-test_passed"></span>logical</td>
+  <td><span class="anchor" id="variable-test_passed%7E2"></span>logical</td>
   
   
   <td></td><td>::</td>
-  <td><strong>test_passed</strong>(1)</td><td></td><td></td><td><p>List of passed tests.</p></td>
+  <td><strong>test_passed</strong>(4)</td><td></td><td></td><td><p>List of passed tests.</p></td>
   
 </tr>
 
@@ -750,23 +758,50 @@ implementation in a submodule of an interface in a parent module.</p>
 <span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span> <span class="k">allocatable</span> <span class="kd">::</span> <span class="n">source</span>         <span class="c">!&lt; String containing the source XML data.</span>
 <span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span> <span class="k">allocatable</span> <span class="kd">::</span> <span class="n">parsed</span>         <span class="c">!&lt; String containing the parsed XML data.</span>
 <span class="k">type</span><span class="p">(</span><span class="n">xml_tag</span><span class="p">)</span>                 <span class="kd">::</span> <span class="n">a_tag</span>          <span class="c">!&lt; XML tag handler.</span>
-<span class="kt">logical</span>                       <span class="kd">::</span> <span class="n">test_passed</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="c">!&lt; List of passed tests.</span>
+<span class="kt">logical</span>                       <span class="kd">::</span> <span class="n">test_passed</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="c">!&lt; List of passed tests.</span>
 <span class="c">!-----------------------------------------------------------------------------------------------------------------------------------</span>
 
 <span class="c">!-----------------------------------------------------------------------------------------------------------------------------------</span>
 <span class="n">test_passed</span> <span class="o">=</span> <span class="p">.</span><span class="n">false</span><span class="p">.</span>
 
-<span class="k">print</span> <span class="s2">&quot;(A)&quot;</span><span class="p">,</span> <span class="s1">&#39;Input XML data:&#39;</span>
+<span class="k">print</span> <span class="s2">&quot;(A)&quot;</span><span class="p">,</span> <span class="s1">&#39;source&#39;</span>
 <span class="n">source</span> <span class="o">=</span> <span class="s1">&#39;&lt;first x=&quot;1&quot; y=&quot;c&quot; z=&quot;2&quot;&gt;lorem ipsum...&lt;/first&gt;&#39;</span>
 <span class="k">print</span> <span class="s2">&quot;(A)&quot;</span><span class="p">,</span> <span class="n">source</span>
-
-<span class="k">print</span> <span class="s2">&quot;(A)&quot;</span><span class="p">,</span> <span class="s1">&#39;Create tag&#39;</span>
-<span class="n">a_tag</span> <span class="o">=</span> <span class="n">tag</span><span class="p">(</span><span class="n">tag_name</span><span class="o">=</span><span class="s1">&#39;first&#39;</span><span class="p">,</span> <span class="n">tag_value</span><span class="o">=</span><span class="s1">&#39;lorem ipsum...&#39;</span><span class="p">,</span> <span class="n">attributes_name</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">],</span> <span class="n">attributes_value</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;1&#39;</span><span class="p">,</span> <span class="s1">&#39;c&#39;</span><span class="p">,</span> <span class="s1">&#39;2&#39;</span><span class="p">])</span>
-<span class="k">print</span> <span class="s2">&quot;(A)&quot;</span><span class="p">,</span> <span class="s1">&#39;Parsed data&#39;</span>
+<span class="k">print</span> <span class="s2">&quot;(A)&quot;</span><span class="p">,</span> <span class="s1">&#39;created&#39;</span>
+<span class="n">a_tag</span> <span class="o">=</span> <span class="n">tag</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;first&#39;</span><span class="p">,</span> <span class="k">value</span><span class="o">=</span><span class="s1">&#39;lorem ipsum...&#39;</span><span class="p">,</span> <span class="n">attributes</span><span class="o">=</span><span class="nb">reshape</span><span class="p">([[</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;1&#39;</span><span class="p">],</span> <span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;c&#39;</span><span class="p">],</span> <span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">,</span> <span class="s1">&#39;2&#39;</span><span class="p">]],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]))</span>
 <span class="n">parsed</span> <span class="o">=</span> <span class="n">a_tag</span><span class="p">%</span><span class="n">stringify</span><span class="p">()</span>
-<span class="k">print</span> <span class="s2">&quot;(A)&quot;</span><span class="p">,</span> <span class="n">parsed</span>
 <span class="n">test_passed</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">=</span> <span class="nb">trim</span><span class="p">(</span><span class="n">source</span><span class="p">)</span><span class="o">==</span><span class="nb">trim</span><span class="p">(</span><span class="n">parsed</span><span class="p">)</span>
-<span class="k">print</span> <span class="s2">&quot;(A,L1)&quot;</span><span class="p">,</span> <span class="s1">&#39;Is parsed data correct? &#39;</span><span class="p">,</span> <span class="n">test_passed</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="k">print</span> <span class="s2">&quot;(A,L1)&quot;</span><span class="p">,</span> <span class="n">parsed</span><span class="o">//</span><span class="s1">&#39;Is correct? &#39;</span><span class="p">,</span> <span class="n">test_passed</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="k">print</span> <span class="s2">&quot;(A)&quot;</span><span class="p">,</span> <span class="s1">&#39;source&#39;</span>
+<span class="n">source</span> <span class="o">=</span> <span class="s1">&#39;&lt;second x=&quot;1&quot; y=&quot;c&quot; z=&quot;2&quot;/&gt;&#39;</span>
+<span class="k">print</span> <span class="s2">&quot;(A)&quot;</span><span class="p">,</span> <span class="n">source</span>
+<span class="k">print</span> <span class="s2">&quot;(A)&quot;</span><span class="p">,</span> <span class="s1">&#39;created&#39;</span>
+<span class="n">a_tag</span> <span class="o">=</span> <span class="n">tag</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;second&#39;</span><span class="p">,</span> <span class="n">attributes</span><span class="o">=</span><span class="nb">reshape</span><span class="p">([[</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;1&#39;</span><span class="p">],</span> <span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;c&#39;</span><span class="p">],</span> <span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">,</span> <span class="s1">&#39;2&#39;</span><span class="p">]],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]),</span> <span class="n">is_self_closing</span><span class="o">=</span><span class="p">.</span><span class="n">true</span><span class="p">.)</span>
+<span class="n">parsed</span> <span class="o">=</span> <span class="n">a_tag</span><span class="p">%</span><span class="n">stringify</span><span class="p">()</span>
+<span class="n">test_passed</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">=</span> <span class="nb">trim</span><span class="p">(</span><span class="n">source</span><span class="p">)</span><span class="o">==</span><span class="nb">trim</span><span class="p">(</span><span class="n">parsed</span><span class="p">)</span>
+<span class="k">print</span> <span class="s2">&quot;(A,L1)&quot;</span><span class="p">,</span> <span class="n">parsed</span><span class="o">//</span><span class="s1">&#39; Is correct? &#39;</span><span class="p">,</span> <span class="n">test_passed</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="c">! create parsing a source</span>
+<span class="k">print</span> <span class="s2">&quot;(A)&quot;</span><span class="p">,</span> <span class="s1">&#39;source&#39;</span>
+<span class="n">source</span> <span class="o">=</span> <span class="s1">&#39;&lt;third x=&quot;1&quot; y=&quot;c&quot; z=&quot;2&quot;/&gt;&#39;</span>
+<span class="k">print</span> <span class="s2">&quot;(A)&quot;</span><span class="p">,</span> <span class="n">source</span>
+<span class="k">print</span> <span class="s2">&quot;(A)&quot;</span><span class="p">,</span> <span class="s1">&#39;created&#39;</span>
+<span class="k">call </span><span class="n">a_tag</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;third&#39;</span><span class="p">)</span>
+<span class="k">call </span><span class="n">a_tag</span><span class="p">%</span><span class="n">parse</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">)</span>
+<span class="n">parsed</span> <span class="o">=</span> <span class="n">a_tag</span><span class="p">%</span><span class="n">stringify</span><span class="p">()</span>
+<span class="n">test_passed</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="o">=</span> <span class="nb">trim</span><span class="p">(</span><span class="n">source</span><span class="p">)</span><span class="o">==</span><span class="nb">trim</span><span class="p">(</span><span class="n">parsed</span><span class="p">)</span>
+<span class="k">print</span> <span class="s2">&quot;(A,L1)&quot;</span><span class="p">,</span> <span class="n">parsed</span><span class="o">//</span><span class="s1">&#39; Is correct? &#39;</span><span class="p">,</span> <span class="n">test_passed</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="k">print</span> <span class="s2">&quot;(A)&quot;</span><span class="p">,</span> <span class="s1">&#39;source&#39;</span>
+<span class="n">source</span> <span class="o">=</span> <span class="s1">&#39;&lt;fourth x=&quot;1&quot; y=&quot;c&quot; z=&quot;2&quot;&gt;&lt;/fourth&gt;&#39;</span>
+<span class="k">print</span> <span class="s2">&quot;(A)&quot;</span><span class="p">,</span> <span class="n">source</span>
+<span class="k">print</span> <span class="s2">&quot;(A)&quot;</span><span class="p">,</span> <span class="s1">&#39;created&#39;</span>
+<span class="k">call </span><span class="n">a_tag</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;fourth&#39;</span><span class="p">)</span>
+<span class="k">call </span><span class="n">a_tag</span><span class="p">%</span><span class="n">parse</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">)</span>
+<span class="n">parsed</span> <span class="o">=</span> <span class="n">a_tag</span><span class="p">%</span><span class="n">stringify</span><span class="p">()</span>
+<span class="n">test_passed</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="o">=</span> <span class="nb">trim</span><span class="p">(</span><span class="n">source</span><span class="p">)</span><span class="o">==</span><span class="nb">trim</span><span class="p">(</span><span class="n">parsed</span><span class="p">)</span>
+<span class="k">print</span> <span class="s2">&quot;(A,L1)&quot;</span><span class="p">,</span> <span class="n">parsed</span><span class="o">//</span><span class="s1">&#39; Is correct? &#39;</span><span class="p">,</span> <span class="n">test_passed</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
 
 <span class="k">print</span> <span class="s2">&quot;(A,L1)&quot;</span><span class="p">,</span> <span class="nb">new_line</span><span class="p">(</span><span class="s1">&#39;a&#39;</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39;Are all tests passed? &#39;</span><span class="p">,</span> <span class="k">all</span><span class="p">(</span><span class="n">test_passed</span><span class="p">)</span>
 <span class="k">stop</span>

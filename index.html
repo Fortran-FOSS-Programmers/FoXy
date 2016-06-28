@@ -135,8 +135,7 @@
 <p><a href="#what-is-foxy">What is FoXy?</a> | <a href="#Aims">Aims</a> | <a href="#status">Status</a> | <a href="#documentation">Documentation</a> | <a href="#copyrights">Copyrights</a></p>
 <hr>
 <h2 id="what-is-foxy"><a class="toclink" href="#what-is-foxy">What is FoXy?</a></h2>
-<p>Modern Fortran standards (2003+) have introduced support for a more
-Modern Fortran standards (2003+) have introduced better support for strings manipulations. Exploiting such new Fortran capabilities, FoXy is aimed to provide an easy to use module library for parsing (and generating) <a href="https://en.wikipedia.org/wiki/XML">XML</a> files.</p>
+<p>Modern Fortran standards (2003+) have introduced better support for strings manipulations. Exploiting such new Fortran capabilities, FoXy is aimed to provide an easy to use module library to parse and emit <a href="https://en.wikipedia.org/wiki/XML">XML</a> files and or tags.</p>
 <h2 id="aims"><a class="toclink" href="#aims">Aims</a></h2>
 <p>Other programming languages have many libraries for XML parsing, Fortran has less options, but some there are:</p>
 <ul>
@@ -145,7 +144,7 @@ Modern Fortran standards (2003+) have introduced better support for strings mani
 <li><a href="https://github.com/andreww/fox">fox</a> of Andrew Walker;</li>
 <li><a href="https://github.com/andreww/fox">tixi</a> from DLR Simulation and Software Technology.</li>
 </ul>
-<p>All of the above are great codes, but lack in some points that I would like to have:</p>
+<p>All of the above are great codes, but lack in some points that we would like to have:</p>
 <ul>
 <li>actively maintained;</li>
 <li>designed for modern Fortran:</li>
@@ -163,6 +162,9 @@ Modern Fortran standards (2003+) have introduced better support for strings mani
 <p>In some sense or other, the afore-mentioned Fortran libraries miss somethings.</p>
 <p>Go to <a href="#top">Top</a></p>
 <h2 id="status"><a class="toclink" href="#status">Status</a></h2>
+<p><a href=""><img alt="Status" src="https://img.shields.io/badge/status-stable-brightgreen.svg"></a>
+<a href="https://travis-ci.org/Fortran-FOSS-Programmers/FoXy"><img alt="Build Status" src="https://travis-ci.org/Fortran-FOSS-Programmers/FoXy.svg?branch=master"></a>
+<a href="http://codecov.io/github/Fortran-FOSS-Programmers/FoXy?branch=master"><img alt="Coverage Status" src="https://img.shields.io/codecov/c/github/Fortran-FOSS-Programmers/FoXy.svg"></a></p>
 <h3 id="done"><a class="toclink" href="#done">Done</a></h3>
 <ul>
 <li>lint baseline code:</li>
@@ -183,7 +185,8 @@ Modern Fortran standards (2003+) have introduced better support for strings mani
 </ul>
 <h3 id="doing"><a class="toclink" href="#doing">Doing</a></h3>
 <ul>
-<li>implement lazy find tag value attribute into file (once provided a tag name and attribute name).</li>
+<li>implement nested tags delete;</li>
+<li>implement lazy find tag's value attribute into file (once provided a tag name and attribute name).</li>
 </ul>
 <h3 id="todo"><a class="toclink" href="#todo">Todo</a></h3>
 <ul>
@@ -246,6 +249,10 @@ Modern Fortran standards (2003+) have introduced better support for strings mani
               <ul>
                 
                   
+                    <li><a href='./sourcefile/add_tag.f90.html'>add_tag.f90</a></li>
+                  
+                
+                  
                     <li><a href='./sourcefile/befor64.f90.html'>befor64.F90</a></li>
                   
                 
@@ -255,6 +262,18 @@ Modern Fortran standards (2003+) have introduced better support for strings mani
                 
                   
                     <li><a href='./sourcefile/create_tag.f90.html'>create_tag.f90</a></li>
+                  
+                
+                  
+                    <li><a href='./sourcefile/delete_attributes.f90.html'>delete_attributes.f90</a></li>
+                  
+                
+                  
+                    <li><a href='./sourcefile/delete_content.f90.html'>delete_content.f90</a></li>
+                  
+                
+                  
+                    <li><a href='./sourcefile/delete_tag.f90.html'>delete_tag.f90</a></li>
                   
                 
                   
@@ -270,23 +289,15 @@ Modern Fortran standards (2003+) have introduced better support for strings mani
                   
                 
                   
-                    <li><a href='./sourcefile/parse_file_simple.f90.html'>parse_file_simple.f90</a></li>
-                  
-                
-                  
-                    <li><a href='./sourcefile/parse_string_simple.f90.html'>parse_string_simple.f90</a></li>
-                  
-                
-                  
-                    <li><a href='./sourcefile/penf.f90.html'>penf.F90</a></li>
-                  
-                
-                  
-                    <li><a href='./sourcefile/stringifor.f90.html'>stringifor.F90</a></li>
-                  
-                
-                  
                     <li><a href="./lists/files.html"><em>All source files&hellip;</em></a></li>
+                  
+                
+                  
+                
+                  
+                
+                  
+                
                   
                 
               </ul>
@@ -349,6 +360,14 @@ Modern Fortran standards (2003+) have introduced better support for strings mani
               <ul>
                 
                   
+                    <li><a href='./proc/add_multiple_attributes.html'>add_multiple_attributes</a></li>
+                  
+                
+                  
+                    <li><a href='./proc/add_single_attribute.html'>add_single_attribute</a></li>
+                  
+                
+                  
                     <li><a href='./proc/add_tag.html'>add_tag</a></li>
                   
                 
@@ -381,15 +400,23 @@ Modern Fortran standards (2003+) have introduced better support for strings mani
                   
                 
                   
-                    <li><a href='./proc/b64_decode_i1_a.html'>b64_decode_I1_a</a></li>
-                  
-                
-                  
-                    <li><a href='./proc/b64_decode_i2.html'>b64_decode_I2</a></li>
-                  
-                
-                  
                     <li><a href="./lists/procedures.html"><em>All procedures&hellip;</em></a></li>
+                  
+                
+                  
+                
+                  
+                
+                  
+                
+                  
+                
+                  
+                
+                  
+                
+                  
+                
                   
                 
                   

@@ -131,9 +131,9 @@
     <div id="vars" class="panel-collapse collapse">
       <div class="list-group">
         
-        <a class="list-group-item" href="../proc/get_value.html#variable-c1%7E2">c1</a>
+        <a class="list-group-item" href="../proc/get_value.html#variable-c1%7E3">c1</a>
         
-        <a class="list-group-item" href="../proc/get_value.html#variable-c2">c2</a>
+        <a class="list-group-item" href="../proc/get_value.html#variable-c2%7E2">c2</a>
         
       </div>
     </div>
@@ -170,6 +170,10 @@
     <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#allprocs">All Procedures</a></h3></div>
     <div id="allprocs" class="panel-collapse collapse">
         <div class="list-group">
+          
+          <a class="list-group-item" href="../proc/add_multiple_attributes.html">add_multiple_attributes</a>
+          
+          <a class="list-group-item" href="../proc/add_single_attribute.html">add_single_attribute</a>
           
           <a class="list-group-item" href="../proc/add_tag.html">add_tag</a>
           
@@ -355,6 +359,10 @@
           
           <a class="list-group-item" href="../proc/check_endian.html">check_endian</a>
           
+          <a class="list-group-item" href="../proc/content.html">content</a>
+          
+          <a class="list-group-item" href="../proc/content%7E2.html">content</a>
+          
           <a class="list-group-item" href="../interface/count.html">count</a>
           
           <a class="list-group-item" href="../proc/count_substring.html">count_substring</a>
@@ -378,6 +386,14 @@
           <a class="list-group-item" href="../proc/decode.html">decode</a>
           
           <a class="list-group-item" href="../proc/decode_bits.html">decode_bits</a>
+          
+          <a class="list-group-item" href="../proc/delete_content.html">delete_content</a>
+          
+          <a class="list-group-item" href="../proc/delete_multiple_attributes.html">delete_multiple_attributes</a>
+          
+          <a class="list-group-item" href="../proc/delete_single_attribute.html">delete_single_attribute</a>
+          
+          <a class="list-group-item" href="../proc/delete_tag.html">delete_tag</a>
           
           <a class="list-group-item" href="../interface/digit.html">digit</a>
           
@@ -458,6 +474,8 @@
           <a class="list-group-item" href="../proc/load_file_as_stream.html">load_file_as_stream</a>
           
           <a class="list-group-item" href="../proc/lower.html">lower</a>
+          
+          <a class="list-group-item" href="../proc/name.html">name</a>
           
           <a class="list-group-item" href="../interface/pack_data.html">pack_data</a>
           
@@ -733,9 +751,7 @@
           
           <a class="list-group-item" href="../proc/tag.html">tag</a>
           
-          <a class="list-group-item" href="../proc/tag_value.html">tag_value</a>
-          
-          <a class="list-group-item" href="../proc/tag_value%7E2.html">tag_value</a>
+          <a class="list-group-item" href="../proc/tag_nested.html">tag_nested</a>
           
           <a class="list-group-item" href="../proc/to_integer_i1p.html">to_integer_I1P</a>
           
@@ -811,7 +827,7 @@ private elemental subroutine get_value(self, source)
   
 <tr>
   
-  <td><span class="anchor" id="variable-self%7E15"></span>class(<a href='../type/xml_tag.html'>xml_tag</a>),</td>
+  <td><span class="anchor" id="variable-self%7E23"></span>class(<a href='../type/xml_tag.html'>xml_tag</a>),</td>
   <td>intent(inout)</td>
   <td></td>
   
@@ -826,7 +842,7 @@ private elemental subroutine get_value(self, source)
   
 <tr>
   
-  <td><span class="anchor" id="variable-source%7E4"></span>character(len=*),</td>
+  <td><span class="anchor" id="variable-source%7E5"></span>character(len=*),</td>
   <td>intent(in)</td>
   <td></td>
   
@@ -843,7 +859,6 @@ private elemental subroutine get_value(self, source)
     
     <h3>Description</h3>
     <p>Get the tag value from source after tag_name has been set.</p>
-<p></p><div class="alert alert-info" role="alert"><h4>Note</h4>It is worth noting that the leading and trailing white spaces of tag value are removed.</div>
     
     
      
@@ -867,7 +882,7 @@ private elemental subroutine get_value(self, source)
   
 <tr>
   
-  <td><span class="anchor" id="variable-c1%7E2"></span>integer,</td>
+  <td><span class="anchor" id="variable-c1%7E3"></span>integer,</td>
   
   <td>public</td>
   <td></td><td>::</td>
@@ -881,7 +896,7 @@ private elemental subroutine get_value(self, source)
   
 <tr>
   
-  <td><span class="anchor" id="variable-c2"></span>integer,</td>
+  <td><span class="anchor" id="variable-c2%7E2"></span>integer,</td>
   
   <td>public</td>
   <td></td><td>::</td>
@@ -915,8 +930,6 @@ private elemental subroutine get_value(self, source)
     <div class="highlight"><pre><span></span>  <span class="k">elemental subroutine </span><span class="n">get_value</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">source</span><span class="p">)</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
   <span class="c">!&lt; Get the tag value from source after tag_name has been set.</span>
-  <span class="c">!&lt;</span>
-  <span class="c">!&lt; @note It is worth noting that the leading and trailing white spaces of tag value are removed.</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
   <span class="k">class</span><span class="p">(</span><span class="n">xml_tag</span><span class="p">),</span> <span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span> <span class="kd">::</span> <span class="n">self</span>   <span class="c">!&lt; XML tag.</span>
   <span class="kt">character</span><span class="p">(</span><span class="o">*</span><span class="p">),</span>   <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span>    <span class="kd">::</span> <span class="n">source</span> <span class="c">!&lt; String containing data.</span>
@@ -925,11 +938,15 @@ private elemental subroutine get_value(self, source)
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
 
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
+  <span class="k">call </span><span class="n">self</span><span class="p">%</span><span class="n">tag_content</span><span class="p">%</span><span class="n">free</span>
+  <span class="n">self</span><span class="p">%</span><span class="n">is_self_closing</span> <span class="o">=</span> <span class="p">.</span><span class="n">false</span><span class="p">.</span>
   <span class="k">if</span> <span class="p">(</span><span class="nb">index</span><span class="p">(</span><span class="n">string</span><span class="o">=</span><span class="n">source</span><span class="p">,</span> <span class="n">substring</span><span class="o">=</span><span class="s1">&#39;&lt;&#39;</span><span class="o">//</span><span class="n">self</span><span class="p">%</span><span class="n">tag_name</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">)</span> <span class="k">then</span>
 <span class="k">    </span><span class="n">c2</span> <span class="o">=</span> <span class="nb">index</span><span class="p">(</span><span class="n">string</span><span class="o">=</span><span class="n">source</span><span class="p">,</span> <span class="n">substring</span><span class="o">=</span><span class="s1">&#39;&lt;/&#39;</span><span class="o">//</span><span class="n">self</span><span class="p">%</span><span class="n">tag_name</span><span class="o">//</span><span class="s1">&#39;&gt;&#39;</span><span class="p">)</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">c2</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">)</span> <span class="k">then</span> <span class="c">! parsing tag value</span>
       <span class="n">c1</span> <span class="o">=</span> <span class="nb">index</span><span class="p">(</span><span class="n">string</span><span class="o">=</span><span class="n">source</span><span class="p">,</span> <span class="n">substring</span><span class="o">=</span><span class="s1">&#39;&gt;&#39;</span><span class="p">)</span>
-      <span class="n">self</span><span class="p">%</span><span class="n">tag_val</span> <span class="o">=</span> <span class="nb">trim</span><span class="p">(</span><span class="nb">adjustl</span><span class="p">(</span><span class="n">source</span><span class="p">(</span><span class="n">c1</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span><span class="n">c2</span><span class="o">-</span><span class="mi">1</span><span class="p">)))</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">c1</span><span class="o">+</span><span class="mi">1</span><span class="o">&lt;</span><span class="n">c2</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="n">self</span><span class="p">%</span><span class="n">tag_content</span> <span class="o">=</span> <span class="n">source</span><span class="p">(</span><span class="n">c1</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span><span class="n">c2</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">else</span>
+<span class="k">      </span><span class="n">self</span><span class="p">%</span><span class="n">is_self_closing</span> <span class="o">=</span> <span class="p">.</span><span class="n">true</span><span class="p">.</span>
     <span class="n">endif</span>
   <span class="n">endif</span>
   <span class="k">return</span>
