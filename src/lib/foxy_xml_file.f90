@@ -15,17 +15,21 @@ private
 !-----------------------------------------------------------------------------------------------------------------------------------
 type, public:: xml_file
   !< XML file class.
+  !<
+  !< @todo The "delete" facility is incomplete: nested tags are not taken into account. Better support will with the
+  !< "dom" facility.
   private
   integer(I4P)               :: Nt = 0 !< Number of XML tags.
   type(xml_tag), allocatable :: tag(:) !< XML tags array.
   contains
     ! public methods
-    procedure :: free      !< Free dynamic memory.
-    final     :: finalize  !< Free dynamic memory when finalizing.
-    procedure :: parse     !< Parse xml data from string or file.
-    procedure :: tag_value !< Return tag value of tag named *tag_name*.
-    procedure :: stringify !< Convert the whole file data into a string.
-    procedure :: add_tag   !< Add tag to self%tag array.
+    procedure :: free       !< Free dynamic memory.
+    final     :: finalize   !< Free dynamic memory when finalizing.
+    procedure :: parse      !< Parse xml data from string or file.
+    procedure :: content    !< Return tag content of tag named *name*.
+    procedure :: stringify  !< Convert the whole file data into a string.
+    procedure :: add_tag    !< Add tag to XML file.
+    procedure :: delete_tag !< Add tag from XML file.
     ! private methods
     procedure, private :: parse_from_string !< Parse xml data from string.
 endtype xml_file
@@ -45,7 +49,6 @@ contains
     deallocate(self%tag)
     self%Nt = 0
   endif
-  return
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine free
 
@@ -58,7 +61,6 @@ contains
 
   !---------------------------------------------------------------------------------------------------------------------------------
   call file%free
-  return
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine finalize
 
@@ -82,34 +84,30 @@ contains
     source = load_file_as_stream(filename=filename, fast_read=.true.)
     call self%parse_from_string(source_string=source)
   endif
-  return
   !---------------------------------------------------------------------------------------------------------------------------------
-  contains
   endsubroutine parse
 
-  pure subroutine tag_value(self, tag_name, tag_val)
+  pure function content(self, name)
   !---------------------------------------------------------------------------------------------------------------------------------
-  !< Return tag value of tag named *tag_name*.
+  !< Return tag content of tag named *name*.
   !<
-  !< @note If there is no value, the *tag_value* string is returned deallocated.
+  !< @note If there is no value, the *tag_content* string is returned deallocated.
   !---------------------------------------------------------------------------------------------------------------------------------
-  class(xml_file),               intent(in)    :: self     !< XML file.
-  character(*),                  intent(in)    :: tag_name !< Tag name.
-  character(len=:), allocatable, intent(inout) :: tag_val  !< Tag value.
-  integer(I4P)                                 :: t        !< Counter.
+  class(xml_file), intent(in)   :: self    !< XML file.
+  character(*),    intent(in)   :: name    !< Tag name.
+  character(len=:), allocatable :: content !< Tag content.
+  integer(I4P)                  :: t       !< Counter.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
-  if (allocated(tag_val)) deallocate(tag_val)
   if (self%Nt>0) then
     do t=1, self%Nt
-      call self%tag(t)%tag_value(tag_name=tag_name, tag_val=tag_val)
-      if (allocated(tag_val)) exit
+      content = self%tag(t)%content(name=name)
+      if (allocated(content)) exit
     enddo
   endif
-  return
   !---------------------------------------------------------------------------------------------------------------------------------
-  endsubroutine tag_value
+  endfunction content
 
   pure function stringify(self) result(string)
   !---------------------------------------------------------------------------------------------------------------------------------
@@ -131,13 +129,12 @@ contains
     tag_string = self%tag(self%Nt)%stringify()
     string = string//tag_string
   endif
-  return
   !---------------------------------------------------------------------------------------------------------------------------------
   endfunction stringify
 
   elemental subroutine add_tag(self, tag)
   !---------------------------------------------------------------------------------------------------------------------------------
-  !< Add tag to self%tag array.
+  !< Add tag to XML file.
   !---------------------------------------------------------------------------------------------------------------------------------
   class(xml_file), intent(inout) :: self       !< XML file.
   type(xml_tag),   intent(in)    :: tag        !< XML tag.
@@ -155,10 +152,40 @@ contains
   endif
   call move_alloc(from=tag_new, to=self%tag)
   self%Nt = self%Nt + 1
-  if (allocated(tag_new)) deallocate(tag_new)
-  return
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine add_tag
+
+  elemental subroutine delete_tag(self, name)
+  !---------------------------------------------------------------------------------------------------------------------------------
+  !< Delete tag from XML file.
+  !---------------------------------------------------------------------------------------------------------------------------------
+  class(xml_file), intent(inout) :: self       !< XML file.
+  character(*),    intent(in)    :: name       !< XML tag name.
+  type(xml_tag), allocatable     :: tag_new(:) !< New (extended) tags array.
+  integer(I4P)                   :: t          !< Counter.
+  !---------------------------------------------------------------------------------------------------------------------------------
+
+  !---------------------------------------------------------------------------------------------------------------------------------
+  if (self%Nt>0_I4P) then
+    do t=1, self%Nt
+      if (name==self%tag(t)%name()) then
+        allocate(tag_new(1:self%Nt - 1))
+        if (t==1) then
+          tag_new(t:) = self%tag(t+1:)
+        elseif (t==self%Nt) then
+          tag_new(:t-1) = self%tag(:t-1)
+        else
+          tag_new(:t-1) = self%tag(:t-1)
+          tag_new(t:) = self%tag(t+1:)
+        endif
+        call move_alloc(from=tag_new, to=self%tag)
+        self%Nt = self%Nt - 1
+        exit
+      endif
+    enddo
+  endif
+  !---------------------------------------------------------------------------------------------------------------------------------
+  endsubroutine delete_tag
 
   ! private methods
   subroutine parse_from_string(self, source_string)
@@ -182,7 +209,6 @@ contains
     if (tag%is_parsed()) call self%add_tag(tag)
     tstart = tstart + tend
   enddo
-  return
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine parse_from_string
 
@@ -291,7 +317,6 @@ contains
   10 close(unit)
   if (present(iostat)) iostat = iostatd
   if (present(iomsg))  iomsg  = iomsgd
-  return
   !---------------------------------------------------------------------------------------------------------------------------------
   endfunction load_file_as_stream
 endmodule foxy_xml_file

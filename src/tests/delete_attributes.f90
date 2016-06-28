@@ -1,5 +1,5 @@
 !< FoXy test.
-program create_tag
+program delete_attributes
 !-----------------------------------------------------------------------------------------------------------------------------------
 !< FoXy test.
 !-----------------------------------------------------------------------------------------------------------------------------------
@@ -20,43 +20,40 @@ test_passed = .false.
 print "(A)", 'source'
 source = '<first x="1" y="c" z="2">lorem ipsum...</first>'
 print "(A)", source
-print "(A)", 'created'
-a_tag = tag(name='first', value='lorem ipsum...', attributes=reshape([['x', '1'], ['y', 'c'], ['z', '2']], [2,3]))
-parsed = a_tag%stringify()
-test_passed(1) = trim(source)==trim(parsed)
-print "(A,L1)", parsed//'Is correct? ', test_passed(1)
 
-print "(A)", 'source'
-source = '<second x="1" y="c" z="2"/>'
-print "(A)", source
-print "(A)", 'created'
-a_tag = tag(name='second', attributes=reshape([['x', '1'], ['y', 'c'], ['z', '2']], [2,3]), is_self_closing=.true.)
+print "(A)", 'delete "y" attribute'
+a_tag = tag(name='first', value='lorem ipsum...', attributes=reshape([['x', '1'], ['y', 'c'], ['z', '2']], [2,3]))
+call a_tag%delete_attributes(name="y")
 parsed = a_tag%stringify()
-test_passed(2) = trim(source)==trim(parsed)
+source = '<first x="1" z="2">lorem ipsum...</first>'
+test_passed(1) = trim(adjustl(source))==trim(adjustl(parsed))
+print "(A,L1)", parsed//' Is correct? ', test_passed(1)
+
+print "(A)", 'delete "x" attribute'
+a_tag = tag(name='first', value='lorem ipsum...', attributes=reshape([['x', '1'], ['y', 'c'], ['z', '2']], [2,3]))
+call a_tag%delete_attributes(name="x")
+parsed = a_tag%stringify()
+source = '<first y="c" z="2">lorem ipsum...</first>'
+test_passed(2) = trim(adjustl(source))==trim(adjustl(parsed))
 print "(A,L1)", parsed//' Is correct? ', test_passed(2)
 
-! create parsing a source
-print "(A)", 'source'
-source = '<third x="1" y="c" z="2"/>'
-print "(A)", source
-print "(A)", 'created'
-call a_tag%set(name='third')
-call a_tag%parse(source=source)
+print "(A)", 'delete "z" attribute'
+a_tag = tag(name='first', value='lorem ipsum...', attributes=reshape([['x', '1'], ['y', 'c'], ['z', '2']], [2,3]))
+call a_tag%delete_attributes(name="z")
 parsed = a_tag%stringify()
-test_passed(3) = trim(source)==trim(parsed)
+source = '<first x="1" y="c">lorem ipsum...</first>'
+test_passed(3) = trim(adjustl(source))==trim(adjustl(parsed))
 print "(A,L1)", parsed//' Is correct? ', test_passed(3)
 
-print "(A)", 'source'
-source = '<fourth x="1" y="c" z="2"></fourth>'
-print "(A)", source
-print "(A)", 'created'
-call a_tag%set(name='fourth')
-call a_tag%parse(source=source)
+print "(A)", 'delete "x" "z" attributes'
+a_tag = tag(name='first', value='lorem ipsum...', attributes=reshape([['x', '1'], ['y', 'c'], ['z', '2']], [2,3]))
+call a_tag%delete_attributes(name=["z", "x"])
 parsed = a_tag%stringify()
-test_passed(4) = trim(source)==trim(parsed)
+source = '<first y="c">lorem ipsum...</first>'
+test_passed(4) = trim(adjustl(source))==trim(adjustl(parsed))
 print "(A,L1)", parsed//' Is correct? ', test_passed(4)
 
 print "(A,L1)", new_line('a')//'Are all tests passed? ', all(test_passed)
 stop
 !-----------------------------------------------------------------------------------------------------------------------------------
-endprogram create_tag
+endprogram delete_attributes
