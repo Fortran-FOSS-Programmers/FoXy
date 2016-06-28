@@ -3,7 +3,7 @@ program delete_attributes
 !-----------------------------------------------------------------------------------------------------------------------------------
 !< FoXy test.
 !-----------------------------------------------------------------------------------------------------------------------------------
-use foxy, only: tag, xml_tag
+use foxy, only: xml_tag
 !-----------------------------------------------------------------------------------------------------------------------------------
 
 !-----------------------------------------------------------------------------------------------------------------------------------
@@ -22,7 +22,7 @@ source = '<first x="1" y="c" z="2">lorem ipsum...</first>'
 print "(A)", source
 
 print "(A)", 'delete "y" attribute'
-a_tag = tag(name='first', value='lorem ipsum...', attributes=reshape([['x', '1'], ['y', 'c'], ['z', '2']], [2,3]))
+a_tag = xml_tag(name='first', value='lorem ipsum...', attributes=reshape([['x', '1'], ['y', 'c'], ['z', '2']], [2,3]))
 call a_tag%delete_attributes(name="y")
 parsed = a_tag%stringify()
 source = '<first x="1" z="2">lorem ipsum...</first>'
@@ -30,7 +30,7 @@ test_passed(1) = trim(adjustl(source))==trim(adjustl(parsed))
 print "(A,L1)", parsed//' Is correct? ', test_passed(1)
 
 print "(A)", 'delete "x" attribute'
-a_tag = tag(name='first', value='lorem ipsum...', attributes=reshape([['x', '1'], ['y', 'c'], ['z', '2']], [2,3]))
+a_tag = xml_tag(name='first', value='lorem ipsum...', attributes=reshape([['x', '1'], ['y', 'c'], ['z', '2']], [2,3]))
 call a_tag%delete_attributes(name="x")
 parsed = a_tag%stringify()
 source = '<first y="c" z="2">lorem ipsum...</first>'
@@ -38,7 +38,7 @@ test_passed(2) = trim(adjustl(source))==trim(adjustl(parsed))
 print "(A,L1)", parsed//' Is correct? ', test_passed(2)
 
 print "(A)", 'delete "z" attribute'
-a_tag = tag(name='first', value='lorem ipsum...', attributes=reshape([['x', '1'], ['y', 'c'], ['z', '2']], [2,3]))
+a_tag = xml_tag(name='first', value='lorem ipsum...', attributes=reshape([['x', '1'], ['y', 'c'], ['z', '2']], [2,3]))
 call a_tag%delete_attributes(name="z")
 parsed = a_tag%stringify()
 source = '<first x="1" y="c">lorem ipsum...</first>'
@@ -46,7 +46,7 @@ test_passed(3) = trim(adjustl(source))==trim(adjustl(parsed))
 print "(A,L1)", parsed//' Is correct? ', test_passed(3)
 
 print "(A)", 'delete "x" "z" attributes'
-a_tag = tag(name='first', value='lorem ipsum...', attributes=reshape([['x', '1'], ['y', 'c'], ['z', '2']], [2,3]))
+a_tag = xml_tag(name='first', value='lorem ipsum...', attributes=reshape([['x', '1'], ['y', 'c'], ['z', '2']], [2,3]))
 call a_tag%delete_attributes(name=["z", "x"])
 parsed = a_tag%stringify()
 source = '<first y="c">lorem ipsum...</first>'
