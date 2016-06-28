@@ -44,9 +44,9 @@ Modern Fortran standards (2003+) have introduced better support for strings mani
 Other programming languages have many libraries for XML parsing, Fortran has less options, but some there are:
 
 + [xml-fortran](http://xml-fortran.sourceforge.net/) of Arjen Markus;
-+ [xml-f90](http://lcdx00.wm.lc.ehu.es/~wdpgaara/xml/index.html) of Alberto Garcia;
-+ [fox](https://github.com/andreww/fox) of Andrew Walker;
-+ [tixi](https://github.com/andreww/fox) from DLR Simulation and Software Technology.
++ [xml-f90](https://github.com/rscircus/xmlf90) of Alberto Garcia;
++ [fox](https://github.com/andreww/fox) of Andrew Walker that is an improved fork of [xml-f90](https://github.com/rscircus/xmlf90) of Alberto Garcia;
++ [tixi](https://github.com/DLR-SC/tixi) from DLR Simulation and Software Technology (C-binding).
 
 All of the above are great codes, but lack in some points that we would like to have:
 
