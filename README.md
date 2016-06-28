@@ -37,8 +37,7 @@ A KISS pure Fortran Library for parsing XML files
 
 ## What is FoXy?
 
-Modern Fortran standards (2003+) have introduced support for a more
-Modern Fortran standards (2003+) have introduced better support for strings manipulations. Exploiting such new Fortran capabilities, FoXy is aimed to provide an easy to use module library for parsing (and generating) [XML](https://en.wikipedia.org/wiki/XML) files.
+Modern Fortran standards (2003+) have introduced better support for strings manipulations. Exploiting such new Fortran capabilities, FoXy is aimed to provide an easy to use module library to parse and emit [XML](https://en.wikipedia.org/wiki/XML) files and or tags.
 
 ## Aims
 
@@ -49,7 +48,7 @@ Other programming languages have many libraries for XML parsing, Fortran has les
 + [fox](https://github.com/andreww/fox) of Andrew Walker;
 + [tixi](https://github.com/andreww/fox) from DLR Simulation and Software Technology.
 
-All of the above are great codes, but lack in some points that I would like to have:
+All of the above are great codes, but lack in some points that we would like to have:
 
 + actively maintained;
 + designed for modern Fortran:
@@ -70,6 +69,10 @@ Go to [Top](#top)
 
 ## Status
 
+[![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)]()
+[![Build Status](https://travis-ci.org/Fortran-FOSS-Programmers/FoXy.svg?branch=master)](https://travis-ci.org/Fortran-FOSS-Programmers/FoXy)
+[![Coverage Status](https://img.shields.io/codecov/c/github/Fortran-FOSS-Programmers/FoXy.svg)](http://codecov.io/github/Fortran-FOSS-Programmers/FoXy?branch=master)
+
 ### Done
 
 + lint baseline code:
@@ -88,7 +91,8 @@ Go to [Top](#top)
 
 ### Doing
 
-+ implement lazy find tag value attribute into file (once provided a tag name and attribute name).
++ implement nested tags delete;
++ implement lazy find tag's value attribute into file (once provided a tag name and attribute name).
 
 ### Todo
 
