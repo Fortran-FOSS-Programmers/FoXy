@@ -3,7 +3,7 @@ program add_tag
 !-----------------------------------------------------------------------------------------------------------------------------------
 !< FoXy test.
 !-----------------------------------------------------------------------------------------------------------------------------------
-use foxy, only: tag, tag_nested, xml_file, xml_tag
+use foxy, only: xml_file, xml_tag
 !-----------------------------------------------------------------------------------------------------------------------------------
 
 !-----------------------------------------------------------------------------------------------------------------------------------
@@ -29,16 +29,16 @@ source = '<first x="1" y="c" z="2">lorem ipsum...</first>'//new_line('a')//&
          '</fift>'
 print "(A)", source
 print "(A)", 'created'
-a_tag = tag(name='first', value='lorem ipsum...', attributes=reshape([['x', '1'], ['y', 'c'], ['z', '2']], [2,3]))
+a_tag = xml_tag(name='first', value='lorem ipsum...', attributes=reshape([['x', '1'], ['y', 'c'], ['z', '2']], [2,3]))
 call a_file%add_tag(tag=a_tag)
-a_tag = tag(name='second', attribute=['a1', '2 '], is_self_closing=.true.)
+a_tag = xml_tag(name='second', attribute=['a1', '2 '], is_self_closing=.true.)
 call a_file%add_tag(tag=a_tag)
-a_tag = tag(name='third', value='bye')
+a_tag = xml_tag(name='third', value='bye')
 call a_file%add_tag(tag=a_tag)
-a_tag = tag(name='fourth', value='bye bye Mrs. Robinson', attribute=['a', '3'])
+a_tag = xml_tag(name='fourth', value='bye bye Mrs. Robinson', attribute=['a', '3'])
 call a_file%add_tag(tag=a_tag)
-another_tag = tag(name='nested', value='I am supported! Nested tag at level 1', attribute=['l', '1'])
-a_tag = tag_nested(name='fift', value=another_tag, is_value_indented=.true.)
+another_tag = xml_tag(name='nested', value='I am supported! Nested tag at level 1', attribute=['l', '1'])
+a_tag = xml_tag(name='fift', value=another_tag, is_value_indented=.true.)
 call a_file%add_tag(tag=a_tag)
 
 parsed = a_file%stringify()

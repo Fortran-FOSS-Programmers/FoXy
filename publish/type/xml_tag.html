@@ -150,6 +150,16 @@
   
   
   
+  <div class="panel panel-primary">
+    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#cons">Constructor</a></h3></div>
+    <div id="cons" class="panel-collapse collapse">
+        <div class="list-group">
+          <a class="list-group-item" href="../type/xml_tag.html#interface-xml_tag">xml_tag</a>
+        </div>
+    </div>
+  </div>
+  
+  
   
   
   
@@ -182,11 +192,15 @@
           
           <a class="list-group-item" href="../type/xml_tag.html#boundprocedure-add_attributes">add_attributes</a>
           
+          <a class="list-group-item" href="../type/xml_tag.html#boundprocedure-attributes">attributes</a>
+          
           <a class="list-group-item" href="../type/xml_tag.html#boundprocedure-content%7E2">content</a>
           
           <a class="list-group-item" href="../type/xml_tag.html#boundprocedure-delete_attributes">delete_attributes</a>
           
           <a class="list-group-item" href="../type/xml_tag.html#boundprocedure-delete_content">delete_content</a>
+          
+          <a class="list-group-item" href="../type/xml_tag.html#boundprocedure-end_tag">end_tag</a>
           
           <a class="list-group-item" href="../type/xml_tag.html#boundprocedure-free%7E2">free</a>
           
@@ -196,7 +210,11 @@
           
           <a class="list-group-item" href="../type/xml_tag.html#boundprocedure-parse%7E2">parse</a>
           
+          <a class="list-group-item" href="../type/xml_tag.html#boundprocedure-self_closing_tag">self_closing_tag</a>
+          
           <a class="list-group-item" href="../type/xml_tag.html#boundprocedure-set">set</a>
+          
+          <a class="list-group-item" href="../type/xml_tag.html#boundprocedure-start_tag">start_tag</a>
           
           <a class="list-group-item" href="../type/xml_tag.html#boundprocedure-stringify%7E2">stringify</a>
           
@@ -639,6 +657,327 @@ implementation in a submodule of an interface in a parent module.</p>
     
     
     
+	 <section>
+	 <h2>Constructor</h2>
+	   
+	   
+<div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="interface-xml_tag"></span><h3>public interface <a href='../interface/xml_tag.html'>xml_tag</a>
+    
+  </h3></div>
+  
+  <div class="panel-body">
+    
+    <p>Overload <em>xml_tag</em> with creator procedures.</p>
+  </div>
+  
+  <ul class="list-group">
+  
+  
+  
+    <li class="list-group-item">
+    
+    
+    <h3>
+private pure function <a href='../proc/tag.html'>tag</a>(name, attribute, attributes, value, indent, is_value_indented, is_self_closing)
+    
+    
+    
+</h3>
+    
+    <h4>Arguments</h4>
+    
+      
+      
+<table class="table table-striped varlist">
+<thead><tr><th>Type</th>
+<th>Intent</th><th>Optional</th>
+<th>Attributes</th><th></th><th>Name</th><th></th></thead>
+
+
+
+<tbody>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>character(len=*),</td>
+  <td>intent(in)</td>
+  <td></td>
+  
+  <td></td><td>::</td>
+  <td><strong>name</strong></td><td><p>Tag name.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>character(len=*),</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>attribute</strong>(1:)</td><td><p>Attribute name/value pair [1:2].</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>character(len=*),</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>attributes</strong>(1:,1:)</td><td><p>Attributes list of name/value pairs [1:2,1:].</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>character(len=*),</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>value</strong></td><td><p>Tag value.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>integer(kind=I4P),</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>indent</strong></td><td><p>Number of indent-white-spaces.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>is_value_indented</strong></td><td><p>Activate value indentation.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>is_self_closing</strong></td><td><p>The tag is self closing.</p></td>
+  
+</tr>
+
+</tbody>
+</table>
+
+      
+    
+    
+
+  
+  
+  
+  
+     <h4>Return Value <small>type(<a href='../type/xml_tag.html'>xml_tag</a>)
+  </small></h4>
+  <p>XML tag.</p>
+    
+    
+    <h4>Description</h4>
+       
+       
+
+
+       
+       <p>Return an instance of xml tag.</p>
+        
+
+    </li>
+  
+    <li class="list-group-item">
+    
+    
+    <h3>
+private pure function <a href='../proc/tag_nested.html'>tag_nested</a>(name, value, attribute, attributes, indent, is_value_indented) result(tag)
+    
+    
+    
+</h3>
+    
+    <h4>Arguments</h4>
+    
+      
+      
+<table class="table table-striped varlist">
+<thead><tr><th>Type</th>
+<th>Intent</th><th>Optional</th>
+<th>Attributes</th><th></th><th>Name</th><th></th></thead>
+
+
+
+<tbody>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>character(len=*),</td>
+  <td>intent(in)</td>
+  <td></td>
+  
+  <td></td><td>::</td>
+  <td><strong>name</strong></td><td><p>Tag name.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>type(<a href='../type/xml_tag.html'>xml_tag</a>),</td>
+  <td>intent(in)</td>
+  <td></td>
+  
+  <td></td><td>::</td>
+  <td><strong>value</strong></td><td><p>Tag value as nested tag..</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>character(len=*),</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>attribute</strong>(1:)</td><td><p>Attribute name/value pair [1:2].</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>character(len=*),</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>attributes</strong>(1:,1:)</td><td><p>Attributes list of name/value pairs [1:2,1:].</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>integer(kind=I4P),</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>indent</strong></td><td><p>Number of indent-white-spaces.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>is_value_indented</strong></td><td><p>Activate value indentation.</p></td>
+  
+</tr>
+
+</tbody>
+</table>
+
+      
+    
+    
+
+  
+  
+  
+  
+     <h4>Return Value <small>type(<a href='../type/xml_tag.html'>xml_tag</a>)
+  </small></h4>
+  <p>XML tag.</p>
+    
+    
+    <h4>Description</h4>
+       
+       
+
+
+       
+       <p>Return an instance of xml tag with value being a nested tag.</p>
+        
+
+    </li>
+  
+  
+  </ul>
+</div>
+
+	   
+	 </section>
+	 <br>
+    
     
     
     <section>
@@ -884,6 +1223,92 @@ private pure subroutine <a href='../proc/add_multiple_attributes.html'>add_multi
         
 
          
+      
+      </li>
+    
+  </ul>
+</div>
+
+    
+	   
+<div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-attributes"></span><h3>procedure, public, pass(self) :: <strong>attributes</strong>  
+    
+  </h3></div>
+  
+  <div class="panel-body">
+    
+
+
+    <p>Return attributes name/value pairs as string.</p>
+  </div>
+  
+  <ul class="list-group">
+    
+      <li class="list-group-item">
+      
+         
+    
+    <h3>
+private elemental function <a href='../proc/attributes.html'>attributes</a>(self) result(att_)
+    
+    
+    
+</h3>
+    
+    <h4>Arguments</h4>
+    
+      
+      
+<table class="table table-striped varlist">
+<thead><tr><th>Type</th>
+<th>Intent</th><th>Optional</th>
+<th>Attributes</th><th></th><th>Name</th><th></th></thead>
+
+
+
+<tbody>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>class(<a href='../type/xml_tag.html'>xml_tag</a>),</td>
+  <td>intent(in)</td>
+  <td></td>
+  
+  <td></td><td>::</td>
+  <td><strong>self</strong></td><td><p>XML tag.</p></td>
+  
+</tr>
+
+</tbody>
+</table>
+
+      
+    
+    
+
+  
+  
+  
+  
+     <h4>Return Value <small>character(len=:),
+  allocatable</small></h4>
+  <p>The attributes string.</p>
+    
+    
+    <h4>Description</h4>
+       
+       
+
+
+       
+       <p>Return attributes name/value pairs as string.</p>
+        
+
       
       </li>
     
@@ -1229,6 +1654,92 @@ private pure subroutine <a href='../proc/delete_content.html'>delete_content</a>
 
        
        <p>Delete tag content.</p>
+        
+
+      
+      </li>
+    
+  </ul>
+</div>
+
+    
+	   
+<div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-end_tag"></span><h3>procedure, public, pass(self) :: <strong>end_tag</strong>  
+    
+  </h3></div>
+  
+  <div class="panel-body">
+    
+
+
+    <p>Return <code>&lt;/tag_name&gt;</code> end tag.</p>
+  </div>
+  
+  <ul class="list-group">
+    
+      <li class="list-group-item">
+      
+         
+    
+    <h3>
+private elemental function <a href='../proc/end_tag.html'>end_tag</a>(self) result(tag_)
+    
+    
+    
+</h3>
+    
+    <h4>Arguments</h4>
+    
+      
+      
+<table class="table table-striped varlist">
+<thead><tr><th>Type</th>
+<th>Intent</th><th>Optional</th>
+<th>Attributes</th><th></th><th>Name</th><th></th></thead>
+
+
+
+<tbody>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>class(<a href='../type/xml_tag.html'>xml_tag</a>),</td>
+  <td>intent(in)</td>
+  <td></td>
+  
+  <td></td><td>::</td>
+  <td><strong>self</strong></td><td><p>XML tag.</p></td>
+  
+</tr>
+
+</tbody>
+</table>
+
+      
+    
+    
+
+  
+  
+  
+  
+     <h4>Return Value <small>character(len=:),
+  allocatable</small></h4>
+  <p>The end tag string.</p>
+    
+    
+    <h4>Description</h4>
+       
+       
+
+
+       
+       <p>Return <code>&lt;/tag_name&gt;</code> end tag.</p>
         
 
       
@@ -1611,6 +2122,92 @@ private elemental subroutine <a href='../proc/parse%7E2.html'>parse</a>(self, so
     
 	   
 <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-self_closing_tag"></span><h3>procedure, public, pass(self) :: <strong>self_closing_tag</strong>  
+    
+  </h3></div>
+  
+  <div class="panel-body">
+    
+
+
+    <p>Return <code>&lt;tag_name.../&gt;</code> self closing tag.</p>
+  </div>
+  
+  <ul class="list-group">
+    
+      <li class="list-group-item">
+      
+         
+    
+    <h3>
+private elemental function <a href='../proc/self_closing_tag.html'>self_closing_tag</a>(self) result(tag_)
+    
+    
+    
+</h3>
+    
+    <h4>Arguments</h4>
+    
+      
+      
+<table class="table table-striped varlist">
+<thead><tr><th>Type</th>
+<th>Intent</th><th>Optional</th>
+<th>Attributes</th><th></th><th>Name</th><th></th></thead>
+
+
+
+<tbody>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>class(<a href='../type/xml_tag.html'>xml_tag</a>),</td>
+  <td>intent(in)</td>
+  <td></td>
+  
+  <td></td><td>::</td>
+  <td><strong>self</strong></td><td><p>XML tag.</p></td>
+  
+</tr>
+
+</tbody>
+</table>
+
+      
+    
+    
+
+  
+  
+  
+  
+     <h4>Return Value <small>character(len=:),
+  allocatable</small></h4>
+  <p>The self closing tag string.</p>
+    
+    
+    <h4>Description</h4>
+       
+       
+
+
+       
+       <p>Return <code>&lt;tag_name.../&gt;</code> self closing tag.</p>
+        
+
+      
+      </li>
+    
+  </ul>
+</div>
+
+    
+	   
+<div class="panel panel-default">
   <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-set"></span><h3>procedure, public, pass(self) :: <strong>set</strong>  
     
   </h3></div>
@@ -1782,6 +2379,92 @@ private pure subroutine <a href='../proc/set.html'>set</a>(self, name, attribute
 
        
        <p>Set tag data.</p>
+        
+
+      
+      </li>
+    
+  </ul>
+</div>
+
+    
+	   
+<div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-start_tag"></span><h3>procedure, public, pass(self) :: <strong>start_tag</strong>  
+    
+  </h3></div>
+  
+  <div class="panel-body">
+    
+
+
+    <p>Return <code>&lt;tag_name...&gt;</code> start tag.</p>
+  </div>
+  
+  <ul class="list-group">
+    
+      <li class="list-group-item">
+      
+         
+    
+    <h3>
+private elemental function <a href='../proc/start_tag.html'>start_tag</a>(self) result(tag_)
+    
+    
+    
+</h3>
+    
+    <h4>Arguments</h4>
+    
+      
+      
+<table class="table table-striped varlist">
+<thead><tr><th>Type</th>
+<th>Intent</th><th>Optional</th>
+<th>Attributes</th><th></th><th>Name</th><th></th></thead>
+
+
+
+<tbody>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>class(<a href='../type/xml_tag.html'>xml_tag</a>),</td>
+  <td>intent(in)</td>
+  <td></td>
+  
+  <td></td><td>::</td>
+  <td><strong>self</strong></td><td><p>XML tag.</p></td>
+  
+</tr>
+
+</tbody>
+</table>
+
+      
+    
+    
+
+  
+  
+  
+  
+     <h4>Return Value <small>character(len=:),
+  allocatable</small></h4>
+  <p>The start tag string.</p>
+    
+    
+    <h4>Description</h4>
+       
+       
+
+
+       
+       <p>Return <code>&lt;tag_name...&gt;</code> start tag.</p>
         
 
       
@@ -3198,16 +3881,20 @@ private elemental subroutine <a href='../proc/assign_tag.html'>assign_tag</a>(lh
     <span class="k">generic</span>               <span class="kd">::</span> <span class="n">add_attributes</span> <span class="o">=&gt;</span>     <span class="p">&amp;</span>
                              <span class="n">add_single_attribute</span><span class="p">,</span> <span class="p">&amp;</span>
                              <span class="n">add_multiple_attributes</span>     <span class="c">!&lt; Add attributes name/value pairs.</span>
+    <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="kd">::</span> <span class="n">attributes</span>                  <span class="c">!&lt; Return attributes name/value pairs as string.</span>
     <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="kd">::</span> <span class="n">content</span>                     <span class="c">!&lt; Return tag content.</span>
     <span class="k">generic</span>               <span class="kd">::</span> <span class="n">delete_attributes</span> <span class="o">=&gt;</span>     <span class="p">&amp;</span>
                              <span class="n">delete_single_attribute</span><span class="p">,</span> <span class="p">&amp;</span>
                              <span class="n">delete_multiple_attributes</span>  <span class="c">!&lt; Delete attributes name/value pairs.</span>
     <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="kd">::</span> <span class="n">delete_content</span>              <span class="c">!&lt; Delete tag conent.</span>
+    <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="kd">::</span> <span class="n">end_tag</span>                     <span class="c">!&lt; Return `&lt;/tag_name&gt;` end tag.</span>
     <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="kd">::</span> <span class="n">free</span>                        <span class="c">!&lt; Free dynamic memory.</span>
     <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="kd">::</span> <span class="n">is_parsed</span>                   <span class="c">!&lt; Check is tag is correctly parsed, i.e. its *tag_name* is allocated.</span>
     <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="kd">::</span> <span class="n">name</span>                        <span class="c">!&lt; Return tag name.</span>
     <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="kd">::</span> <span class="n">parse</span>                       <span class="c">!&lt; Parse the tag contained into a source string.</span>
+    <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="kd">::</span> <span class="n">self_closing_tag</span>            <span class="c">!&lt; Return `&lt;tag_name.../&gt;` self closing tag.</span>
     <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="kd">::</span> <span class="n">set</span>                         <span class="c">!&lt; Set tag data.</span>
+    <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="kd">::</span> <span class="n">start_tag</span>                   <span class="c">!&lt; Return `&lt;tag_name...&gt;` start tag.</span>
     <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="kd">::</span> <span class="n">stringify</span>                   <span class="c">!&lt; Convert the whole tag into a string.</span>
     <span class="k">generic</span>               <span class="kd">::</span> <span class="n">assignment</span><span class="p">(</span><span class="o">=</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">assign_tag</span> <span class="c">!&lt; Assignment operator overloading.</span>
     <span class="c">! private methods</span>

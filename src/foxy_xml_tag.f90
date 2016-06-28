@@ -10,7 +10,6 @@ use stringifor, only : string
 !-----------------------------------------------------------------------------------------------------------------------------------
 implicit none
 private
-public :: tag, tag_nested
 public :: xml_tag
 !-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -42,16 +41,20 @@ type :: xml_tag
     generic               :: add_attributes =>     &
                              add_single_attribute, &
                              add_multiple_attributes     !< Add attributes name/value pairs.
+    procedure, pass(self) :: attributes                  !< Return attributes name/value pairs as string.
     procedure, pass(self) :: content                     !< Return tag content.
     generic               :: delete_attributes =>     &
                              delete_single_attribute, &
                              delete_multiple_attributes  !< Delete attributes name/value pairs.
     procedure, pass(self) :: delete_content              !< Delete tag conent.
+    procedure, pass(self) :: end_tag                     !< Return `</tag_name>` end tag.
     procedure, pass(self) :: free                        !< Free dynamic memory.
     procedure, pass(self) :: is_parsed                   !< Check is tag is correctly parsed, i.e. its *tag_name* is allocated.
     procedure, pass(self) :: name                        !< Return tag name.
     procedure, pass(self) :: parse                       !< Parse the tag contained into a source string.
+    procedure, pass(self) :: self_closing_tag            !< Return `<tag_name.../>` self closing tag.
     procedure, pass(self) :: set                         !< Set tag data.
+    procedure, pass(self) :: start_tag                   !< Return `<tag_name...>` start tag.
     procedure, pass(self) :: stringify                   !< Convert the whole tag into a string.
     generic               :: assignment(=) => assign_tag !< Assignment operator overloading.
     ! private methods
@@ -70,9 +73,13 @@ type :: xml_tag
     procedure, pass(lhs), private :: assign_tag !< Assignment between two tags.
     final                         :: finalize   !< Free dynamic memory when finalizing.
 endtype xml_tag
+interface xml_tag
+  !< Overload *xml_tag* with creator procedures.
+  module procedure tag, tag_nested
+endinterface
 !-----------------------------------------------------------------------------------------------------------------------------------
 contains
-  ! public procedure
+  ! creator procedures overloading *xml_tag* name
   pure function tag(name, attribute, attributes, value, indent, is_value_indented, is_self_closing)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Return an instance of xml tag.
@@ -113,6 +120,26 @@ contains
   endfunction tag_nested
 
   ! public methods
+  elemental function attributes(self) result(att_)
+  !---------------------------------------------------------------------------------------------------------------------------------
+  !< Return attributes name/value pairs as string.
+  !---------------------------------------------------------------------------------------------------------------------------------
+  class(xml_tag), intent(in)    :: self !< XML tag.
+  character(len=:), allocatable :: att_ !< The attributes string.
+  integer(I4P)                  :: a    !< Counter.
+  !---------------------------------------------------------------------------------------------------------------------------------
+
+  !---------------------------------------------------------------------------------------------------------------------------------
+  if (self%attributes_number>0) then
+    att_ = ''
+    do a=1, self%attributes_number
+      att_ = att_//' '//self%attribute(1, a)//'="'//self%attribute(2, a)//'"'
+    enddo
+    att_ = trim(adjustl(att_))
+  endif
+  !---------------------------------------------------------------------------------------------------------------------------------
+  endfunction attributes
+
   pure function content(self, name)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Return tag content of self (or its nested tags) if named *name*.
@@ -138,6 +165,19 @@ contains
   endif
   !---------------------------------------------------------------------------------------------------------------------------------
   endfunction content
+
+  elemental function end_tag(self) result(tag_)
+  !---------------------------------------------------------------------------------------------------------------------------------
+  !< Return `</tag_name>` end tag.
+  !---------------------------------------------------------------------------------------------------------------------------------
+  class(xml_tag), intent(in)    :: self !< XML tag.
+  character(len=:), allocatable :: tag_ !< The end tag string.
+  !---------------------------------------------------------------------------------------------------------------------------------
+
+  !---------------------------------------------------------------------------------------------------------------------------------
+  tag_ = '</'//self%tag_name//'>'
+  !---------------------------------------------------------------------------------------------------------------------------------
+  endfunction end_tag
 
   elemental subroutine free(self)
   !---------------------------------------------------------------------------------------------------------------------------------
@@ -169,7 +209,6 @@ contains
 
   !---------------------------------------------------------------------------------------------------------------------------------
   is_parsed = self%tag_name%is_allocated()
-  return
   !---------------------------------------------------------------------------------------------------------------------------------
   endfunction is_parsed
 
@@ -216,7 +255,6 @@ contains
   endif
   if (present(tstart)) tstart = tstartd
   if (present(tend  )) tend   = tendd
-  return
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine parse
 
@@ -252,6 +290,36 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine set
 
+  elemental function self_closing_tag(self) result(tag_)
+  !---------------------------------------------------------------------------------------------------------------------------------
+  !< Return `<tag_name.../>` self closing tag.
+  !---------------------------------------------------------------------------------------------------------------------------------
+  class(xml_tag), intent(in)    :: self !< XML tag.
+  character(len=:), allocatable :: tag_ !< The self closing tag string.
+  !---------------------------------------------------------------------------------------------------------------------------------
+
+  !---------------------------------------------------------------------------------------------------------------------------------
+  tag_ = tag_//'<'//self%tag_name
+  if (self%attributes_number>0) tag_ = tag_//' '//self%attributes()
+  tag_ = tag_//'/>'
+  !---------------------------------------------------------------------------------------------------------------------------------
+  endfunction self_closing_tag
+
+  elemental function start_tag(self) result(tag_)
+  !---------------------------------------------------------------------------------------------------------------------------------
+  !< Return `<tag_name...>` start tag.
+  !---------------------------------------------------------------------------------------------------------------------------------
+  class(xml_tag), intent(in)    :: self !< XML tag.
+  character(len=:), allocatable :: tag_ !< The start tag string.
+  !---------------------------------------------------------------------------------------------------------------------------------
+
+  !---------------------------------------------------------------------------------------------------------------------------------
+  tag_ = tag_//'<'//self%tag_name
+  if (self%attributes_number>0) tag_ = tag_//' '//self%attributes()
+  tag_ = tag_//'>'
+  !---------------------------------------------------------------------------------------------------------------------------------
+  endfunction start_tag
+
   pure function stringify(self, is_value_indented) result(stringed)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Convert the whole tag into a string.
@@ -267,25 +335,19 @@ contains
   is_value_indented_ = .false. ; if (present(is_value_indented)) is_value_indented_ = is_value_indented
   stringed = ''
   if (self%tag_name%is_allocated()) then
-    stringed = stringed//'<'//self%tag_name
-    if (self%attributes_number>0) then
-      do a=1, self%attributes_number
-        stringed = stringed//' '//self%attribute(1, a)//'="'//self%attribute(2, a)//'"'
-      enddo
-    endif
     if (self%is_self_closing) then
-      stringed = stringed//'/>'
+      stringed = self%self_closing_tag()
     else
+      stringed = self%start_tag()
       if (self%tag_content%is_allocated()) then
         if (is_value_indented_) then
-          stringed = stringed//'>'//new_line('a')//repeat(' ',self%indent+2)//&
-                     self%tag_content//new_line('a')//'</'//self%tag_name//'>'
+          stringed = stringed//new_line('a')//repeat(' ',self%indent+2)//&
+                     self%tag_content//new_line('a')//repeat(' ',self%indent)
         else
-          stringed = stringed//'>'//self%tag_content//'</'//self%tag_name//'>'
+          stringed = stringed//self%tag_content
         endif
-      else
-        stringed = stringed//'></'//self%tag_name//'>'
       endif
+      stringed = stringed//self%end_tag()
     endif
   endif
   !---------------------------------------------------------------------------------------------------------------------------------
@@ -358,7 +420,6 @@ contains
   endif
   allocate(self%attribute(1:2, 1:Na))
   self%attributes_number = Na
-  return
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine alloc_attributes
 
@@ -439,7 +500,6 @@ contains
   call self%get_value(source=source)
   call self%get_attributes(source=source)
   ! call self%get_nested()
-  return
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine get
 
@@ -472,7 +532,6 @@ contains
       enddo
     endif
   endif
-  return
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine get_attributes
 
@@ -498,7 +557,6 @@ contains
       self%is_self_closing = .true.
     endif
   endif
-  return
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine get_value
 
@@ -543,7 +601,6 @@ contains
       c = c + 1
     enddo Att_Search
   endif
-  return
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine parse_attributes_names
 
@@ -602,7 +659,6 @@ contains
   enddo Tag_Search
   if (present(tstart)) tstart = tstartd
   if (present(tend  )) tend   = tendd
-  return
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine parse_tag_name
 
@@ -648,7 +704,6 @@ contains
   endif
   if (present(tstart)) tstart = tstartd
   if (present(tend  )) tend   = tendd
-  return
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine search
 
@@ -675,7 +730,6 @@ contains
   lhs%attributes_number = rhs%attributes_number
   lhs%indent = rhs%indent
   lhs%is_self_closing = rhs%is_self_closing
-  return
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine assign_tag
 
