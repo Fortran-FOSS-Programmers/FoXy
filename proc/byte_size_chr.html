@@ -161,6 +161,8 @@
           
           <a class="list-group-item" href="../proc/add_single_attribute.html">add_single_attribute</a>
           
+          <a class="list-group-item" href="../proc/add_stream_attributes.html">add_stream_attributes</a>
+          
           <a class="list-group-item" href="../proc/add_tag.html">add_tag</a>
           
           <a class="list-group-item" href="../interface/adjustl.html">adjustl</a>
@@ -357,6 +359,10 @@
           
           <a class="list-group-item" href="../proc/count_substring.html">count_substring</a>
           
+          <a class="list-group-item" href="../proc/create_tag_flat.html">create_tag_flat</a>
+          
+          <a class="list-group-item" href="../proc/create_tag_nested.html">create_tag_nested</a>
+          
           <a class="list-group-item" href="../proc/ctoi_i1p.html">ctoi_I1P</a>
           
           <a class="list-group-item" href="../proc/ctoi_i2p.html">ctoi_I2P</a>
@@ -440,6 +446,8 @@
           <a class="list-group-item" href="../proc/insert_string.html">insert_string</a>
           
           <a class="list-group-item" href="../proc/is_allocated.html">is_allocated</a>
+          
+          <a class="list-group-item" href="../proc/is_attribute_present.html">is_attribute_present</a>
           
           <a class="list-group-item" href="../proc/is_digit.html">is_digit</a>
           
@@ -745,10 +753,6 @@
           
           <a class="list-group-item" href="../proc/swapcase.html">swapcase</a>
           
-          <a class="list-group-item" href="../proc/tag.html">tag</a>
-          
-          <a class="list-group-item" href="../proc/tag_nested.html">tag_nested</a>
-          
           <a class="list-group-item" href="../proc/to_integer_i1p.html">to_integer_I1P</a>
           
           <a class="list-group-item" href="../proc/to_integer_i2p.html">to_integer_I2P</a>
@@ -896,29 +900,29 @@ private elemental function byte_size_chr(i) result(bytes)
 <path fill="none" stroke="#000000" d="M360.306,-184.921C366.99,-182.231 373.787,-179.225 380,-176 393.686,-168.896 407.973,-159.475 419.655,-151.174"/>
 <polygon fill="#000000" stroke="#000000" points="421.988,-153.806 428.028,-145.101 417.878,-148.139 421.988,-153.806"/>
 </g>
-<!-- proc~b64_encode_string -->
-<g id="node4" class="node"><title>proc~b64_encode_string</title>
-<a xlink:href="../proc/b64_encode_string.html" xlink:title="b64_encode_string">
-<polygon fill="#d9534f" stroke="#d9534f" points="374,-123 270,-123 270,-97 374,-97 374,-123"/>
-<text text-anchor="middle" x="322" y="-107.55" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">b64_encode_string</text>
-</a>
-</g>
-<!-- proc~b64_encode_string&#45;&gt;interface~byte_size -->
-<g id="edge40" class="edge"><title>proc~b64_encode_string&#45;&gt;interface~byte_size</title>
-<path fill="none" stroke="#000000" d="M374.163,-119.33C384.757,-121.225 395.729,-123.187 405.783,-124.986"/>
-<polygon fill="#000000" stroke="#000000" points="405.413,-128.475 415.873,-126.79 406.645,-121.584 405.413,-128.475"/>
-</g>
 <!-- proc~b64_decode_string -->
-<g id="node5" class="node"><title>proc~b64_decode_string</title>
+<g id="node4" class="node"><title>proc~b64_decode_string</title>
 <a xlink:href="../proc/b64_decode_string.html" xlink:title="b64_decode_string">
 <polygon fill="#d9534f" stroke="#d9534f" points="374,-167 270,-167 270,-141 374,-141 374,-167"/>
 <text text-anchor="middle" x="322" y="-151.55" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">b64_decode_string</text>
 </a>
 </g>
 <!-- proc~b64_decode_string&#45;&gt;interface~byte_size -->
-<g id="edge42" class="edge"><title>proc~b64_decode_string&#45;&gt;interface~byte_size</title>
+<g id="edge40" class="edge"><title>proc~b64_decode_string&#45;&gt;interface~byte_size</title>
 <path fill="none" stroke="#000000" d="M374.163,-144.67C384.757,-142.775 395.729,-140.813 405.783,-139.014"/>
 <polygon fill="#000000" stroke="#000000" points="406.645,-142.416 415.873,-137.21 405.413,-135.525 406.645,-142.416"/>
+</g>
+<!-- proc~b64_encode_string -->
+<g id="node5" class="node"><title>proc~b64_encode_string</title>
+<a xlink:href="../proc/b64_encode_string.html" xlink:title="b64_encode_string">
+<polygon fill="#d9534f" stroke="#d9534f" points="374,-123 270,-123 270,-97 374,-97 374,-123"/>
+<text text-anchor="middle" x="322" y="-107.55" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">b64_encode_string</text>
+</a>
+</g>
+<!-- proc~b64_encode_string&#45;&gt;interface~byte_size -->
+<g id="edge42" class="edge"><title>proc~b64_encode_string&#45;&gt;interface~byte_size</title>
+<path fill="none" stroke="#000000" d="M374.163,-119.33C384.757,-121.225 395.729,-123.187 405.783,-124.986"/>
+<polygon fill="#000000" stroke="#000000" points="405.413,-128.475 415.873,-126.79 406.645,-121.584 405.413,-128.475"/>
 </g>
 <!-- proc~b64_encode_string_a -->
 <g id="node6" class="node"><title>proc~b64_encode_string_a</title>
@@ -979,7 +983,7 @@ private elemental function byte_size_chr(i) result(bytes)
 <polygon fill="#000000" stroke="#000000" points="253.988,-201.5 263.988,-198 253.988,-194.5 253.988,-201.5"/>
 </g>
 <!-- interface~b64_decode&#45;&gt;proc~b64_decode_string -->
-<g id="edge26" class="edge"><title>interface~b64_decode&#45;&gt;proc~b64_decode_string</title>
+<g id="edge18" class="edge"><title>interface~b64_decode&#45;&gt;proc~b64_decode_string</title>
 <path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M213.216,-187.01C230.138,-181.875 250.615,-175.662 269.217,-170.017"/>
 <polygon fill="#000000" stroke="#000000" points="270.48,-173.291 279.033,-167.038 268.448,-166.593 270.48,-173.291"/>
 </g>
@@ -1008,31 +1012,43 @@ private elemental function byte_size_chr(i) result(bytes)
 <polygon fill="#000000" stroke="#000000" points="135.6,-184.14 146.165,-184.943 138.406,-177.727 135.6,-184.14"/>
 </g>
 <!-- interface~b64_encode -->
-<g id="node21" class="node"><title>interface~b64_encode</title>
+<g id="node24" class="node"><title>interface~b64_encode</title>
 <a xlink:href="../interface/b64_encode.html" xlink:title="b64_encode">
 <polygon fill="#a7506f" stroke="#a7506f" points="213,-79 141,-79 141,-53 213,-53 213,-79"/>
 <text text-anchor="middle" x="177" y="-63.55" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">b64_encode</text>
 </a>
 </g>
 <!-- proc~autotest&#45;&gt;interface~b64_encode -->
-<g id="edge18" class="edge"><title>proc~autotest&#45;&gt;interface~b64_encode</title>
+<g id="edge22" class="edge"><title>proc~autotest&#45;&gt;interface~b64_encode</title>
 <path fill="none" stroke="#000000" d="M64.8674,-123.932C81.0021,-113.578 104.522,-99.0633 126,-88 129.094,-86.4062 132.33,-84.8246 135.605,-83.2833"/>
 <polygon fill="#000000" stroke="#000000" points="137.207,-86.3995 144.857,-79.0698 134.306,-80.029 137.207,-86.3995"/>
 </g>
+<!-- proc~b64_decode_up -->
+<g id="node19" class="node"><title>proc~b64_decode_up</title>
+<a xlink:href="../proc/b64_decode_up.html" xlink:title="b64_decode_up">
+<polygon fill="#d9534f" stroke="#d9534f" points="222,-167 132,-167 132,-141 222,-141 222,-167"/>
+<text text-anchor="middle" x="177" y="-151.55" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">b64_decode_up</text>
+</a>
+</g>
+<!-- proc~b64_decode_up&#45;&gt;proc~b64_decode_string -->
+<g id="edge16" class="edge"><title>proc~b64_decode_up&#45;&gt;proc~b64_decode_string</title>
+<path fill="none" stroke="#000000" d="M222.084,-154C234.023,-154 247.125,-154 259.799,-154"/>
+<polygon fill="#000000" stroke="#000000" points="259.841,-157.5 269.841,-154 259.84,-150.5 259.841,-157.5"/>
+</g>
 <!-- proc~b64_encode_up -->
-<g id="node19" class="node"><title>proc~b64_encode_up</title>
+<g id="node22" class="node"><title>proc~b64_encode_up</title>
 <a xlink:href="../proc/b64_encode_up.html" xlink:title="b64_encode_up">
 <polygon fill="#d9534f" stroke="#d9534f" points="222,-123 132,-123 132,-97 222,-97 222,-123"/>
 <text text-anchor="middle" x="177" y="-107.55" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">b64_encode_up</text>
 </a>
 </g>
 <!-- proc~b64_encode_up&#45;&gt;proc~b64_encode_string -->
-<g id="edge16" class="edge"><title>proc~b64_encode_up&#45;&gt;proc~b64_encode_string</title>
+<g id="edge20" class="edge"><title>proc~b64_encode_up&#45;&gt;proc~b64_encode_string</title>
 <path fill="none" stroke="#000000" d="M222.084,-110C234.023,-110 247.125,-110 259.799,-110"/>
 <polygon fill="#000000" stroke="#000000" points="259.841,-113.5 269.841,-110 259.84,-106.5 259.841,-113.5"/>
 </g>
 <!-- interface~b64_encode&#45;&gt;proc~b64_encode_string -->
-<g id="edge22" class="edge"><title>interface~b64_encode&#45;&gt;proc~b64_encode_string</title>
+<g id="edge26" class="edge"><title>interface~b64_encode&#45;&gt;proc~b64_encode_string</title>
 <path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M213.216,-76.9896C230.138,-82.1247 250.615,-88.3382 269.217,-93.983"/>
 <polygon fill="#000000" stroke="#000000" points="268.448,-97.4072 279.033,-96.9618 270.48,-90.7088 268.448,-97.4072"/>
 </g>
@@ -1042,28 +1058,16 @@ private elemental function byte_size_chr(i) result(bytes)
 <polygon fill="#000000" stroke="#000000" points="253.988,-69.5001 263.988,-66 253.988,-62.5001 253.988,-69.5001"/>
 </g>
 <!-- proc~encode -->
-<g id="node22" class="node"><title>proc~encode</title>
+<g id="node25" class="node"><title>proc~encode</title>
 <a xlink:href="../proc/encode.html" xlink:title="encode">
 <polygon fill="#d94e8f" stroke="#d94e8f" points="72,-88 18,-88 18,-62 72,-62 72,-88"/>
 <text text-anchor="middle" x="45" y="-72.55" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">encode</text>
 </a>
 </g>
 <!-- proc~encode&#45;&gt;interface~b64_encode -->
-<g id="edge20" class="edge"><title>proc~encode&#45;&gt;interface~b64_encode</title>
+<g id="edge24" class="edge"><title>proc~encode&#45;&gt;interface~b64_encode</title>
 <path fill="none" stroke="#000000" d="M72.0307,-73.157C88.9875,-72.0009 111.291,-70.4802 130.977,-69.1379"/>
 <polygon fill="#000000" stroke="#000000" points="131.252,-72.6274 140.99,-68.4552 130.775,-65.6436 131.252,-72.6274"/>
-</g>
-<!-- proc~b64_decode_up -->
-<g id="node26" class="node"><title>proc~b64_decode_up</title>
-<a xlink:href="../proc/b64_decode_up.html" xlink:title="b64_decode_up">
-<polygon fill="#d9534f" stroke="#d9534f" points="222,-167 132,-167 132,-141 222,-141 222,-167"/>
-<text text-anchor="middle" x="177" y="-151.55" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">b64_decode_up</text>
-</a>
-</g>
-<!-- proc~b64_decode_up&#45;&gt;proc~b64_decode_string -->
-<g id="edge24" class="edge"><title>proc~b64_decode_up&#45;&gt;proc~b64_decode_string</title>
-<path fill="none" stroke="#000000" d="M222.084,-154C234.023,-154 247.125,-154 259.799,-154"/>
-<polygon fill="#000000" stroke="#000000" points="259.841,-157.5 269.841,-154 259.84,-150.5 259.841,-157.5"/>
 </g>
 <!-- proc~b64_encode_up_a -->
 <g id="node29" class="node"><title>proc~b64_encode_up_a</title>

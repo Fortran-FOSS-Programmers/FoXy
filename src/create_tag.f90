@@ -22,7 +22,7 @@ print "(A)", 'source'
 source = '<first x="1" y="c" z="2">lorem ipsum...</first>'
 print "(A)", source
 print "(A)", 'created'
-a_tag = xml_tag(name='first', value='lorem ipsum...', attributes=reshape([['x', '1'], ['y', 'c'], ['z', '2']], [2,3]))
+a_tag = xml_tag(name='first', content='lorem ipsum...', attributes=reshape([['x', '1'], ['y', 'c'], ['z', '2']], [2,3]))
 parsed = a_tag%stringify()
 test_passed(1) = trim(source)==trim(parsed)
 print "(A,L1)", parsed//'Is correct? ', test_passed(1)

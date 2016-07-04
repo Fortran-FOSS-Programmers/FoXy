@@ -173,6 +173,8 @@
           
           <a class="list-group-item" href="../proc/add_single_attribute.html">add_single_attribute</a>
           
+          <a class="list-group-item" href="../proc/add_stream_attributes.html">add_stream_attributes</a>
+          
           <a class="list-group-item" href="../proc/add_tag.html">add_tag</a>
           
           <a class="list-group-item" href="../interface/adjustl.html">adjustl</a>
@@ -369,6 +371,10 @@
           
           <a class="list-group-item" href="../proc/count_substring.html">count_substring</a>
           
+          <a class="list-group-item" href="../proc/create_tag_flat.html">create_tag_flat</a>
+          
+          <a class="list-group-item" href="../proc/create_tag_nested.html">create_tag_nested</a>
+          
           <a class="list-group-item" href="../proc/ctoi_i1p.html">ctoi_I1P</a>
           
           <a class="list-group-item" href="../proc/ctoi_i2p.html">ctoi_I2P</a>
@@ -452,6 +458,8 @@
           <a class="list-group-item" href="../proc/insert_string.html">insert_string</a>
           
           <a class="list-group-item" href="../proc/is_allocated.html">is_allocated</a>
+          
+          <a class="list-group-item" href="../proc/is_attribute_present.html">is_attribute_present</a>
           
           <a class="list-group-item" href="../proc/is_digit.html">is_digit</a>
           
@@ -757,10 +765,6 @@
           
           <a class="list-group-item" href="../proc/swapcase.html">swapcase</a>
           
-          <a class="list-group-item" href="../proc/tag.html">tag</a>
-          
-          <a class="list-group-item" href="../proc/tag_nested.html">tag_nested</a>
-          
           <a class="list-group-item" href="../proc/to_integer_i1p.html">to_integer_I1P</a>
           
           <a class="list-group-item" href="../proc/to_integer_i2p.html">to_integer_I2P</a>
@@ -871,7 +875,7 @@ private pure function content(self, name)
     
     
     
-	 <h3>Return Value <small><span class="anchor" id="variable-content%7E4"></span>character(len=:),
+	 <h3>Return Value <small><span class="anchor" id="variable-content%7E6"></span>character(len=:),
   allocatable</small></h3>
     <p>Tag content.</p>
     
@@ -933,7 +937,74 @@ private pure function content(self, name)
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="highlight"><pre><span></span>  <span class="k">pure function </span><span class="n">content</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+    <div class="highlight"><pre><span></span>  <span class="k">function </span><span class="n">create_tag_flat</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">attribute</span><span class="p">,</span> <span class="n">attributes</span><span class="p">,</span> <span class="n">attributes_stream</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="n">indent</span><span class="p">,</span> <span class="p">&amp;</span>
+                                <span class="n">is_content_indented</span><span class="p">,</span> <span class="n">is_self_closing</span><span class="p">)</span> <span class="k">result</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+  <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
+  <span class="c">!&lt; Return an instance of xml tag.</span>
+  <span class="c">!&lt;</span>
+  <span class="c">!&lt; Attributes are passed by array.</span>
+  <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
+  <span class="kt">character</span><span class="p">(</span><span class="o">*</span><span class="p">),</span> <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span>           <span class="kd">::</span> <span class="n">name</span>                <span class="c">!&lt; Tag name.</span>
+  <span class="kt">character</span><span class="p">(</span><span class="o">*</span><span class="p">),</span> <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span> <span class="k">optional</span> <span class="kd">::</span> <span class="n">attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">:)</span>       <span class="c">!&lt; Attribute name/value pair [1:2].</span>
+  <span class="kt">character</span><span class="p">(</span><span class="o">*</span><span class="p">),</span> <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span> <span class="k">optional</span> <span class="kd">::</span> <span class="n">attributes</span><span class="p">(</span><span class="mi">1</span><span class="p">:,</span><span class="mi">1</span><span class="p">:)</span>   <span class="c">!&lt; Attributes list of name/value pairs [1:2,1:].</span>
+  <span class="kt">character</span><span class="p">(</span><span class="o">*</span><span class="p">),</span> <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span> <span class="k">optional</span> <span class="kd">::</span> <span class="n">attributes_stream</span>   <span class="c">!&lt; Attributes list of name/value pairs as single stream.</span>
+  <span class="kt">character</span><span class="p">(</span><span class="o">*</span><span class="p">),</span> <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span> <span class="k">optional</span> <span class="kd">::</span> <span class="n">content</span>             <span class="c">!&lt; Tag value.</span>
+  <span class="kt">integer</span><span class="p">(</span><span class="n">I4P</span><span class="p">),</span> <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span> <span class="k">optional</span> <span class="kd">::</span> <span class="n">indent</span>              <span class="c">!&lt; Number of indent-white-spaces.</span>
+  <span class="kt">logical</span><span class="p">,</span>      <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span> <span class="k">optional</span> <span class="kd">::</span> <span class="n">is_content_indented</span> <span class="c">!&lt; Activate value indentation.</span>
+  <span class="kt">logical</span><span class="p">,</span>      <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span> <span class="k">optional</span> <span class="kd">::</span> <span class="n">is_self_closing</span>     <span class="c">!&lt; The tag is self closing.</span>
+  <span class="k">type</span><span class="p">(</span><span class="n">xml_tag</span><span class="p">)</span>                      <span class="kd">::</span> <span class="n">tag</span>                 <span class="c">!&lt; XML tag.</span>
+  <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
+
+  <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
+  <span class="k">call </span><span class="n">tag</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="n">attribute</span><span class="p">,</span> <span class="n">attributes</span><span class="o">=</span><span class="n">attributes</span><span class="p">,</span> <span class="n">attributes_stream</span><span class="o">=</span><span class="n">attributes_stream</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="n">content</span><span class="p">,</span> <span class="p">&amp;</span>
+               <span class="n">indent</span><span class="o">=</span><span class="n">indent</span><span class="p">,</span> <span class="n">is_content_indented</span><span class="o">=</span><span class="n">is_content_indented</span><span class="p">,</span> <span class="n">is_self_closing</span><span class="o">=</span><span class="n">is_self_closing</span><span class="p">)</span>
+  <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
+  <span class="n">endfunction</span> <span class="n">create_tag_flat</span>
+
+  <span class="k">function </span><span class="n">create_tag_nested</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="n">attribute</span><span class="p">,</span> <span class="n">attributes</span><span class="p">,</span> <span class="n">attributes_stream</span><span class="p">,</span> <span class="n">indent</span><span class="p">,</span> <span class="n">is_content_indented</span><span class="p">)</span> <span class="k">result</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+  <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
+  <span class="c">!&lt; Return an instance of xml tag with value being a nested tag.</span>
+  <span class="c">!&lt;</span>
+  <span class="c">!&lt; Attributes are passed by array.</span>
+  <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
+  <span class="kt">character</span><span class="p">(</span><span class="o">*</span><span class="p">),</span>  <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span>           <span class="kd">::</span> <span class="n">name</span>                <span class="c">!&lt; Tag name.</span>
+  <span class="k">type</span><span class="p">(</span><span class="n">xml_tag</span><span class="p">),</span> <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span>           <span class="kd">::</span> <span class="n">content</span>             <span class="c">!&lt; Tag value as nested tag..</span>
+  <span class="kt">character</span><span class="p">(</span><span class="o">*</span><span class="p">),</span>  <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span> <span class="k">optional</span> <span class="kd">::</span> <span class="n">attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">:)</span>       <span class="c">!&lt; Attribute name/value pair [1:2].</span>
+  <span class="kt">character</span><span class="p">(</span><span class="o">*</span><span class="p">),</span>  <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span> <span class="k">optional</span> <span class="kd">::</span> <span class="n">attributes</span><span class="p">(</span><span class="mi">1</span><span class="p">:,</span><span class="mi">1</span><span class="p">:)</span>   <span class="c">!&lt; Attributes list of name/value pairs [1:2,1:].</span>
+  <span class="kt">character</span><span class="p">(</span><span class="o">*</span><span class="p">),</span>  <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span> <span class="k">optional</span> <span class="kd">::</span> <span class="n">attributes_stream</span>   <span class="c">!&lt; Attributes list of name/value pairs as single stream.</span>
+  <span class="kt">integer</span><span class="p">(</span><span class="n">I4P</span><span class="p">),</span>  <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span> <span class="k">optional</span> <span class="kd">::</span> <span class="n">indent</span>              <span class="c">!&lt; Number of indent-white-spaces.</span>
+  <span class="kt">logical</span><span class="p">,</span>       <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span> <span class="k">optional</span> <span class="kd">::</span> <span class="n">is_content_indented</span> <span class="c">!&lt; Activate value indentation.</span>
+  <span class="k">type</span><span class="p">(</span><span class="n">xml_tag</span><span class="p">)</span>                       <span class="kd">::</span> <span class="n">tag</span>                 <span class="c">!&lt; XML tag.</span>
+  <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
+
+  <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
+  <span class="k">call </span><span class="n">tag</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="n">attribute</span><span class="p">,</span> <span class="n">attributes</span><span class="o">=</span><span class="n">attributes</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="n">content</span><span class="p">%</span><span class="n">stringify</span><span class="p">(),</span> <span class="p">&amp;</span>
+               <span class="n">attributes_stream</span><span class="o">=</span><span class="n">attributes_stream</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="n">indent</span><span class="p">,</span> <span class="n">is_content_indented</span><span class="o">=</span><span class="n">is_content_indented</span><span class="p">)</span>
+  <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
+  <span class="n">endfunction</span> <span class="n">create_tag_nested</span>
+
+  <span class="c">! public methods</span>
+  <span class="k">elemental function </span><span class="n">attributes</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="k">result</span><span class="p">(</span><span class="n">att_</span><span class="p">)</span>
+  <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
+  <span class="c">!&lt; Return attributes name/value pairs as string.</span>
+  <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
+  <span class="k">class</span><span class="p">(</span><span class="n">xml_tag</span><span class="p">),</span> <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span>    <span class="kd">::</span> <span class="n">self</span> <span class="c">!&lt; XML tag.</span>
+  <span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span> <span class="k">allocatable</span> <span class="kd">::</span> <span class="n">att_</span> <span class="c">!&lt; The attributes string.</span>
+  <span class="kt">integer</span><span class="p">(</span><span class="n">I4P</span><span class="p">)</span>                  <span class="kd">::</span> <span class="n">a</span>    <span class="c">!&lt; Counter.</span>
+  <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
+
+  <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">self</span><span class="p">%</span><span class="n">attributes_number</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">)</span> <span class="k">then</span>
+<span class="k">    </span><span class="n">att_</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="k">do </span><span class="n">a</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">self</span><span class="p">%</span><span class="n">attributes_number</span>
+      <span class="n">att_</span> <span class="o">=</span> <span class="n">att_</span><span class="o">//</span><span class="s1">&#39; &#39;</span><span class="o">//</span><span class="n">self</span><span class="p">%</span><span class="n">attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39;=&quot;&#39;</span><span class="o">//</span><span class="n">self</span><span class="p">%</span><span class="n">attribute</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39;&quot;&#39;</span>
+    <span class="n">enddo</span>
+    <span class="n">att_</span> <span class="o">=</span> <span class="nb">trim</span><span class="p">(</span><span class="nb">adjustl</span><span class="p">(</span><span class="n">att_</span><span class="p">))</span>
+  <span class="n">endif</span>
+  <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
+  <span class="n">endfunction</span> <span class="n">attributes</span>
+
+  <span class="k">pure function </span><span class="n">content</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
   <span class="c">!&lt; Return tag content of self (or its nested tags) if named *name*.</span>
   <span class="c">!&lt;</span>

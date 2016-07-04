@@ -204,6 +204,8 @@
           
           <a class="list-group-item" href="../type/xml_tag.html#boundprocedure-free%7E2">free</a>
           
+          <a class="list-group-item" href="../type/xml_tag.html#boundprocedure-is_attribute_present">is_attribute_present</a>
+          
           <a class="list-group-item" href="../type/xml_tag.html#boundprocedure-is_parsed">is_parsed</a>
           
           <a class="list-group-item" href="../type/xml_tag.html#boundprocedure-name">name</a>
@@ -223,6 +225,8 @@
           <a class="list-group-item" href="../type/xml_tag.html#boundprocedure-add_single_attribute">add_single_attribute</a>
           
           <a class="list-group-item" href="../type/xml_tag.html#boundprocedure-add_multiple_attributes">add_multiple_attributes</a>
+          
+          <a class="list-group-item" href="../type/xml_tag.html#boundprocedure-add_stream_attributes">add_stream_attributes</a>
           
           <a class="list-group-item" href="../type/xml_tag.html#boundprocedure-alloc_attributes">alloc_attributes</a>
           
@@ -679,7 +683,7 @@ implementation in a submodule of an interface in a parent module.</p>
     
     
     <h3>
-private pure function <a href='../proc/tag.html'>tag</a>(name, attribute, attributes, value, indent, is_value_indented, is_self_closing)
+private function <a href='../proc/create_tag_flat.html'>create_tag_flat</a>(name, attribute, attributes, attributes_stream, content, indent, is_content_indented, is_self_closing) result(tag)
     
     
     
@@ -754,7 +758,22 @@ private pure function <a href='../proc/tag.html'>tag</a>(name, attribute, attrib
   <td>optional</td>
   
   <td></td><td>::</td>
-  <td><strong>value</strong></td><td><p>Tag value.</p></td>
+  <td><strong>attributes_stream</strong></td><td><p>Attributes list of name/value pairs as single stream.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>character(len=*),</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>content</strong></td><td><p>Tag value.</p></td>
   
 </tr>
 
@@ -784,7 +803,7 @@ private pure function <a href='../proc/tag.html'>tag</a>(name, attribute, attrib
   <td>optional</td>
   
   <td></td><td>::</td>
-  <td><strong>is_value_indented</strong></td><td><p>Activate value indentation.</p></td>
+  <td><strong>is_content_indented</strong></td><td><p>Activate value indentation.</p></td>
   
 </tr>
 
@@ -834,7 +853,7 @@ private pure function <a href='../proc/tag.html'>tag</a>(name, attribute, attrib
     
     
     <h3>
-private pure function <a href='../proc/tag_nested.html'>tag_nested</a>(name, value, attribute, attributes, indent, is_value_indented) result(tag)
+private function <a href='../proc/create_tag_nested.html'>create_tag_nested</a>(name, content, attribute, attributes, attributes_stream, indent, is_content_indented) result(tag)
     
     
     
@@ -879,7 +898,7 @@ private pure function <a href='../proc/tag_nested.html'>tag_nested</a>(name, val
   <td></td>
   
   <td></td><td>::</td>
-  <td><strong>value</strong></td><td><p>Tag value as nested tag..</p></td>
+  <td><strong>content</strong></td><td><p>Tag value as nested tag..</p></td>
   
 </tr>
 
@@ -919,6 +938,21 @@ private pure function <a href='../proc/tag_nested.html'>tag_nested</a>(name, val
   
 <tr>
   
+  <td><span class="anchor" ></span>character(len=*),</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>attributes_stream</strong></td><td><p>Attributes list of name/value pairs as single stream.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
   <td><span class="anchor" ></span>integer(kind=I4P),</td>
   <td>intent(in),</td>
   <td>optional</td>
@@ -939,7 +973,7 @@ private pure function <a href='../proc/tag_nested.html'>tag_nested</a>(name, val
   <td>optional</td>
   
   <td></td><td>::</td>
-  <td><strong>is_value_indented</strong></td><td><p>Activate value indentation.</p></td>
+  <td><strong>is_content_indented</strong></td><td><p>Activate value indentation.</p></td>
   
 </tr>
 
@@ -1063,7 +1097,7 @@ private elemental subroutine <a href='../proc/finalize%7E2.html'>finalize</a>(ta
     
 	   
 <div class="panel panel-default">
-  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-add_attributes"></span><h3>generic, public :: <strong>add_attributes</strong>  => <a href='../type/xml_tag.html#boundprocedure-add_single_attribute'>add_single_attribute</a>, <a href='../type/xml_tag.html#boundprocedure-add_multiple_attributes'>add_multiple_attributes</a> 
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-add_attributes"></span><h3>generic, public :: <strong>add_attributes</strong>  => <a href='../type/xml_tag.html#boundprocedure-add_single_attribute'>add_single_attribute</a>, <a href='../type/xml_tag.html#boundprocedure-add_multiple_attributes'>add_multiple_attributes</a>, <a href='../type/xml_tag.html#boundprocedure-add_stream_attributes'>add_stream_attributes</a> 
     
   </h3></div>
   
@@ -1220,6 +1254,81 @@ private pure subroutine <a href='../proc/add_multiple_attributes.html'>add_multi
 
        
        <p>Add list of attributes name/value pairs.</p>
+        
+
+         
+      
+      </li>
+    
+      <li class="list-group-item">
+      
+         
+            
+    
+    <h3>
+private pure subroutine <a href='../proc/add_stream_attributes.html'>add_stream_attributes</a>(self, attributes_stream)
+    
+    
+    
+</h3>
+    
+    <h4>Arguments</h4>
+    
+      
+      
+<table class="table table-striped varlist">
+<thead><tr><th>Type</th>
+<th>Intent</th><th>Optional</th>
+<th>Attributes</th><th></th><th>Name</th><th></th></thead>
+
+
+
+<tbody>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>class(<a href='../type/xml_tag.html'>xml_tag</a>),</td>
+  <td>intent(inout)</td>
+  <td></td>
+  
+  <td></td><td>::</td>
+  <td><strong>self</strong></td><td><p>XML tag.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>character(len=*),</td>
+  <td>intent(in)</td>
+  <td></td>
+  
+  <td></td><td>::</td>
+  <td><strong>attributes_stream</strong></td><td><p>Attribute name/value pair list passed as stream.</p></td>
+  
+</tr>
+
+</tbody>
+</table>
+
+      
+    
+    
+    
+    <h4>Description</h4>
+       
+       
+
+
+       
+       <p>Add list of attributes name/value pairs passed as stream.</p>
         
 
          
@@ -1828,6 +1937,107 @@ private elemental subroutine <a href='../proc/free%7E2.html'>free</a>(self)
     
 	   
 <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-is_attribute_present"></span><h3>procedure, public, pass(self) :: <strong>is_attribute_present</strong>  
+    
+  </h3></div>
+  
+  <div class="panel-body">
+    
+
+
+    <p>Return .true. it the queried attribute name is defined.</p>
+  </div>
+  
+  <ul class="list-group">
+    
+      <li class="list-group-item">
+      
+         
+    
+    <h3>
+private pure function <a href='../proc/is_attribute_present.html'>is_attribute_present</a>(self, name) result(is_present)
+    
+    
+    
+</h3>
+    
+    <h4>Arguments</h4>
+    
+      
+      
+<table class="table table-striped varlist">
+<thead><tr><th>Type</th>
+<th>Intent</th><th>Optional</th>
+<th>Attributes</th><th></th><th>Name</th><th></th></thead>
+
+
+
+<tbody>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>class(<a href='../type/xml_tag.html'>xml_tag</a>),</td>
+  <td>intent(in)</td>
+  <td></td>
+  
+  <td></td><td>::</td>
+  <td><strong>self</strong></td><td><p>XML tag.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>character(len=*),</td>
+  <td>intent(in)</td>
+  <td></td>
+  
+  <td></td><td>::</td>
+  <td><strong>name</strong></td><td><p>Attribute name.</p></td>
+  
+</tr>
+
+</tbody>
+</table>
+
+      
+    
+    
+
+  
+  
+  
+  
+     <h4>Return Value <small>logical
+  </small></h4>
+  <p>Inquire result.</p>
+    
+    
+    <h4>Description</h4>
+       
+       
+
+
+       
+       <p>Return .true. it the queried attribute name is defined, .false. otherwise.</p>
+        
+
+      
+      </li>
+    
+  </ul>
+</div>
+
+    
+	   
+<div class="panel panel-default">
   <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-is_parsed"></span><h3>procedure, public, pass(self) :: <strong>is_parsed</strong>  
     
   </h3></div>
@@ -2226,7 +2436,7 @@ private elemental function <a href='../proc/self_closing_tag.html'>self_closing_
          
     
     <h3>
-private pure subroutine <a href='../proc/set.html'>set</a>(self, name, attribute, attributes, value, indent, is_value_indented, is_self_closing)
+private subroutine <a href='../proc/set.html'>set</a>(self, name, attribute, attributes, attributes_stream, content, indent, is_content_indented, is_self_closing)
     
     
     
@@ -2316,7 +2526,22 @@ private pure subroutine <a href='../proc/set.html'>set</a>(self, name, attribute
   <td>optional</td>
   
   <td></td><td>::</td>
-  <td><strong>value</strong></td><td><p>Tag value.</p></td>
+  <td><strong>attributes_stream</strong></td><td><p>Attributes list of name/value pairs as single stream.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>character(len=*),</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>content</strong></td><td><p>Tag value.</p></td>
   
 </tr>
 
@@ -2346,7 +2571,7 @@ private pure subroutine <a href='../proc/set.html'>set</a>(self, name, attribute
   <td>optional</td>
   
   <td></td><td>::</td>
-  <td><strong>is_value_indented</strong></td><td><p>Activate value indentation.</p></td>
+  <td><strong>is_content_indented</strong></td><td><p>Activate value indentation.</p></td>
   
 </tr>
 
@@ -2494,7 +2719,7 @@ private elemental function <a href='../proc/start_tag.html'>start_tag</a>(self) 
          
     
     <h3>
-private pure function <a href='../proc/stringify%7E2.html'>stringify</a>(self, is_value_indented) result(stringed)
+private pure function <a href='../proc/stringify%7E2.html'>stringify</a>(self, is_content_indented) result(stringed)
     
     
     
@@ -2539,7 +2764,7 @@ private pure function <a href='../proc/stringify%7E2.html'>stringify</a>(self, i
   <td>optional</td>
   
   <td></td><td>::</td>
-  <td><strong>is_value_indented</strong></td><td><p>Activate value indentation.</p></td>
+  <td><strong>is_content_indented</strong></td><td><p>Activate content indentation.</p></td>
   
 </tr>
 
@@ -2844,6 +3069,98 @@ private pure subroutine <a href='../proc/add_multiple_attributes.html'>add_multi
 
        
        <p>Add list of attributes name/value pairs.</p>
+        
+
+      
+      </li>
+    
+  </ul>
+</div>
+
+    
+	   
+<div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-add_stream_attributes"></span><h3>procedure, private, pass(self) :: <strong>add_stream_attributes</strong>  
+    
+  </h3></div>
+  
+  <div class="panel-body">
+    
+
+
+    <p>Add list of attributes name/value pairs passed as stream.</p>
+  </div>
+  
+  <ul class="list-group">
+    
+      <li class="list-group-item">
+      
+         
+    
+    <h3>
+private pure subroutine <a href='../proc/add_stream_attributes.html'>add_stream_attributes</a>(self, attributes_stream)
+    
+    
+    
+</h3>
+    
+    <h4>Arguments</h4>
+    
+      
+      
+<table class="table table-striped varlist">
+<thead><tr><th>Type</th>
+<th>Intent</th><th>Optional</th>
+<th>Attributes</th><th></th><th>Name</th><th></th></thead>
+
+
+
+<tbody>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>class(<a href='../type/xml_tag.html'>xml_tag</a>),</td>
+  <td>intent(inout)</td>
+  <td></td>
+  
+  <td></td><td>::</td>
+  <td><strong>self</strong></td><td><p>XML tag.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>character(len=*),</td>
+  <td>intent(in)</td>
+  <td></td>
+  
+  <td></td><td>::</td>
+  <td><strong>attributes_stream</strong></td><td><p>Attribute name/value pair list passed as stream.</p></td>
+  
+</tr>
+
+</tbody>
+</table>
+
+      
+    
+    
+    
+    <h4>Description</h4>
+       
+       
+
+
+       
+       <p>Add list of attributes name/value pairs passed as stream.</p>
         
 
       
@@ -3878,9 +4195,10 @@ private elemental subroutine <a href='../proc/assign_tag.html'>assign_tag</a>(lh
   <span class="kt">logical</span>                   <span class="kd">::</span> <span class="n">is_self_closing</span><span class="o">=</span><span class="p">.</span><span class="n">false</span><span class="p">.</span> <span class="c">!&lt; Self closing tag flag.</span>
   <span class="k">contains</span>
     <span class="c">! public methods</span>
-    <span class="k">generic</span>               <span class="kd">::</span> <span class="n">add_attributes</span> <span class="o">=&gt;</span>     <span class="p">&amp;</span>
-                             <span class="n">add_single_attribute</span><span class="p">,</span> <span class="p">&amp;</span>
-                             <span class="n">add_multiple_attributes</span>     <span class="c">!&lt; Add attributes name/value pairs.</span>
+    <span class="k">generic</span>               <span class="kd">::</span> <span class="n">add_attributes</span> <span class="o">=&gt;</span>        <span class="p">&amp;</span>
+                             <span class="n">add_single_attribute</span><span class="p">,</span>    <span class="p">&amp;</span>
+                             <span class="n">add_multiple_attributes</span><span class="p">,</span> <span class="p">&amp;</span>
+                             <span class="n">add_stream_attributes</span>       <span class="c">!&lt; Add attributes name/value pairs.</span>
     <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="kd">::</span> <span class="n">attributes</span>                  <span class="c">!&lt; Return attributes name/value pairs as string.</span>
     <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="kd">::</span> <span class="n">content</span>                     <span class="c">!&lt; Return tag content.</span>
     <span class="k">generic</span>               <span class="kd">::</span> <span class="n">delete_attributes</span> <span class="o">=&gt;</span>     <span class="p">&amp;</span>
@@ -3889,6 +4207,7 @@ private elemental subroutine <a href='../proc/assign_tag.html'>assign_tag</a>(lh
     <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="kd">::</span> <span class="n">delete_content</span>              <span class="c">!&lt; Delete tag conent.</span>
     <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="kd">::</span> <span class="n">end_tag</span>                     <span class="c">!&lt; Return `&lt;/tag_name&gt;` end tag.</span>
     <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="kd">::</span> <span class="n">free</span>                        <span class="c">!&lt; Free dynamic memory.</span>
+    <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="kd">::</span> <span class="n">is_attribute_present</span>        <span class="c">!&lt; Return .true. it the queried attribute name is defined.</span>
     <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="kd">::</span> <span class="n">is_parsed</span>                   <span class="c">!&lt; Check is tag is correctly parsed, i.e. its *tag_name* is allocated.</span>
     <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="kd">::</span> <span class="n">name</span>                        <span class="c">!&lt; Return tag name.</span>
     <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="kd">::</span> <span class="n">parse</span>                       <span class="c">!&lt; Parse the tag contained into a source string.</span>
@@ -3900,6 +4219,7 @@ private elemental subroutine <a href='../proc/assign_tag.html'>assign_tag</a>(lh
     <span class="c">! private methods</span>
     <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">),</span> <span class="k">private</span> <span class="kd">::</span> <span class="n">add_single_attribute</span>       <span class="c">!&lt; Add one attribute name/value pair.</span>
     <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">),</span> <span class="k">private</span> <span class="kd">::</span> <span class="n">add_multiple_attributes</span>    <span class="c">!&lt; Add list of attributes name/value pairs.</span>
+    <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">),</span> <span class="k">private</span> <span class="kd">::</span> <span class="n">add_stream_attributes</span>      <span class="c">!&lt; Add list of attributes name/value pairs passed as stream.</span>
     <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">),</span> <span class="k">private</span> <span class="kd">::</span> <span class="n">alloc_attributes</span>           <span class="c">!&lt; Allocate (prepare for filling) dynamic memory of attributes.</span>
     <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">),</span> <span class="k">private</span> <span class="kd">::</span> <span class="n">delete_single_attribute</span>    <span class="c">!&lt; Delete one attribute name/value pair.</span>
     <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">),</span> <span class="k">private</span> <span class="kd">::</span> <span class="n">delete_multiple_attributes</span> <span class="c">!&lt; Delete list of attributes name/value pairs.</span>

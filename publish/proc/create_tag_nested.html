@@ -10,7 +10,7 @@
     <meta name="author" content="Chris MacMackin" >
     <link rel="icon" href="../favicon.png">
 
-    <title>tag_nested &ndash; FoXy</title>
+    <title>create_tag_nested &ndash; FoXy</title>
 
     <link href="../css/bootstrap.min.css" rel="stylesheet">
     <link href="../css/pygments.css" rel="stylesheet">
@@ -87,7 +87,7 @@
     
   
   <div class="row">
-    <h1>tag_nested
+    <h1>create_tag_nested
     <small>Function</small>
     
     </h1>
@@ -111,7 +111,7 @@
   
      <li><a href='../module/foxy_xml_tag.html'>foxy_xml_tag</a></li>
   
-     <li class="active">tag_nested</li>
+     <li class="active">create_tag_nested</li>
   </ol>
 </div>
 </div>
@@ -146,7 +146,7 @@
   <div class="panel panel-primary">
     <div class="panel-heading text-left"><h3 class="panel-title">Source Code</h3></div>
     <div class="list-group">
-      <a class="list-group-item" href="../proc/tag_nested.html#src">tag_nested</a>
+      <a class="list-group-item" href="../proc/create_tag_nested.html#src">create_tag_nested</a>
     </div>
   </div>
   
@@ -160,6 +160,8 @@
           <a class="list-group-item" href="../proc/add_multiple_attributes.html">add_multiple_attributes</a>
           
           <a class="list-group-item" href="../proc/add_single_attribute.html">add_single_attribute</a>
+          
+          <a class="list-group-item" href="../proc/add_stream_attributes.html">add_stream_attributes</a>
           
           <a class="list-group-item" href="../proc/add_tag.html">add_tag</a>
           
@@ -357,6 +359,10 @@
           
           <a class="list-group-item" href="../proc/count_substring.html">count_substring</a>
           
+          <a class="list-group-item" href="../proc/create_tag_flat.html">create_tag_flat</a>
+          
+          <a class="list-group-item" href="../proc/create_tag_nested.html">create_tag_nested</a>
+          
           <a class="list-group-item" href="../proc/ctoi_i1p.html">ctoi_I1P</a>
           
           <a class="list-group-item" href="../proc/ctoi_i2p.html">ctoi_I2P</a>
@@ -440,6 +446,8 @@
           <a class="list-group-item" href="../proc/insert_string.html">insert_string</a>
           
           <a class="list-group-item" href="../proc/is_allocated.html">is_allocated</a>
+          
+          <a class="list-group-item" href="../proc/is_attribute_present.html">is_attribute_present</a>
           
           <a class="list-group-item" href="../proc/is_digit.html">is_digit</a>
           
@@ -745,10 +753,6 @@
           
           <a class="list-group-item" href="../proc/swapcase.html">swapcase</a>
           
-          <a class="list-group-item" href="../proc/tag.html">tag</a>
-          
-          <a class="list-group-item" href="../proc/tag_nested.html">tag_nested</a>
-          
           <a class="list-group-item" href="../proc/to_integer_i1p.html">to_integer_I1P</a>
           
           <a class="list-group-item" href="../proc/to_integer_i2p.html">to_integer_I2P</a>
@@ -797,7 +801,7 @@
     
     <div class="col-lg-9" id='text'>
     <h2>
-private pure function tag_nested(name, value, attribute, attributes, indent, is_value_indented) result(tag)
+private function create_tag_nested(name, content, attribute, attributes, attributes_stream, indent, is_content_indented) result(tag)
     
     
     
@@ -840,12 +844,12 @@ private pure function tag_nested(name, value, attribute, attributes, indent, is_
   
 <tr>
   
-  <td><span class="anchor" id="variable-value%7E2"></span>type(<a href='../type/xml_tag.html'>xml_tag</a>),</td>
+  <td><span class="anchor" id="variable-content%7E5"></span>type(<a href='../type/xml_tag.html'>xml_tag</a>),</td>
   <td>intent(in)</td>
   <td></td>
   
   <td></td><td>::</td>
-  <td><strong>value</strong></td><td><p>Tag value as nested tag..</p></td>
+  <td><strong>content</strong></td><td><p>Tag value as nested tag..</p></td>
   
 </tr>
 
@@ -885,6 +889,21 @@ private pure function tag_nested(name, value, attribute, attributes, indent, is_
   
 <tr>
   
+  <td><span class="anchor" id="variable-attributes_stream%7E2"></span>character(len=*),</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>attributes_stream</strong></td><td><p>Attributes list of name/value pairs as single stream.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
   <td><span class="anchor" id="variable-indent%7E3"></span>integer(kind=I4P),</td>
   <td>intent(in),</td>
   <td>optional</td>
@@ -900,12 +919,12 @@ private pure function tag_nested(name, value, attribute, attributes, indent, is_
   
 <tr>
   
-  <td><span class="anchor" id="variable-is_value_indented%7E2"></span>logical,</td>
+  <td><span class="anchor" id="variable-is_content_indented%7E2"></span>logical,</td>
   <td>intent(in),</td>
   <td>optional</td>
   
   <td></td><td>::</td>
-  <td><strong>is_value_indented</strong></td><td><p>Activate value indentation.</p></td>
+  <td><strong>is_content_indented</strong></td><td><p>Activate value indentation.</p></td>
   
 </tr>
 
@@ -926,6 +945,7 @@ private pure function tag_nested(name, value, attribute, attributes, indent, is_
     
     <h3>Description</h3>
     <p>Return an instance of xml tag with value being a nested tag.</p>
+<p>Attributes are passed by array.</p>
     
     
      
@@ -936,76 +956,88 @@ private pure function tag_nested(name, value, attribute, attributes, indent, is_
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.26.3 (20100126.1600)
  -->
-<!-- Title: proc~~tag_nested~~CalledByGraph Pages: 1 -->
-<svg id="proctag_nestedCalledByGraph" width="292pt" height="166pt"
- viewBox="0.00 0.00 292.00 166.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~tag_nested~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 162)">
-<title>proc~~tag_nested~~CalledByGraph</title>
-<polygon fill="white" stroke="white" points="-4,5 -4,-162 289,-162 289,5 -4,5"/>
-<!-- proc~tag_nested -->
-<g id="node1" class="node"><title>proc~tag_nested</title>
-<polygon fill="none" stroke="black" points="284,-92 218,-92 218,-66 284,-66 284,-92"/>
-<text text-anchor="middle" x="251" y="-76.55" font-family="Helvetica,sans-Serif" font-size="10.50">tag_nested</text>
+<!-- Title: proc~~create_tag_nested~~CalledByGraph Pages: 1 -->
+<svg id="proccreate_tag_nestedCalledByGraph" width="328pt" height="210pt"
+ viewBox="0.00 0.00 328.00 210.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~create_tag_nested~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 206)">
+<title>proc~~create_tag_nested~~CalledByGraph</title>
+<polygon fill="white" stroke="white" points="-4,5 -4,-206 325,-206 325,5 -4,5"/>
+<!-- proc~create_tag_nested -->
+<g id="node1" class="node"><title>proc~create_tag_nested</title>
+<polygon fill="none" stroke="black" points="320,-114 218,-114 218,-88 320,-88 320,-114"/>
+<text text-anchor="middle" x="269" y="-98.55" font-family="Helvetica,sans-Serif" font-size="10.50">create_tag_nested</text>
 </g>
 <!-- interface~xml_tag -->
 <g id="node2" class="node"><title>interface~xml_tag</title>
 <a xlink:href="../interface/xml_tag.html" xlink:title="xml_tag">
-<polygon fill="#a7506f" stroke="#a7506f" points="182,-92 128,-92 128,-66 182,-66 182,-92"/>
-<text text-anchor="middle" x="155" y="-76.55" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xml_tag</text>
+<polygon fill="#a7506f" stroke="#a7506f" points="182,-114 128,-114 128,-88 182,-88 182,-114"/>
+<text text-anchor="middle" x="155" y="-98.55" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xml_tag</text>
 </a>
 </g>
-<!-- interface~xml_tag&#45;&gt;proc~tag_nested -->
-<g id="edge10" class="edge"><title>interface~xml_tag&#45;&gt;proc~tag_nested</title>
-<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M182.253,-79C190.221,-79 199.135,-79 207.834,-79"/>
-<polygon fill="#000000" stroke="#000000" points="207.878,-82.5001 217.878,-79 207.878,-75.5001 207.878,-82.5001"/>
-</g>
-<!-- program~add_tag -->
-<g id="node3" class="node"><title>program~add_tag</title>
-<a xlink:href="../program/add_tag.html" xlink:title="add_tag">
-<polygon fill="#f0ad4e" stroke="#f0ad4e" points="73,-158 19,-158 19,-132 73,-132 73,-158"/>
-<text text-anchor="middle" x="46" y="-142.55" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_tag</text>
-</a>
-</g>
-<!-- program~add_tag&#45;&gt;interface~xml_tag -->
-<g id="edge2" class="edge"><title>program~add_tag&#45;&gt;interface~xml_tag</title>
-<path fill="none" stroke="#000000" d="M73.1396,-132.927C79.4345,-129.879 86.035,-126.478 92,-123 104.858,-115.503 118.473,-106.184 129.744,-98.055"/>
-<polygon fill="#000000" stroke="#000000" points="131.852,-100.85 137.855,-92.1204 127.718,-95.2008 131.852,-100.85"/>
+<!-- interface~xml_tag&#45;&gt;proc~create_tag_nested -->
+<g id="edge12" class="edge"><title>interface~xml_tag&#45;&gt;proc~create_tag_nested</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M182.016,-101C189.766,-101 198.55,-101 207.482,-101"/>
+<polygon fill="#000000" stroke="#000000" points="207.584,-104.5 217.584,-101 207.584,-97.5001 207.584,-104.5"/>
 </g>
 <!-- program~delete_content -->
-<g id="node4" class="node"><title>program~delete_content</title>
+<g id="node3" class="node"><title>program~delete_content</title>
 <a xlink:href="../program/delete_content.html" xlink:title="delete_content">
-<polygon fill="#f0ad4e" stroke="#f0ad4e" points="87,-114 5,-114 5,-88 87,-88 87,-114"/>
-<text text-anchor="middle" x="46" y="-98.55" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">delete_content</text>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="87,-202 5,-202 5,-176 87,-176 87,-202"/>
+<text text-anchor="middle" x="46" y="-186.55" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">delete_content</text>
 </a>
 </g>
 <!-- program~delete_content&#45;&gt;interface~xml_tag -->
-<g id="edge4" class="edge"><title>program~delete_content&#45;&gt;interface~xml_tag</title>
-<path fill="none" stroke="#000000" d="M87.5192,-92.62C97.5212,-90.6012 108.143,-88.4574 117.927,-86.4827"/>
-<polygon fill="#000000" stroke="#000000" points="118.648,-89.9077 127.758,-84.4983 117.264,-83.046 118.648,-89.9077"/>
+<g id="edge2" class="edge"><title>program~delete_content&#45;&gt;interface~xml_tag</title>
+<path fill="none" stroke="#000000" d="M77.5574,-175.797C82.5674,-173.174 87.5567,-170.222 92,-167 109.629,-154.217 126.491,-136.131 138.327,-122.124"/>
+<polygon fill="#000000" stroke="#000000" points="141.352,-123.957 145.009,-114.013 135.949,-119.506 141.352,-123.957"/>
+</g>
+<!-- program~add_attributes -->
+<g id="node4" class="node"><title>program~add_attributes</title>
+<a xlink:href="../program/add_attributes.html" xlink:title="add_attributes">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="86,-158 6,-158 6,-132 86,-132 86,-158"/>
+<text text-anchor="middle" x="46" y="-142.55" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_attributes</text>
+</a>
+</g>
+<!-- program~add_attributes&#45;&gt;interface~xml_tag -->
+<g id="edge4" class="edge"><title>program~add_attributes&#45;&gt;interface~xml_tag</title>
+<path fill="none" stroke="#000000" d="M78.4085,-131.918C90.9103,-126.871 105.279,-121.071 118.169,-115.868"/>
+<polygon fill="#000000" stroke="#000000" points="119.72,-119.016 127.683,-112.027 117.099,-112.525 119.72,-119.016"/>
+</g>
+<!-- program~create_tag -->
+<g id="node5" class="node"><title>program~create_tag</title>
+<a xlink:href="../program/create_tag.html" xlink:title="create_tag">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="78,-114 14,-114 14,-88 78,-88 78,-114"/>
+<text text-anchor="middle" x="46" y="-98.55" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">create_tag</text>
+</a>
+</g>
+<!-- program~create_tag&#45;&gt;interface~xml_tag -->
+<g id="edge6" class="edge"><title>program~create_tag&#45;&gt;interface~xml_tag</title>
+<path fill="none" stroke="#000000" d="M78.1141,-101C90.4773,-101 104.701,-101 117.526,-101"/>
+<polygon fill="#000000" stroke="#000000" points="117.899,-104.5 127.899,-101 117.899,-97.5001 117.899,-104.5"/>
 </g>
 <!-- program~delete_attributes -->
-<g id="node5" class="node"><title>program~delete_attributes</title>
+<g id="node6" class="node"><title>program~delete_attributes</title>
 <a xlink:href="../program/delete_attributes.html" xlink:title="delete_attributes">
 <polygon fill="#f0ad4e" stroke="#f0ad4e" points="92,-70 4.26326e-14,-70 0,-44 92,-44 92,-70"/>
 <text text-anchor="middle" x="46" y="-54.55" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">delete_attributes</text>
 </a>
 </g>
 <!-- program~delete_attributes&#45;&gt;interface~xml_tag -->
-<g id="edge6" class="edge"><title>program~delete_attributes&#45;&gt;interface~xml_tag</title>
-<path fill="none" stroke="#000000" d="M92.2258,-66.33C100.793,-68.0592 109.64,-69.8448 117.893,-71.5104"/>
-<polygon fill="#000000" stroke="#000000" points="117.467,-74.9951 127.962,-73.5428 118.852,-68.1335 117.467,-74.9951"/>
+<g id="edge8" class="edge"><title>program~delete_attributes&#45;&gt;interface~xml_tag</title>
+<path fill="none" stroke="#000000" d="M78.4085,-70.0823C90.9103,-75.1289 105.279,-80.9292 118.169,-86.1325"/>
+<polygon fill="#000000" stroke="#000000" points="117.099,-89.4751 127.683,-89.9728 119.72,-82.984 117.099,-89.4751"/>
 </g>
-<!-- program~create_tag -->
-<g id="node6" class="node"><title>program~create_tag</title>
-<a xlink:href="../program/create_tag.html" xlink:title="create_tag">
-<polygon fill="#f0ad4e" stroke="#f0ad4e" points="78,-26 14,-26 14,-1.24345e-14 78,-3.55271e-15 78,-26"/>
-<text text-anchor="middle" x="46" y="-10.55" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">create_tag</text>
+<!-- program~add_tag -->
+<g id="node7" class="node"><title>program~add_tag</title>
+<a xlink:href="../program/add_tag.html" xlink:title="add_tag">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="73,-26 19,-26 19,-1.24345e-14 73,-3.55271e-15 73,-26"/>
+<text text-anchor="middle" x="46" y="-10.55" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_tag</text>
 </a>
 </g>
-<!-- program~create_tag&#45;&gt;interface~xml_tag -->
-<g id="edge8" class="edge"><title>program~create_tag&#45;&gt;interface~xml_tag</title>
-<path fill="none" stroke="#000000" d="M75.0851,-26.0217C80.7818,-28.8194 86.6468,-31.8787 92,-35 104.858,-42.4969 118.473,-51.8159 129.744,-59.945"/>
-<polygon fill="#000000" stroke="#000000" points="127.718,-62.7992 137.855,-65.8796 131.852,-57.1499 127.718,-62.7992"/>
+<!-- program~add_tag&#45;&gt;interface~xml_tag -->
+<g id="edge10" class="edge"><title>program~add_tag&#45;&gt;interface~xml_tag</title>
+<path fill="none" stroke="#000000" d="M73.2013,-24.0026C79.6245,-27.1353 86.2667,-30.8427 92,-35 109.629,-47.7829 126.491,-65.8687 138.327,-79.8763"/>
+<polygon fill="#000000" stroke="#000000" points="135.949,-82.4942 145.009,-87.9871 141.352,-78.0433 135.949,-82.4942"/>
 </g>
 </g>
 </svg>
@@ -1122,24 +1154,27 @@ implementation in a submodule of an interface in a parent module.</p>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="highlight"><pre><span></span>  <span class="k">pure function </span><span class="n">tag_nested</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="k">value</span><span class="p">,</span> <span class="n">attribute</span><span class="p">,</span> <span class="n">attributes</span><span class="p">,</span> <span class="n">indent</span><span class="p">,</span> <span class="n">is_value_indented</span><span class="p">)</span> <span class="k">result</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+    <div class="highlight"><pre><span></span>  <span class="k">function </span><span class="n">create_tag_nested</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="n">attribute</span><span class="p">,</span> <span class="n">attributes</span><span class="p">,</span> <span class="n">attributes_stream</span><span class="p">,</span> <span class="n">indent</span><span class="p">,</span> <span class="n">is_content_indented</span><span class="p">)</span> <span class="k">result</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
   <span class="c">!&lt; Return an instance of xml tag with value being a nested tag.</span>
+  <span class="c">!&lt;</span>
+  <span class="c">!&lt; Attributes are passed by array.</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
-  <span class="kt">character</span><span class="p">(</span><span class="o">*</span><span class="p">),</span>  <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span>           <span class="kd">::</span> <span class="n">name</span>              <span class="c">!&lt; Tag name.</span>
-  <span class="k">type</span><span class="p">(</span><span class="n">xml_tag</span><span class="p">),</span> <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span>           <span class="kd">::</span> <span class="k">value</span>             <span class="c">!&lt; Tag value as nested tag..</span>
-  <span class="kt">character</span><span class="p">(</span><span class="o">*</span><span class="p">),</span>  <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span> <span class="k">optional</span> <span class="kd">::</span> <span class="n">attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">:)</span>     <span class="c">!&lt; Attribute name/value pair [1:2].</span>
-  <span class="kt">character</span><span class="p">(</span><span class="o">*</span><span class="p">),</span>  <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span> <span class="k">optional</span> <span class="kd">::</span> <span class="n">attributes</span><span class="p">(</span><span class="mi">1</span><span class="p">:,</span><span class="mi">1</span><span class="p">:)</span> <span class="c">!&lt; Attributes list of name/value pairs [1:2,1:].</span>
-  <span class="kt">integer</span><span class="p">(</span><span class="n">I4P</span><span class="p">),</span>  <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span> <span class="k">optional</span> <span class="kd">::</span> <span class="n">indent</span>            <span class="c">!&lt; Number of indent-white-spaces.</span>
-  <span class="kt">logical</span><span class="p">,</span>       <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span> <span class="k">optional</span> <span class="kd">::</span> <span class="n">is_value_indented</span> <span class="c">!&lt; Activate value indentation.</span>
-  <span class="k">type</span><span class="p">(</span><span class="n">xml_tag</span><span class="p">)</span>                       <span class="kd">::</span> <span class="n">tag</span>               <span class="c">!&lt; XML tag.</span>
+  <span class="kt">character</span><span class="p">(</span><span class="o">*</span><span class="p">),</span>  <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span>           <span class="kd">::</span> <span class="n">name</span>                <span class="c">!&lt; Tag name.</span>
+  <span class="k">type</span><span class="p">(</span><span class="n">xml_tag</span><span class="p">),</span> <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span>           <span class="kd">::</span> <span class="n">content</span>             <span class="c">!&lt; Tag value as nested tag..</span>
+  <span class="kt">character</span><span class="p">(</span><span class="o">*</span><span class="p">),</span>  <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span> <span class="k">optional</span> <span class="kd">::</span> <span class="n">attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">:)</span>       <span class="c">!&lt; Attribute name/value pair [1:2].</span>
+  <span class="kt">character</span><span class="p">(</span><span class="o">*</span><span class="p">),</span>  <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span> <span class="k">optional</span> <span class="kd">::</span> <span class="n">attributes</span><span class="p">(</span><span class="mi">1</span><span class="p">:,</span><span class="mi">1</span><span class="p">:)</span>   <span class="c">!&lt; Attributes list of name/value pairs [1:2,1:].</span>
+  <span class="kt">character</span><span class="p">(</span><span class="o">*</span><span class="p">),</span>  <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span> <span class="k">optional</span> <span class="kd">::</span> <span class="n">attributes_stream</span>   <span class="c">!&lt; Attributes list of name/value pairs as single stream.</span>
+  <span class="kt">integer</span><span class="p">(</span><span class="n">I4P</span><span class="p">),</span>  <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span> <span class="k">optional</span> <span class="kd">::</span> <span class="n">indent</span>              <span class="c">!&lt; Number of indent-white-spaces.</span>
+  <span class="kt">logical</span><span class="p">,</span>       <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span> <span class="k">optional</span> <span class="kd">::</span> <span class="n">is_content_indented</span> <span class="c">!&lt; Activate value indentation.</span>
+  <span class="k">type</span><span class="p">(</span><span class="n">xml_tag</span><span class="p">)</span>                       <span class="kd">::</span> <span class="n">tag</span>                 <span class="c">!&lt; XML tag.</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
 
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
-  <span class="k">call </span><span class="n">tag</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="k">value</span><span class="o">=</span><span class="k">value</span><span class="p">%</span><span class="n">stringify</span><span class="p">(),</span> <span class="p">&amp;</span>
-               <span class="n">attribute</span><span class="o">=</span><span class="n">attribute</span><span class="p">,</span> <span class="n">attributes</span><span class="o">=</span><span class="n">attributes</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="n">indent</span><span class="p">,</span> <span class="n">is_value_indented</span><span class="o">=</span><span class="n">is_value_indented</span><span class="p">)</span>
+  <span class="k">call </span><span class="n">tag</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="n">attribute</span><span class="p">,</span> <span class="n">attributes</span><span class="o">=</span><span class="n">attributes</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="n">content</span><span class="p">%</span><span class="n">stringify</span><span class="p">(),</span> <span class="p">&amp;</span>
+               <span class="n">attributes_stream</span><span class="o">=</span><span class="n">attributes_stream</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="n">indent</span><span class="p">,</span> <span class="n">is_content_indented</span><span class="o">=</span><span class="n">is_content_indented</span><span class="p">)</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
-  <span class="n">endfunction</span> <span class="n">tag_nested</span>
+  <span class="n">endfunction</span> <span class="n">create_tag_nested</span>
 </pre></div>
 
     </section>

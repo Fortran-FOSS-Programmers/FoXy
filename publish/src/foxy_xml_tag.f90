@@ -4,7 +4,7 @@ module foxy_xml_tag
 !< FoXy XML tag class.
 !-----------------------------------------------------------------------------------------------------------------------------------
 use penf
-use stringifor, only : string
+use stringifor
 !-----------------------------------------------------------------------------------------------------------------------------------
 
 !-----------------------------------------------------------------------------------------------------------------------------------
@@ -38,9 +38,10 @@ type :: xml_tag
   logical                   :: is_self_closing=.false. !< Self closing tag flag.
   contains
     ! public methods
-    generic               :: add_attributes =>     &
-                             add_single_attribute, &
-                             add_multiple_attributes     !< Add attributes name/value pairs.
+    generic               :: add_attributes =>        &
+                             add_single_attribute,    &
+                             add_multiple_attributes, &
+                             add_stream_attributes       !< Add attributes name/value pairs.
     procedure, pass(self) :: attributes                  !< Return attributes name/value pairs as string.
     procedure, pass(self) :: content                     !< Return tag content.
     generic               :: delete_attributes =>     &
@@ -49,6 +50,7 @@ type :: xml_tag
     procedure, pass(self) :: delete_content              !< Delete tag conent.
     procedure, pass(self) :: end_tag                     !< Return `</tag_name>` end tag.
     procedure, pass(self) :: free                        !< Free dynamic memory.
+    procedure, pass(self) :: is_attribute_present        !< Return .true. it the queried attribute name is defined.
     procedure, pass(self) :: is_parsed                   !< Check is tag is correctly parsed, i.e. its *tag_name* is allocated.
     procedure, pass(self) :: name                        !< Return tag name.
     procedure, pass(self) :: parse                       !< Parse the tag contained into a source string.
@@ -60,6 +62,7 @@ type :: xml_tag
     ! private methods
     procedure, pass(self), private :: add_single_attribute       !< Add one attribute name/value pair.
     procedure, pass(self), private :: add_multiple_attributes    !< Add list of attributes name/value pairs.
+    procedure, pass(self), private :: add_stream_attributes      !< Add list of attributes name/value pairs passed as stream.
     procedure, pass(self), private :: alloc_attributes           !< Allocate (prepare for filling) dynamic memory of attributes.
     procedure, pass(self), private :: delete_single_attribute    !< Delete one attribute name/value pair.
     procedure, pass(self), private :: delete_multiple_attributes !< Delete list of attributes name/value pairs.
@@ -75,49 +78,56 @@ type :: xml_tag
 endtype xml_tag
 interface xml_tag
   !< Overload *xml_tag* with creator procedures.
-  module procedure tag, tag_nested
+  module procedure create_tag_flat, create_tag_nested
 endinterface
 !-----------------------------------------------------------------------------------------------------------------------------------
 contains
   ! creator procedures overloading *xml_tag* name
-  pure function tag(name, attribute, attributes, value, indent, is_value_indented, is_self_closing)
+  function create_tag_flat(name, attribute, attributes, attributes_stream, content, indent, &
+                                is_content_indented, is_self_closing) result(tag)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Return an instance of xml tag.
+  !<
+  !< Attributes are passed by array.
   !---------------------------------------------------------------------------------------------------------------------------------
-  character(*), intent(in)           :: name              !< Tag name.
-  character(*), intent(in), optional :: attribute(1:)     !< Attribute name/value pair [1:2].
-  character(*), intent(in), optional :: attributes(1:,1:) !< Attributes list of name/value pairs [1:2,1:].
-  character(*), intent(in), optional :: value             !< Tag value.
-  integer(I4P), intent(in), optional :: indent            !< Number of indent-white-spaces.
-  logical,      intent(in), optional :: is_value_indented !< Activate value indentation.
-  logical,      intent(in), optional :: is_self_closing   !< The tag is self closing.
-  type(xml_tag)                      :: tag               !< XML tag.
+  character(*), intent(in)           :: name                !< Tag name.
+  character(*), intent(in), optional :: attribute(1:)       !< Attribute name/value pair [1:2].
+  character(*), intent(in), optional :: attributes(1:,1:)   !< Attributes list of name/value pairs [1:2,1:].
+  character(*), intent(in), optional :: attributes_stream   !< Attributes list of name/value pairs as single stream.
+  character(*), intent(in), optional :: content             !< Tag value.
+  integer(I4P), intent(in), optional :: indent              !< Number of indent-white-spaces.
+  logical,      intent(in), optional :: is_content_indented !< Activate value indentation.
+  logical,      intent(in), optional :: is_self_closing     !< The tag is self closing.
+  type(xml_tag)                      :: tag                 !< XML tag.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
-  call tag%set(name=name, attribute=attribute, attributes=attributes, value=value, indent=indent, &
-               is_value_indented=is_value_indented, is_self_closing=is_self_closing)
+  call tag%set(name=name, attribute=attribute, attributes=attributes, attributes_stream=attributes_stream, content=content, &
+               indent=indent, is_content_indented=is_content_indented, is_self_closing=is_self_closing)
   !---------------------------------------------------------------------------------------------------------------------------------
-  endfunction tag
+  endfunction create_tag_flat
 
-  pure function tag_nested(name, value, attribute, attributes, indent, is_value_indented) result(tag)
+  function create_tag_nested(name, content, attribute, attributes, attributes_stream, indent, is_content_indented) result(tag)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Return an instance of xml tag with value being a nested tag.
+  !<
+  !< Attributes are passed by array.
   !---------------------------------------------------------------------------------------------------------------------------------
-  character(*),  intent(in)           :: name              !< Tag name.
-  type(xml_tag), intent(in)           :: value             !< Tag value as nested tag..
-  character(*),  intent(in), optional :: attribute(1:)     !< Attribute name/value pair [1:2].
-  character(*),  intent(in), optional :: attributes(1:,1:) !< Attributes list of name/value pairs [1:2,1:].
-  integer(I4P),  intent(in), optional :: indent            !< Number of indent-white-spaces.
-  logical,       intent(in), optional :: is_value_indented !< Activate value indentation.
-  type(xml_tag)                       :: tag               !< XML tag.
+  character(*),  intent(in)           :: name                !< Tag name.
+  type(xml_tag), intent(in)           :: content             !< Tag value as nested tag..
+  character(*),  intent(in), optional :: attribute(1:)       !< Attribute name/value pair [1:2].
+  character(*),  intent(in), optional :: attributes(1:,1:)   !< Attributes list of name/value pairs [1:2,1:].
+  character(*),  intent(in), optional :: attributes_stream   !< Attributes list of name/value pairs as single stream.
+  integer(I4P),  intent(in), optional :: indent              !< Number of indent-white-spaces.
+  logical,       intent(in), optional :: is_content_indented !< Activate value indentation.
+  type(xml_tag)                       :: tag                 !< XML tag.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
-  call tag%set(name=name, value=value%stringify(), &
-               attribute=attribute, attributes=attributes, indent=indent, is_value_indented=is_value_indented)
+  call tag%set(name=name, attribute=attribute, attributes=attributes, content=content%stringify(), &
+               attributes_stream=attributes_stream, indent=indent, is_content_indented=is_content_indented)
   !---------------------------------------------------------------------------------------------------------------------------------
-  endfunction tag_nested
+  endfunction create_tag_nested
 
   ! public methods
   elemental function attributes(self) result(att_)
@@ -258,32 +268,34 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine parse
 
-  pure subroutine set(self, name, attribute, attributes, value, indent, is_value_indented, is_self_closing)
+  subroutine set(self, name, attribute, attributes, attributes_stream, content, indent, is_content_indented, is_self_closing)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Set tag data.
   !---------------------------------------------------------------------------------------------------------------------------------
-  class(xml_tag), intent(inout)        :: self              !< XML tag.
-  character(*),   intent(in), optional :: name              !< Tag name.
-  character(*),   intent(in), optional :: attribute(1:)     !< Attribute name/value pair [1:2].
-  character(*),   intent(in), optional :: attributes(1:,1:) !< Attributes list of name/value pairs [1:2,1:].
-  character(*),   intent(in), optional :: value             !< Tag value.
-  integer(I4P),   intent(in), optional :: indent            !< Number of indent-white-spaces.
-  logical,        intent(in), optional :: is_value_indented !< Activate value indentation.
-  logical,        intent(in), optional :: is_self_closing   !< The tag is self closing.
-  logical                              :: is_value_indented_ !< Activate value indentation.
+  class(xml_tag), intent(inout)        :: self                 !< XML tag.
+  character(*),   intent(in), optional :: name                 !< Tag name.
+  character(*),   intent(in), optional :: attribute(1:)        !< Attribute name/value pair [1:2].
+  character(*),   intent(in), optional :: attributes(1:,1:)    !< Attributes list of name/value pairs [1:2,1:].
+  character(*),   intent(in), optional :: attributes_stream    !< Attributes list of name/value pairs as single stream.
+  character(*),   intent(in), optional :: content              !< Tag value.
+  integer(I4P),   intent(in), optional :: indent               !< Number of indent-white-spaces.
+  logical,        intent(in), optional :: is_content_indented  !< Activate value indentation.
+  logical,        intent(in), optional :: is_self_closing      !< The tag is self closing.
+  logical                              :: is_content_indented_ !< Activate value indentation.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
   if (present(name)) self%tag_name = name
   if (present(attribute)) call self%add_single_attribute(attribute=attribute)
   if (present(attributes)) call self%add_multiple_attributes(attributes=attributes)
+  if (present(attributes_stream)) call self%add_stream_attributes(attributes_stream=attributes_stream)
   if (present(indent)) self%indent = indent
-  if (present(value)) then
-    is_value_indented_ = .false. ; if (present(is_value_indented)) is_value_indented_ = is_value_indented
-    if (is_value_indented_) then
-      self%tag_content = new_line('a')//repeat(' ', self%indent+2)//value//new_line('a')
+  if (present(content)) then
+    is_content_indented_ = .false. ; if (present(is_content_indented)) is_content_indented_ = is_content_indented
+    if (is_content_indented_) then
+      self%tag_content = new_line('a')//repeat(' ', self%indent+2)//content//new_line('a')
     else
-      self%tag_content = value
+      self%tag_content = content
     endif
   endif
   if (present(is_self_closing)) self%is_self_closing = is_self_closing
@@ -320,19 +332,19 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
   endfunction start_tag
 
-  pure function stringify(self, is_value_indented) result(stringed)
+  pure function stringify(self, is_content_indented) result(stringed)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Convert the whole tag into a string.
   !---------------------------------------------------------------------------------------------------------------------------------
   class(xml_tag), intent(in)           :: self               !< XML tag.
-  logical,        intent(in), optional :: is_value_indented  !< Activate value indentation.
+  logical,        intent(in), optional :: is_content_indented  !< Activate content indentation.
   character(len=:), allocatable        :: stringed           !< Output string containing the whole tag.
-  logical                              :: is_value_indented_ !< Activate value indentation.
+  logical                              :: is_content_indented_ !< Activate content indentation.
   integer(I4P)                         :: a                  !< Counter.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
-  is_value_indented_ = .false. ; if (present(is_value_indented)) is_value_indented_ = is_value_indented
+  is_content_indented_ = .false. ; if (present(is_content_indented)) is_content_indented_ = is_content_indented
   stringed = ''
   if (self%tag_name%is_allocated()) then
     if (self%is_self_closing) then
@@ -340,7 +352,7 @@ contains
     else
       stringed = self%start_tag()
       if (self%tag_content%is_allocated()) then
-        if (is_value_indented_) then
+        if (is_content_indented_) then
           stringed = stringed//new_line('a')//repeat(' ',self%indent+2)//&
                      self%tag_content//new_line('a')//repeat(' ',self%indent)
         else
@@ -354,9 +366,34 @@ contains
   endfunction stringify
 
   ! private methods
+  pure function is_attribute_present(self, name) result(is_present)
+  !---------------------------------------------------------------------------------------------------------------------------------
+  !< Return .true. it the queried attribute name is defined, .false. otherwise.
+  !---------------------------------------------------------------------------------------------------------------------------------
+  class(xml_tag), intent(in) :: self       !< XML tag.
+  character(*),   intent(in) :: name       !< Attribute name.
+  logical                    :: is_present !< Inquire result.
+  integer(I4P)               :: a          !< Counter.
+  !---------------------------------------------------------------------------------------------------------------------------------
+
+  !---------------------------------------------------------------------------------------------------------------------------------
+  is_present = .false.
+  if (self%attributes_number>0) then
+    do a=1, self%attributes_number
+      if (self%attribute(1, a)==name) then
+        is_present = .true.
+        exit
+      endif
+    enddo
+  endif
+  !---------------------------------------------------------------------------------------------------------------------------------
+  endfunction is_attribute_present
+
   pure subroutine add_single_attribute(self, attribute)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Add one attribute name/value pair.
+  !<
+  !< @note Leading and trailing white spaces are trimmed out by attribute's name.
   !---------------------------------------------------------------------------------------------------------------------------------
   class(xml_tag), intent(inout) :: self               !< XML tag.
   character(*),   intent(in)    :: attribute(1:)      !< Attribute name/value pair [1:2].
@@ -378,13 +415,15 @@ contains
     if (.not.is_updated) then
       allocate(new_attribute(1:2, 1:self%attributes_number+1))
       new_attribute(1:2, 1:self%attributes_number) = self%attribute
-      new_attribute(1:2, self%attributes_number+1) = attribute
+      new_attribute(1, self%attributes_number+1) = trim(adjustl(attribute(1)))
+      new_attribute(2, self%attributes_number+1) = attribute(2)
       call move_alloc(from=new_attribute, to=self%attribute)
       self%attributes_number = self%attributes_number + 1
     endif
   else
     call self%alloc_attributes(Na=1)
-    self%attribute(1:2, 1) = attribute
+    self%attribute(1, 1) = trim(adjustl(attribute(1)))
+    self%attribute(2, 1) = attribute(2)
   endif
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine add_single_attribute
@@ -404,6 +443,43 @@ contains
   enddo
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine add_multiple_attributes
+
+  pure subroutine add_stream_attributes(self, attributes_stream)
+  !---------------------------------------------------------------------------------------------------------------------------------
+  !< Add list of attributes name/value pairs passed as stream.
+  !<
+  !< @note The character `=` cannot compare into the attributes names of values.
+  !---------------------------------------------------------------------------------------------------------------------------------
+  class(xml_tag), intent(inout) :: self              !< XML tag.
+  character(*),   intent(in)    :: attributes_stream !< Attribute name/value pair list passed as stream.
+  type(string)                  :: attributes_string !< Attribute name/value pair list as string.
+  type(string)                  :: tokens(1:3)       !< Attributes tokenized by `=`.
+  type(string)                  :: attribute(1:2)    !< Attribute name/value pair.
+  logical                       :: continue_to_parse !< Sentinel to stop attributes stream parsing.
+  integer(I4P)                  :: max_chars         !< Counter.
+  !---------------------------------------------------------------------------------------------------------------------------------
+
+  !---------------------------------------------------------------------------------------------------------------------------------
+  attributes_string = attributes_stream
+  continue_to_parse = .true.
+  do while(continue_to_parse)
+    tokens = attributes_string%partition(sep='=')
+    attribute(1) = trim(adjustl(tokens(1)))
+    tokens(3) = tokens(3)%slice(istart=tokens(3)%index('"')+1, iend=tokens(3)%len())
+    attribute(2) = tokens(3)%slice(istart=1, iend=tokens(3)%index('"')-1)
+    tokens(3) = tokens(3)%slice(istart=tokens(3)%index('"')+1, iend=tokens(3)%len())
+    max_chars = max(attribute(1)%len(), attribute(2)%len())
+    attribute(1) = attribute(1)%fill(width=max_chars, right=.true., filling_char=' ')
+    attribute(2) = attribute(2)%fill(width=max_chars, right=.true., filling_char=' ')
+    call self%add_single_attribute(attribute=[attribute(1)//'', attribute(2)//''])
+    if (tokens(3)%index('=')>0) then
+      attributes_string = tokens(3)
+    else
+      continue_to_parse = .false.
+    endif
+  enddo
+  !---------------------------------------------------------------------------------------------------------------------------------
+  endsubroutine add_stream_attributes
 
   elemental subroutine alloc_attributes(self, Na)
   !---------------------------------------------------------------------------------------------------------------------------------
