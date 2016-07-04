@@ -803,7 +803,7 @@ private pure function <a href='../proc/create_tag_flat.html'>create_tag_flat</a>
   <td>optional</td>
   
   <td></td><td>::</td>
-  <td><strong>is_content_indented</strong></td><td><p>Activate value indentation.</p></td>
+  <td><strong>is_content_indented</strong></td><td><p>Activate content indentation.</p></td>
   
 </tr>
 
@@ -2350,7 +2350,7 @@ private elemental subroutine <a href='../proc/parse%7E2.html'>parse</a>(self, so
          
     
     <h3>
-private elemental function <a href='../proc/self_closing_tag.html'>self_closing_tag</a>(self) result(tag_)
+private elemental function <a href='../proc/self_closing_tag.html'>self_closing_tag</a>(self, is_indented) result(tag_)
     
     
     
@@ -2381,6 +2381,21 @@ private elemental function <a href='../proc/self_closing_tag.html'>self_closing_
   
   <td></td><td>::</td>
   <td><strong>self</strong></td><td><p>XML tag.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>is_indented</strong></td><td><p>Flag to check if tag is indented.</p></td>
   
 </tr>
 
@@ -2633,7 +2648,7 @@ private pure subroutine <a href='../proc/set.html'>set</a>(self, name, attribute
          
     
     <h3>
-private elemental function <a href='../proc/start_tag.html'>start_tag</a>(self) result(tag_)
+private elemental function <a href='../proc/start_tag.html'>start_tag</a>(self, is_indented) result(tag_)
     
     
     
@@ -2664,6 +2679,21 @@ private elemental function <a href='../proc/start_tag.html'>start_tag</a>(self) 
   
   <td></td><td>::</td>
   <td><strong>self</strong></td><td><p>XML tag.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>is_indented</strong></td><td><p>Flag to check if tag is indented.</p></td>
   
 </tr>
 
@@ -2719,7 +2749,7 @@ private elemental function <a href='../proc/start_tag.html'>start_tag</a>(self) 
          
     
     <h3>
-private pure function <a href='../proc/stringify%7E2.html'>stringify</a>(self, is_content_indented) result(stringed)
+private pure function <a href='../proc/stringify%7E2.html'>stringify</a>(self, is_indented, is_content_indented) result(stringed)
     
     
     
@@ -2750,6 +2780,21 @@ private pure function <a href='../proc/stringify%7E2.html'>stringify</a>(self, i
   
   <td></td><td>::</td>
   <td><strong>self</strong></td><td><p>XML tag.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>is_indented</strong></td><td><p>Activate content indentation.</p></td>
   
 </tr>
 
