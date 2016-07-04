@@ -96,7 +96,7 @@ contains
   character(*), intent(in), optional :: attributes_stream   !< Attributes list of name/value pairs as single stream.
   character(*), intent(in), optional :: content             !< Tag value.
   integer(I4P), intent(in), optional :: indent              !< Number of indent-white-spaces.
-  logical,      intent(in), optional :: is_content_indented !< Activate value indentation.
+  logical,      intent(in), optional :: is_content_indented !< Activate content indentation.
   logical,      intent(in), optional :: is_self_closing     !< The tag is self closing.
   type(xml_tag)                      :: tag                 !< XML tag.
   !---------------------------------------------------------------------------------------------------------------------------------
@@ -302,45 +302,54 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine set
 
-  elemental function self_closing_tag(self) result(tag_)
+  elemental function self_closing_tag(self, is_indented) result(tag_)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Return `<tag_name.../>` self closing tag.
   !---------------------------------------------------------------------------------------------------------------------------------
-  class(xml_tag), intent(in)    :: self !< XML tag.
-  character(len=:), allocatable :: tag_ !< The self closing tag string.
+  class(xml_tag), intent(in)           :: self        !< XML tag.
+  logical,        intent(in), optional :: is_indented !< Flag to check if tag is indented.
+  character(len=:), allocatable        :: tag_        !< The self closing tag string.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
   tag_ = tag_//'<'//self%tag_name
   if (self%attributes_number>0) tag_ = tag_//' '//self%attributes()
   tag_ = tag_//'/>'
+  if (present(is_indented)) then
+    if (is_indented) tag_ = new_line('a')//repeat(' ', self%indent)//tag_
+  endif
   !---------------------------------------------------------------------------------------------------------------------------------
   endfunction self_closing_tag
 
-  elemental function start_tag(self) result(tag_)
+  elemental function start_tag(self, is_indented) result(tag_)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Return `<tag_name...>` start tag.
   !---------------------------------------------------------------------------------------------------------------------------------
-  class(xml_tag), intent(in)    :: self !< XML tag.
-  character(len=:), allocatable :: tag_ !< The start tag string.
+  class(xml_tag), intent(in)           :: self        !< XML tag.
+  logical,        intent(in), optional :: is_indented !< Flag to check if tag is indented.
+  character(len=:), allocatable        :: tag_        !< The start tag string.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
   tag_ = tag_//'<'//self%tag_name
   if (self%attributes_number>0) tag_ = tag_//' '//self%attributes()
   tag_ = tag_//'>'
+  if (present(is_indented)) then
+    if (is_indented) tag_ = repeat(' ', self%indent)//tag_
+  endif
   !---------------------------------------------------------------------------------------------------------------------------------
   endfunction start_tag
 
-  pure function stringify(self, is_content_indented) result(stringed)
+  pure function stringify(self, is_indented, is_content_indented) result(stringed)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Convert the whole tag into a string.
   !---------------------------------------------------------------------------------------------------------------------------------
-  class(xml_tag), intent(in)           :: self               !< XML tag.
+  class(xml_tag), intent(in)           :: self                 !< XML tag.
+  logical,        intent(in), optional :: is_indented          !< Activate content indentation.
   logical,        intent(in), optional :: is_content_indented  !< Activate content indentation.
-  character(len=:), allocatable        :: stringed           !< Output string containing the whole tag.
+  character(len=:), allocatable        :: stringed             !< Output string containing the whole tag.
   logical                              :: is_content_indented_ !< Activate content indentation.
-  integer(I4P)                         :: a                  !< Counter.
+  integer(I4P)                         :: a                    !< Counter.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
@@ -348,13 +357,13 @@ contains
   stringed = ''
   if (self%tag_name%is_allocated()) then
     if (self%is_self_closing) then
-      stringed = self%self_closing_tag()
+      stringed = self%self_closing_tag(is_indented=is_indented)
     else
-      stringed = self%start_tag()
+      stringed = self%start_tag(is_indented=is_indented)
       if (self%tag_content%is_allocated()) then
         if (is_content_indented_) then
-          stringed = stringed//new_line('a')//repeat(' ',self%indent+2)//&
-                     self%tag_content//new_line('a')//repeat(' ',self%indent)
+          stringed = stringed//new_line('a')//repeat(' ', self%indent+2)//&
+                     self%tag_content//new_line('a')//repeat(' ', self%indent)
         else
           stringed = stringed//self%tag_content
         endif
