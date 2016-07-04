@@ -328,7 +328,7 @@ contains
   if (self%attributes_number>0) tag_ = tag_//' '//self%attributes()
   tag_ = tag_//'/>'
   if (present(is_indented)) then
-    if (is_indented) tag_ = new_line('a')//repeat(' ', self%indent)//tag_
+    if (is_indented) tag_ = repeat(' ', self%indent)//tag_
   endif
   !---------------------------------------------------------------------------------------------------------------------------------
   endfunction self_closing_tag
