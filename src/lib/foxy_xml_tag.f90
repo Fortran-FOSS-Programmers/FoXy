@@ -83,7 +83,7 @@ endinterface
 !-----------------------------------------------------------------------------------------------------------------------------------
 contains
   ! creator procedures overloading *xml_tag* name
-  function create_tag_flat(name, attribute, attributes, attributes_stream, content, indent, &
+  pure function create_tag_flat(name, attribute, attributes, attributes_stream, content, indent, &
                                 is_content_indented, is_self_closing) result(tag)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Return an instance of xml tag.
@@ -107,7 +107,7 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
   endfunction create_tag_flat
 
-  function create_tag_nested(name, content, attribute, attributes, attributes_stream, indent, is_content_indented) result(tag)
+  pure function create_tag_nested(name, content, attribute, attributes, attributes_stream, indent, is_content_indented) result(tag)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Return an instance of xml tag with value being a nested tag.
   !<
@@ -268,7 +268,7 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
   endsubroutine parse
 
-  subroutine set(self, name, attribute, attributes, attributes_stream, content, indent, is_content_indented, is_self_closing)
+  pure subroutine set(self, name, attribute, attributes, attributes_stream, content, indent, is_content_indented, is_self_closing)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Set tag data.
   !---------------------------------------------------------------------------------------------------------------------------------
