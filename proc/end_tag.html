@@ -801,7 +801,7 @@
     
     <div class="col-lg-9" id='text'>
     <h2>
-private elemental function end_tag(self) result(tag_)
+private elemental function end_tag(self, is_indented) result(tag_)
     
     
     
@@ -835,6 +835,21 @@ private elemental function end_tag(self) result(tag_)
   
   <td></td><td>::</td>
   <td><strong>self</strong></td><td><p>XML tag.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" id="variable-is_indented"></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>is_indented</strong></td><td><p>Activate content indentation.</p></td>
   
 </tr>
 
@@ -877,16 +892,20 @@ private elemental function end_tag(self) result(tag_)
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="highlight"><pre><span></span>  <span class="k">elemental function </span><span class="n">end_tag</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="k">result</span><span class="p">(</span><span class="n">tag_</span><span class="p">)</span>
+    <div class="highlight"><pre><span></span>  <span class="k">elemental function </span><span class="n">end_tag</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">is_indented</span><span class="p">)</span> <span class="k">result</span><span class="p">(</span><span class="n">tag_</span><span class="p">)</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
   <span class="c">!&lt; Return `&lt;/tag_name&gt;` end tag.</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
-  <span class="k">class</span><span class="p">(</span><span class="n">xml_tag</span><span class="p">),</span> <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span>    <span class="kd">::</span> <span class="n">self</span> <span class="c">!&lt; XML tag.</span>
-  <span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span> <span class="k">allocatable</span> <span class="kd">::</span> <span class="n">tag_</span> <span class="c">!&lt; The end tag string.</span>
+  <span class="k">class</span><span class="p">(</span><span class="n">xml_tag</span><span class="p">),</span> <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span>           <span class="kd">::</span> <span class="n">self</span>        <span class="c">!&lt; XML tag.</span>
+  <span class="kt">logical</span><span class="p">,</span>        <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span> <span class="k">optional</span> <span class="kd">::</span> <span class="n">is_indented</span> <span class="c">!&lt; Activate content indentation.</span>
+  <span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span> <span class="k">allocatable</span>        <span class="kd">::</span> <span class="n">tag_</span>        <span class="c">!&lt; The end tag string.</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
 
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
   <span class="n">tag_</span> <span class="o">=</span> <span class="s1">&#39;&lt;/&#39;</span><span class="o">//</span><span class="n">self</span><span class="p">%</span><span class="n">tag_name</span><span class="o">//</span><span class="s1">&#39;&gt;&#39;</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">is_indented</span><span class="p">))</span> <span class="k">then</span>
+<span class="k">    if</span> <span class="p">(</span><span class="n">is_indented</span><span class="p">)</span> <span class="n">tag_</span> <span class="o">=</span> <span class="nb">repeat</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="n">self</span><span class="p">%</span><span class="n">indent</span><span class="p">)</span><span class="o">//</span><span class="n">tag_</span>
+  <span class="n">endif</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
   <span class="n">endfunction</span> <span class="n">end_tag</span>
 </pre></div>

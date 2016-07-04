@@ -181,16 +181,20 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
   endfunction content
 
-  elemental function end_tag(self) result(tag_)
+  elemental function end_tag(self, is_indented) result(tag_)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Return `</tag_name>` end tag.
   !---------------------------------------------------------------------------------------------------------------------------------
-  class(xml_tag), intent(in)    :: self !< XML tag.
-  character(len=:), allocatable :: tag_ !< The end tag string.
+  class(xml_tag), intent(in)           :: self        !< XML tag.
+  logical,        intent(in), optional :: is_indented !< Activate content indentation.
+  character(len=:), allocatable        :: tag_        !< The end tag string.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
   tag_ = '</'//self%tag_name//'>'
+  if (present(is_indented)) then
+    if (is_indented) tag_ = repeat(' ', self%indent)//tag_
+  endif
   !---------------------------------------------------------------------------------------------------------------------------------
   endfunction end_tag
 

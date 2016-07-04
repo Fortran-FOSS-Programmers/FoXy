@@ -1867,7 +1867,7 @@ private pure subroutine <a href='../proc/delete_content.html'>delete_content</a>
          
     
     <h3>
-private elemental function <a href='../proc/end_tag.html'>end_tag</a>(self) result(tag_)
+private elemental function <a href='../proc/end_tag.html'>end_tag</a>(self, is_indented) result(tag_)
     
     
     
@@ -1898,6 +1898,21 @@ private elemental function <a href='../proc/end_tag.html'>end_tag</a>(self) resu
   
   <td></td><td>::</td>
   <td><strong>self</strong></td><td><p>XML tag.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>is_indented</strong></td><td><p>Activate content indentation.</p></td>
   
 </tr>
 
