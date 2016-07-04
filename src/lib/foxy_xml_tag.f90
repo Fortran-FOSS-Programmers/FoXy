@@ -500,15 +500,19 @@ contains
   do while(continue_to_parse)
     tokens = attributes_string%partition(sep='=')
     attribute(1) = trim(adjustl(tokens(1)))
-    tokens(3) = tokens(3)%slice(istart=tokens(3)%index('"')+1, iend=tokens(3)%len())
-    attribute(2) = tokens(3)%slice(istart=1, iend=tokens(3)%index('"')-1)
-    tokens(3) = tokens(3)%slice(istart=tokens(3)%index('"')+1, iend=tokens(3)%len())
-    max_chars = max(attribute(1)%len(), attribute(2)%len())
-    attribute(1) = attribute(1)%fill(width=max_chars, right=.true., filling_char=' ')
-    attribute(2) = attribute(2)%fill(width=max_chars, right=.true., filling_char=' ')
-    call self%add_single_attribute(attribute=[attribute(1)//'', attribute(2)//''], sanitize_value=sanitize_values)
-    if (tokens(3)%index('=')>0) then
-      attributes_string = tokens(3)
+    if (attribute(1)/='') then
+      tokens(3) = tokens(3)%slice(istart=tokens(3)%index('"')+1, iend=tokens(3)%len())
+      attribute(2) = tokens(3)%slice(istart=1, iend=tokens(3)%index('"')-1)
+      tokens(3) = tokens(3)%slice(istart=tokens(3)%index('"')+1, iend=tokens(3)%len())
+      max_chars = max(attribute(1)%len(), attribute(2)%len())
+      attribute(1) = attribute(1)%fill(width=max_chars, right=.true., filling_char=' ')
+      attribute(2) = attribute(2)%fill(width=max_chars, right=.true., filling_char=' ')
+      call self%add_single_attribute(attribute=[attribute(1)//'', attribute(2)//''], sanitize_value=sanitize_values)
+      if (tokens(3)%index('=')>0) then
+        attributes_string = tokens(3)
+      else
+        continue_to_parse = .false.
+      endif
     else
       continue_to_parse = .false.
     endif
