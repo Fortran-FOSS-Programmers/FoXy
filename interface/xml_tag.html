@@ -978,15 +978,15 @@ implementation in a submodule of an interface in a parent module.</p>
 <path fill="none" stroke="#000000" d="M77.5574,-175.797C82.5674,-173.174 87.5567,-170.222 92,-167 109.629,-154.217 126.491,-136.131 138.327,-122.124"/>
 <polygon fill="#000000" stroke="#000000" points="141.352,-123.957 145.009,-114.013 135.949,-119.506 141.352,-123.957"/>
 </g>
-<!-- program~add_attributes -->
-<g id="node3" class="node"><title>program~add_attributes</title>
-<a xlink:href="../program/add_attributes.html" xlink:title="add_attributes">
-<polygon fill="#f0ad4e" stroke="#f0ad4e" points="86,-158 6,-158 6,-132 86,-132 86,-158"/>
-<text text-anchor="middle" x="46" y="-142.55" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_attributes</text>
+<!-- program~delete_attributes -->
+<g id="node3" class="node"><title>program~delete_attributes</title>
+<a xlink:href="../program/delete_attributes.html" xlink:title="delete_attributes">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="92,-158 4.26326e-14,-158 0,-132 92,-132 92,-158"/>
+<text text-anchor="middle" x="46" y="-142.55" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">delete_attributes</text>
 </a>
 </g>
-<!-- program~add_attributes&#45;&gt;interface~xml_tag -->
-<g id="edge4" class="edge"><title>program~add_attributes&#45;&gt;interface~xml_tag</title>
+<!-- program~delete_attributes&#45;&gt;interface~xml_tag -->
+<g id="edge4" class="edge"><title>program~delete_attributes&#45;&gt;interface~xml_tag</title>
 <path fill="none" stroke="#000000" d="M78.4085,-131.918C90.9103,-126.871 105.279,-121.071 118.169,-115.868"/>
 <polygon fill="#000000" stroke="#000000" points="119.72,-119.016 127.683,-112.027 117.099,-112.525 119.72,-119.016"/>
 </g>
@@ -1002,15 +1002,15 @@ implementation in a submodule of an interface in a parent module.</p>
 <path fill="none" stroke="#000000" d="M78.1141,-101C90.4773,-101 104.701,-101 117.526,-101"/>
 <polygon fill="#000000" stroke="#000000" points="117.899,-104.5 127.899,-101 117.899,-97.5001 117.899,-104.5"/>
 </g>
-<!-- program~delete_attributes -->
-<g id="node5" class="node"><title>program~delete_attributes</title>
-<a xlink:href="../program/delete_attributes.html" xlink:title="delete_attributes">
-<polygon fill="#f0ad4e" stroke="#f0ad4e" points="92,-70 4.26326e-14,-70 0,-44 92,-44 92,-70"/>
-<text text-anchor="middle" x="46" y="-54.55" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">delete_attributes</text>
+<!-- program~add_attributes -->
+<g id="node5" class="node"><title>program~add_attributes</title>
+<a xlink:href="../program/add_attributes.html" xlink:title="add_attributes">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="86,-70 6,-70 6,-44 86,-44 86,-70"/>
+<text text-anchor="middle" x="46" y="-54.55" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_attributes</text>
 </a>
 </g>
-<!-- program~delete_attributes&#45;&gt;interface~xml_tag -->
-<g id="edge8" class="edge"><title>program~delete_attributes&#45;&gt;interface~xml_tag</title>
+<!-- program~add_attributes&#45;&gt;interface~xml_tag -->
+<g id="edge8" class="edge"><title>program~add_attributes&#45;&gt;interface~xml_tag</title>
 <path fill="none" stroke="#000000" d="M78.4085,-70.0823C90.9103,-75.1289 105.279,-80.9292 118.169,-86.1325"/>
 <polygon fill="#000000" stroke="#000000" points="117.099,-89.4751 127.683,-89.9728 119.72,-82.984 117.099,-89.4751"/>
 </g>
@@ -1134,7 +1134,7 @@ implementation in a submodule of an interface in a parent module.</p>
     
   <div class="panel panel-default">
   <div class="panel-heading codesum"><span class="anchor" id="proc-create_tag_flat"></span><h3>
-private function <a href='../proc/create_tag_flat.html'>create_tag_flat</a>(name, attribute, attributes, attributes_stream, content, indent, is_content_indented, is_self_closing) result(tag)
+private pure function <a href='../proc/create_tag_flat.html'>create_tag_flat</a>(name, attribute, attributes, attributes_stream, content, indent, is_content_indented, is_self_closing) result(tag)
     
     
     
@@ -1307,7 +1307,7 @@ private function <a href='../proc/create_tag_flat.html'>create_tag_flat</a>(name
     
   <div class="panel panel-default">
   <div class="panel-heading codesum"><span class="anchor" id="proc-create_tag_nested"></span><h3>
-private function <a href='../proc/create_tag_nested.html'>create_tag_nested</a>(name, content, attribute, attributes, attributes_stream, indent, is_content_indented) result(tag)
+private pure function <a href='../proc/create_tag_nested.html'>create_tag_nested</a>(name, content, attribute, attributes, attributes_stream, indent, is_content_indented) result(tag)
     
     
     
