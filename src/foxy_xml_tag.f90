@@ -58,6 +58,7 @@ type :: xml_tag
     procedure, pass(self) :: set                         !< Set tag data.
     procedure, pass(self) :: start_tag                   !< Return `<tag_name...>` start tag.
     procedure, pass(self) :: stringify                   !< Convert the whole tag into a string.
+    procedure, pass(self) :: write => write_tag          !< Write tag to unit file.
     generic               :: assignment(=) => assign_tag !< Assignment operator overloading.
     ! private methods
     procedure, pass(self), private :: add_single_attribute       !< Add one attribute name/value pair.
@@ -385,6 +386,44 @@ contains
   endif
   !---------------------------------------------------------------------------------------------------------------------------------
   endfunction stringify
+
+  subroutine write_tag(self, unit, is_indented, is_content_indented, form, end_record, iostat, iomsg)
+  !---------------------------------------------------------------------------------------------------------------------------------
+  !< Write tag to unit file.
+  !---------------------------------------------------------------------------------------------------------------------------------
+  class(xml_tag), intent(in)            :: self                !< XML tag.
+  integer(I4P),   intent(in)            :: unit                !< File unit.
+  logical,        intent(in),  optional :: is_indented         !< Activate content indentation.
+  logical,        intent(in),  optional :: is_content_indented !< Activate content indentation.
+  character(*),   intent(in),  optional :: form                !< Format.
+  character(*),   intent(in),  optional :: end_record          !< Ending record.
+  integer(I4P),   intent(out), optional :: iostat              !< IO status.
+  character(*),   intent(out), optional :: iomsg               !< IO message.
+  type(string)                          :: form_               !< Format.
+  type(string)                          :: end_record_         !< Ending record.
+  integer(I4P)                          :: iostat_             !< IO status.
+  character(500)                        :: iomsg_              !< IO message.
+  !---------------------------------------------------------------------------------------------------------------------------------
+
+  !---------------------------------------------------------------------------------------------------------------------------------
+  form_ = 'UNFORMATTED'
+  if (present(form)) then
+    form_ = form
+    form_ = form_%upper()
+  endif
+  end_record_ = '' ; if (present(end_record)) end_record_ = end_record
+  select case(form_%chars())
+  case('UNFORMATTED')
+    write(unit=unit, iostat=iostat_, iomsg=iomsg_)self%stringify(is_indented=is_indented, &
+                                                                 is_content_indented=is_content_indented)//end_record
+  case('FORMATTED')
+    write(unit=unit, fmt='(A)', iostat=iostat_, iomsg=iomsg_)self%stringify(is_indented=is_indented, &
+                                                                            is_content_indented=is_content_indented)//end_record
+  endselect
+  if (present(iostat)) iostat = iostat_
+  if (present(iomsg)) iomsg = iomsg_
+  !---------------------------------------------------------------------------------------------------------------------------------
+  endsubroutine write_tag
 
   ! private methods
   pure function is_attribute_present(self, name) result(is_present)

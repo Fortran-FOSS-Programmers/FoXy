@@ -220,6 +220,8 @@
           
           <a class="list-group-item" href="../type/xml_tag.html#boundprocedure-stringify%7E2">stringify</a>
           
+          <a class="list-group-item" href="../type/xml_tag.html#boundprocedure-write">write</a>
+          
           <a class="list-group-item" href="../type/xml_tag.html#boundprocedure-assignment%28%3D%29">assignment(=)</a>
           
           <a class="list-group-item" href="../type/xml_tag.html#boundprocedure-add_single_attribute">add_single_attribute</a>
@@ -2952,6 +2954,188 @@ private pure function <a href='../proc/stringify%7E2.html'>stringify</a>(self, i
     
 	   
 <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-write"></span><h3>procedure, public, pass(self) :: <strong>write</strong>  => <a href='../proc/write_tag.html'>write_tag</a> 
+    
+  </h3></div>
+  
+  <div class="panel-body">
+    
+
+
+    <p>Write tag to unit file.</p>
+  </div>
+  
+  <ul class="list-group">
+    
+      <li class="list-group-item">
+      
+         
+    
+    <h3>
+private subroutine <a href='../proc/write_tag.html'>write_tag</a>(self, unit, is_indented, is_content_indented, form, end_record, iostat, iomsg)
+    
+    
+    
+</h3>
+    
+    <h4>Arguments</h4>
+    
+      
+      
+<table class="table table-striped varlist">
+<thead><tr><th>Type</th>
+<th>Intent</th><th>Optional</th>
+<th>Attributes</th><th></th><th>Name</th><th></th></thead>
+
+
+
+<tbody>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>class(<a href='../type/xml_tag.html'>xml_tag</a>),</td>
+  <td>intent(in)</td>
+  <td></td>
+  
+  <td></td><td>::</td>
+  <td><strong>self</strong></td><td><p>XML tag.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>integer(kind=I4P),</td>
+  <td>intent(in)</td>
+  <td></td>
+  
+  <td></td><td>::</td>
+  <td><strong>unit</strong></td><td><p>File unit.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>is_indented</strong></td><td><p>Activate content indentation.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>is_content_indented</strong></td><td><p>Activate content indentation.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>character(len=*),</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>form</strong></td><td><p>Format.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>character(len=*),</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>end_record</strong></td><td><p>Ending record.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>integer(kind=I4P),</td>
+  <td>intent(out),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>iostat</strong></td><td><p>IO status.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>character(len=*),</td>
+  <td>intent(out),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>iomsg</strong></td><td><p>IO message.</p></td>
+  
+</tr>
+
+</tbody>
+</table>
+
+      
+    
+    
+    
+    <h4>Description</h4>
+       
+       
+
+
+       
+       <p>Write tag to unit file.</p>
+        
+
+      
+      </li>
+    
+  </ul>
+</div>
+
+    
+	   
+<div class="panel panel-default">
   <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-assignment%28%3D%29"></span><h3>generic, public :: <strong>assignment(=)</strong>  => <a href='../type/xml_tag.html#boundprocedure-assign_tag'>assign_tag</a> 
     
   </h3></div>
@@ -4410,6 +4594,7 @@ private elemental subroutine <a href='../proc/assign_tag.html'>assign_tag</a>(lh
     <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="kd">::</span> <span class="n">set</span>                         <span class="c">!&lt; Set tag data.</span>
     <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="kd">::</span> <span class="n">start_tag</span>                   <span class="c">!&lt; Return `&lt;tag_name...&gt;` start tag.</span>
     <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="kd">::</span> <span class="n">stringify</span>                   <span class="c">!&lt; Convert the whole tag into a string.</span>
+    <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="kd">::</span> <span class="k">write</span> <span class="o">=&gt;</span> <span class="n">write_tag</span>          <span class="c">!&lt; Write tag to unit file.</span>
     <span class="k">generic</span>               <span class="kd">::</span> <span class="n">assignment</span><span class="p">(</span><span class="o">=</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">assign_tag</span> <span class="c">!&lt; Assignment operator overloading.</span>
     <span class="c">! private methods</span>
     <span class="k">procedure</span><span class="p">,</span> <span class="k">pass</span><span class="p">(</span><span class="n">self</span><span class="p">),</span> <span class="k">private</span> <span class="kd">::</span> <span class="n">add_single_attribute</span>       <span class="c">!&lt; Add one attribute name/value pair.</span>
