@@ -821,7 +821,7 @@
     
     <div class="col-lg-9" id='text'>
     <h2>
-private pure subroutine add_stream_attributes(self, attributes_stream)
+private pure subroutine add_stream_attributes(self, attributes_stream, sanitize_values)
     
     
     
@@ -870,6 +870,21 @@ private pure subroutine add_stream_attributes(self, attributes_stream)
   
   <td></td><td>::</td>
   <td><strong>attributes_stream</strong></td><td><p>Attribute name/value pair list passed as stream.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" id="variable-sanitize_values%7E2"></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>sanitize_values</strong></td><td><p>Sanitize attribute values.</p></td>
   
 </tr>
 
@@ -992,19 +1007,20 @@ private pure subroutine add_stream_attributes(self, attributes_stream)
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="highlight"><pre><span></span>  <span class="k">pure subroutine </span><span class="n">add_stream_attributes</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">attributes_stream</span><span class="p">)</span>
+    <div class="highlight"><pre><span></span>  <span class="k">pure subroutine </span><span class="n">add_stream_attributes</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">attributes_stream</span><span class="p">,</span> <span class="n">sanitize_values</span><span class="p">)</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
   <span class="c">!&lt; Add list of attributes name/value pairs passed as stream.</span>
   <span class="c">!&lt;</span>
   <span class="c">!&lt; @note The character `=` cannot compare into the attributes names of values.</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
-  <span class="k">class</span><span class="p">(</span><span class="n">xml_tag</span><span class="p">),</span> <span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span> <span class="kd">::</span> <span class="n">self</span>              <span class="c">!&lt; XML tag.</span>
-  <span class="kt">character</span><span class="p">(</span><span class="o">*</span><span class="p">),</span>   <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span>    <span class="kd">::</span> <span class="n">attributes_stream</span> <span class="c">!&lt; Attribute name/value pair list passed as stream.</span>
-  <span class="k">type</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>                  <span class="kd">::</span> <span class="n">attributes_string</span> <span class="c">!&lt; Attribute name/value pair list as string.</span>
-  <span class="k">type</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>                  <span class="kd">::</span> <span class="n">tokens</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">)</span>       <span class="c">!&lt; Attributes tokenized by `=`.</span>
-  <span class="k">type</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>                  <span class="kd">::</span> <span class="n">attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">)</span>    <span class="c">!&lt; Attribute name/value pair.</span>
-  <span class="kt">logical</span>                       <span class="kd">::</span> <span class="n">continue_to_parse</span> <span class="c">!&lt; Sentinel to stop attributes stream parsing.</span>
-  <span class="kt">integer</span><span class="p">(</span><span class="n">I4P</span><span class="p">)</span>                  <span class="kd">::</span> <span class="n">max_chars</span>         <span class="c">!&lt; Counter.</span>
+  <span class="k">class</span><span class="p">(</span><span class="n">xml_tag</span><span class="p">),</span> <span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span>        <span class="kd">::</span> <span class="n">self</span>              <span class="c">!&lt; XML tag.</span>
+  <span class="kt">character</span><span class="p">(</span><span class="o">*</span><span class="p">),</span>   <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span>           <span class="kd">::</span> <span class="n">attributes_stream</span> <span class="c">!&lt; Attribute name/value pair list passed as stream.</span>
+  <span class="kt">logical</span><span class="p">,</span>        <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span> <span class="k">optional</span> <span class="kd">::</span> <span class="n">sanitize_values</span>   <span class="c">!&lt; Sanitize attribute values.</span>
+  <span class="k">type</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>                         <span class="kd">::</span> <span class="n">attributes_string</span> <span class="c">!&lt; Attribute name/value pair list as string.</span>
+  <span class="k">type</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>                         <span class="kd">::</span> <span class="n">tokens</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">)</span>       <span class="c">!&lt; Attributes tokenized by `=`.</span>
+  <span class="k">type</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>                         <span class="kd">::</span> <span class="n">attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">)</span>    <span class="c">!&lt; Attribute name/value pair.</span>
+  <span class="kt">logical</span>                              <span class="kd">::</span> <span class="n">continue_to_parse</span> <span class="c">!&lt; Sentinel to stop attributes stream parsing.</span>
+  <span class="kt">integer</span><span class="p">(</span><span class="n">I4P</span><span class="p">)</span>                         <span class="kd">::</span> <span class="n">max_chars</span>         <span class="c">!&lt; Counter.</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
 
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
@@ -1019,7 +1035,7 @@ private pure subroutine add_stream_attributes(self, attributes_stream)
     <span class="n">max_chars</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">)%</span><span class="nb">len</span><span class="p">(),</span> <span class="n">attribute</span><span class="p">(</span><span class="mi">2</span><span class="p">)%</span><span class="nb">len</span><span class="p">())</span>
     <span class="n">attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">=</span> <span class="n">attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">)%</span><span class="n">fill</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="n">max_chars</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="p">.</span><span class="n">true</span><span class="p">.,</span> <span class="n">filling_char</span><span class="o">=</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
     <span class="n">attribute</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">=</span> <span class="n">attribute</span><span class="p">(</span><span class="mi">2</span><span class="p">)%</span><span class="n">fill</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="n">max_chars</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="p">.</span><span class="n">true</span><span class="p">.,</span> <span class="n">filling_char</span><span class="o">=</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
-    <span class="k">call </span><span class="n">self</span><span class="p">%</span><span class="n">add_single_attribute</span><span class="p">(</span><span class="n">attribute</span><span class="o">=</span><span class="p">[</span><span class="n">attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">attribute</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39;&#39;</span><span class="p">])</span>
+    <span class="k">call </span><span class="n">self</span><span class="p">%</span><span class="n">add_single_attribute</span><span class="p">(</span><span class="n">attribute</span><span class="o">=</span><span class="p">[</span><span class="n">attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">attribute</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39;&#39;</span><span class="p">],</span> <span class="n">sanitize_value</span><span class="o">=</span><span class="n">sanitize_values</span><span class="p">)</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">tokens</span><span class="p">(</span><span class="mi">3</span><span class="p">)%</span><span class="nb">index</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">)</span> <span class="k">then</span>
 <span class="k">      </span><span class="n">attributes_string</span> <span class="o">=</span> <span class="n">tokens</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
     <span class="k">else</span>

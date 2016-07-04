@@ -21,7 +21,7 @@ test_passed = .false.
 
 print "(A)", 'source'
 source = '<first x="1" y="c" z="2">lorem ipsum...</first>'//new_line('a')//&
-         '<second a1="2 "/>'//new_line('a')//&
+         '<second a1="2"/>'//new_line('a')//&
          '<third>bye</third>'//new_line('a')//&
          '<fourth a="3">bye bye Mrs. Robinson</fourth>'//new_line('a')//&
          '<fift>'//new_line('a')//&
@@ -31,7 +31,7 @@ print "(A)", source
 print "(A)", 'created'
 a_tag = xml_tag(name='first', content='lorem ipsum...', attributes=reshape([['x', '1'], ['y', 'c'], ['z', '2']], [2,3]))
 call a_file%add_tag(tag=a_tag)
-a_tag = xml_tag(name='second', attribute=['a1', '2 '], is_self_closing=.true.)
+a_tag = xml_tag(name='second', attribute=['a1', '2 '], is_self_closing=.true., sanitize_attributes_value=.true.)
 call a_file%add_tag(tag=a_tag)
 a_tag = xml_tag(name='third', content='bye')
 call a_file%add_tag(tag=a_tag)

@@ -683,7 +683,7 @@ implementation in a submodule of an interface in a parent module.</p>
     
     
     <h3>
-private pure function <a href='../proc/create_tag_flat.html'>create_tag_flat</a>(name, attribute, attributes, attributes_stream, content, indent, is_content_indented, is_self_closing) result(tag)
+private pure function <a href='../proc/create_tag_flat.html'>create_tag_flat</a>(name, attribute, attributes, attributes_stream, sanitize_attributes_value, content, indent, is_content_indented, is_self_closing) result(tag)
     
     
     
@@ -759,6 +759,21 @@ private pure function <a href='../proc/create_tag_flat.html'>create_tag_flat</a>
   
   <td></td><td>::</td>
   <td><strong>attributes_stream</strong></td><td><p>Attributes list of name/value pairs as single stream.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>sanitize_attributes_value</strong></td><td><p>Sanitize attributes value.</p></td>
   
 </tr>
 
@@ -853,7 +868,7 @@ private pure function <a href='../proc/create_tag_flat.html'>create_tag_flat</a>
     
     
     <h3>
-private pure function <a href='../proc/create_tag_nested.html'>create_tag_nested</a>(name, content, attribute, attributes, attributes_stream, indent, is_content_indented) result(tag)
+private pure function <a href='../proc/create_tag_nested.html'>create_tag_nested</a>(name, content, attribute, attributes, attributes_stream, sanitize_attributes_value, indent, is_content_indented) result(tag)
     
     
     
@@ -944,6 +959,21 @@ private pure function <a href='../proc/create_tag_nested.html'>create_tag_nested
   
   <td></td><td>::</td>
   <td><strong>attributes_stream</strong></td><td><p>Attributes list of name/value pairs as single stream.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>sanitize_attributes_value</strong></td><td><p>Sanitize attributes value.</p></td>
   
 </tr>
 
@@ -1116,7 +1146,7 @@ private elemental subroutine <a href='../proc/finalize%7E2.html'>finalize</a>(ta
             
     
     <h3>
-private pure subroutine <a href='../proc/add_single_attribute.html'>add_single_attribute</a>(self, attribute)
+private pure subroutine <a href='../proc/add_single_attribute.html'>add_single_attribute</a>(self, attribute, sanitize_value)
     
     
     
@@ -1165,6 +1195,21 @@ private pure subroutine <a href='../proc/add_single_attribute.html'>add_single_a
   
 </tr>
 
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>sanitize_value</strong></td><td><p>Sanitize attribute value.</p></td>
+  
+</tr>
+
 </tbody>
 </table>
 
@@ -1191,7 +1236,7 @@ private pure subroutine <a href='../proc/add_single_attribute.html'>add_single_a
             
     
     <h3>
-private pure subroutine <a href='../proc/add_multiple_attributes.html'>add_multiple_attributes</a>(self, attributes)
+private pure subroutine <a href='../proc/add_multiple_attributes.html'>add_multiple_attributes</a>(self, attributes, sanitize_values)
     
     
     
@@ -1240,6 +1285,21 @@ private pure subroutine <a href='../proc/add_multiple_attributes.html'>add_multi
   
 </tr>
 
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>sanitize_values</strong></td><td><p>Sanitize attribute values.</p></td>
+  
+</tr>
+
 </tbody>
 </table>
 
@@ -1266,7 +1326,7 @@ private pure subroutine <a href='../proc/add_multiple_attributes.html'>add_multi
             
     
     <h3>
-private pure subroutine <a href='../proc/add_stream_attributes.html'>add_stream_attributes</a>(self, attributes_stream)
+private pure subroutine <a href='../proc/add_stream_attributes.html'>add_stream_attributes</a>(self, attributes_stream, sanitize_values)
     
     
     
@@ -1312,6 +1372,21 @@ private pure subroutine <a href='../proc/add_stream_attributes.html'>add_stream_
   
   <td></td><td>::</td>
   <td><strong>attributes_stream</strong></td><td><p>Attribute name/value pair list passed as stream.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>sanitize_values</strong></td><td><p>Sanitize attribute values.</p></td>
   
 </tr>
 
@@ -2451,7 +2526,7 @@ private elemental function <a href='../proc/self_closing_tag.html'>self_closing_
          
     
     <h3>
-private pure subroutine <a href='../proc/set.html'>set</a>(self, name, attribute, attributes, attributes_stream, content, indent, is_content_indented, is_self_closing)
+private pure subroutine <a href='../proc/set.html'>set</a>(self, name, attribute, attributes, attributes_stream, sanitize_attributes_value, content, indent, is_content_indented, is_self_closing)
     
     
     
@@ -2542,6 +2617,21 @@ private pure subroutine <a href='../proc/set.html'>set</a>(self, name, attribute
   
   <td></td><td>::</td>
   <td><strong>attributes_stream</strong></td><td><p>Attributes list of name/value pairs as single stream.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>sanitize_attributes_value</strong></td><td><p>Sanitize attributes value.</p></td>
   
 </tr>
 
@@ -2959,7 +3049,7 @@ private elemental subroutine <a href='../proc/assign_tag.html'>assign_tag</a>(lh
          
     
     <h3>
-private pure subroutine <a href='../proc/add_single_attribute.html'>add_single_attribute</a>(self, attribute)
+private pure subroutine <a href='../proc/add_single_attribute.html'>add_single_attribute</a>(self, attribute, sanitize_value)
     
     
     
@@ -3008,6 +3098,21 @@ private pure subroutine <a href='../proc/add_single_attribute.html'>add_single_a
   
 </tr>
 
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>sanitize_value</strong></td><td><p>Sanitize attribute value.</p></td>
+  
+</tr>
+
 </tbody>
 </table>
 
@@ -3051,7 +3156,7 @@ private pure subroutine <a href='../proc/add_single_attribute.html'>add_single_a
          
     
     <h3>
-private pure subroutine <a href='../proc/add_multiple_attributes.html'>add_multiple_attributes</a>(self, attributes)
+private pure subroutine <a href='../proc/add_multiple_attributes.html'>add_multiple_attributes</a>(self, attributes, sanitize_values)
     
     
     
@@ -3100,6 +3205,21 @@ private pure subroutine <a href='../proc/add_multiple_attributes.html'>add_multi
   
 </tr>
 
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>sanitize_values</strong></td><td><p>Sanitize attribute values.</p></td>
+  
+</tr>
+
 </tbody>
 </table>
 
@@ -3143,7 +3263,7 @@ private pure subroutine <a href='../proc/add_multiple_attributes.html'>add_multi
          
     
     <h3>
-private pure subroutine <a href='../proc/add_stream_attributes.html'>add_stream_attributes</a>(self, attributes_stream)
+private pure subroutine <a href='../proc/add_stream_attributes.html'>add_stream_attributes</a>(self, attributes_stream, sanitize_values)
     
     
     
@@ -3189,6 +3309,21 @@ private pure subroutine <a href='../proc/add_stream_attributes.html'>add_stream_
   
   <td></td><td>::</td>
   <td><strong>attributes_stream</strong></td><td><p>Attribute name/value pair list passed as stream.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>sanitize_values</strong></td><td><p>Sanitize attribute values.</p></td>
   
 </tr>
 

@@ -133,6 +133,8 @@
         
         <a class="list-group-item" href="../proc/add_single_attribute.html#variable-new_attribute">new_attribute</a>
         
+        <a class="list-group-item" href="../proc/add_single_attribute.html#variable-sanitize_value_">sanitize_value_</a>
+        
         <a class="list-group-item" href="../proc/add_single_attribute.html#variable-is_updated">is_updated</a>
         
         <a class="list-group-item" href="../proc/add_single_attribute.html#variable-a%7E4">a</a>
@@ -817,7 +819,7 @@
     
     <div class="col-lg-9" id='text'>
     <h2>
-private pure subroutine add_single_attribute(self, attribute)
+private pure subroutine add_single_attribute(self, attribute, sanitize_value)
     
     
     
@@ -869,6 +871,21 @@ private pure subroutine add_single_attribute(self, attribute)
   
 </tr>
 
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" id="variable-sanitize_value"></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>sanitize_value</strong></td><td><p>Sanitize attribute value.</p></td>
+  
+</tr>
+
 </tbody>
 </table>
 
@@ -906,6 +923,20 @@ private pure subroutine add_single_attribute(self, attribute)
   <td>public,</td>
   <td>allocatable</td><td>::</td>
   <td><strong>new_attribute</strong>(:,:)</td><td></td><td></td><td><p>Temporary storage for attributes.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" id="variable-sanitize_value_"></span>logical,</td>
+  
+  <td>public</td>
+  <td></td><td>::</td>
+  <td><strong>sanitize_value_</strong></td><td></td><td></td><td><p>Sanitize attribute value.</p></td>
   
 </tr>
 
@@ -960,25 +991,32 @@ private pure subroutine add_single_attribute(self, attribute)
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="highlight"><pre><span></span>  <span class="k">pure subroutine </span><span class="n">add_single_attribute</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">attribute</span><span class="p">)</span>
+    <div class="highlight"><pre><span></span>  <span class="k">pure subroutine </span><span class="n">add_single_attribute</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">attribute</span><span class="p">,</span> <span class="n">sanitize_value</span><span class="p">)</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
   <span class="c">!&lt; Add one attribute name/value pair.</span>
   <span class="c">!&lt;</span>
   <span class="c">!&lt; @note Leading and trailing white spaces are trimmed out by attribute&#39;s name.</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
-  <span class="k">class</span><span class="p">(</span><span class="n">xml_tag</span><span class="p">),</span> <span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span> <span class="kd">::</span> <span class="n">self</span>               <span class="c">!&lt; XML tag.</span>
-  <span class="kt">character</span><span class="p">(</span><span class="o">*</span><span class="p">),</span>   <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span>    <span class="kd">::</span> <span class="n">attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">:)</span>      <span class="c">!&lt; Attribute name/value pair [1:2].</span>
-  <span class="k">type</span><span class="p">(</span><span class="n">string</span><span class="p">),</span> <span class="k">allocatable</span>     <span class="kd">::</span> <span class="n">new_attribute</span><span class="p">(:,:)</span> <span class="c">!&lt; Temporary storage for attributes.</span>
-  <span class="kt">logical</span>                       <span class="kd">::</span> <span class="n">is_updated</span>         <span class="c">!&lt; Flag to check if the attribute has been updeted.</span>
-  <span class="kt">integer</span><span class="p">(</span><span class="n">I4P</span><span class="p">)</span>                  <span class="kd">::</span> <span class="n">a</span>                  <span class="c">!&lt; Counter.</span>
+  <span class="k">class</span><span class="p">(</span><span class="n">xml_tag</span><span class="p">),</span> <span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span>        <span class="kd">::</span> <span class="n">self</span>               <span class="c">!&lt; XML tag.</span>
+  <span class="kt">character</span><span class="p">(</span><span class="o">*</span><span class="p">),</span>   <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span>           <span class="kd">::</span> <span class="n">attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">:)</span>      <span class="c">!&lt; Attribute name/value pair [1:2].</span>
+  <span class="kt">logical</span><span class="p">,</span>        <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span> <span class="k">optional</span> <span class="kd">::</span> <span class="n">sanitize_value</span>     <span class="c">!&lt; Sanitize attribute value.</span>
+  <span class="k">type</span><span class="p">(</span><span class="n">string</span><span class="p">),</span> <span class="k">allocatable</span>            <span class="kd">::</span> <span class="n">new_attribute</span><span class="p">(:,:)</span> <span class="c">!&lt; Temporary storage for attributes.</span>
+  <span class="kt">logical</span>                              <span class="kd">::</span> <span class="n">sanitize_value_</span>    <span class="c">!&lt; Sanitize attribute value.</span>
+  <span class="kt">logical</span>                              <span class="kd">::</span> <span class="n">is_updated</span>         <span class="c">!&lt; Flag to check if the attribute has been updeted.</span>
+  <span class="kt">integer</span><span class="p">(</span><span class="n">I4P</span><span class="p">)</span>                         <span class="kd">::</span> <span class="n">a</span>                  <span class="c">!&lt; Counter.</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
 
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
+  <span class="n">sanitize_value_</span> <span class="o">=</span> <span class="p">.</span><span class="n">false</span><span class="p">.</span> <span class="p">;</span> <span class="k">if</span> <span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">sanitize_value</span><span class="p">))</span> <span class="n">sanitize_value_</span> <span class="o">=</span> <span class="n">sanitize_value</span>
   <span class="k">if</span> <span class="p">(</span><span class="n">self</span><span class="p">%</span><span class="n">attributes_number</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">)</span> <span class="k">then</span>
 <span class="k">    </span><span class="n">is_updated</span> <span class="o">=</span> <span class="p">.</span><span class="n">false</span><span class="p">.</span>
     <span class="n">update_if_already_present</span><span class="p">:</span> <span class="k">do </span><span class="n">a</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">self</span><span class="p">%</span><span class="n">attributes_number</span>
       <span class="k">if</span> <span class="p">(</span><span class="n">self</span><span class="p">%</span><span class="n">attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span><span class="o">==</span><span class="n">attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="k">then</span>
-<span class="k">        </span><span class="n">self</span><span class="p">%</span><span class="n">attribute</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span> <span class="o">=</span> <span class="n">attribute</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="k">        if</span> <span class="p">(</span><span class="n">sanitize_value_</span><span class="p">)</span> <span class="k">then</span>
+<span class="k">          </span><span class="n">self</span><span class="p">%</span><span class="n">attribute</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span> <span class="o">=</span> <span class="nb">trim</span><span class="p">(</span><span class="nb">adjustl</span><span class="p">(</span><span class="n">attribute</span><span class="p">(</span><span class="mi">2</span><span class="p">)))</span>
+        <span class="k">else</span>
+<span class="k">          </span><span class="n">self</span><span class="p">%</span><span class="n">attribute</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span> <span class="o">=</span> <span class="n">attribute</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">endif</span>
         <span class="n">is_updated</span> <span class="o">=</span> <span class="p">.</span><span class="n">true</span><span class="p">.</span>
         <span class="k">exit </span><span class="n">update_if_already_present</span>
       <span class="n">endif</span>
@@ -987,14 +1025,22 @@ private pure subroutine add_single_attribute(self, attribute)
 <span class="k">      allocate</span><span class="p">(</span><span class="n">new_attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="n">self</span><span class="p">%</span><span class="n">attributes_number</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
       <span class="n">new_attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="n">self</span><span class="p">%</span><span class="n">attributes_number</span><span class="p">)</span> <span class="o">=</span> <span class="n">self</span><span class="p">%</span><span class="n">attribute</span>
       <span class="n">new_attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">self</span><span class="p">%</span><span class="n">attributes_number</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">=</span> <span class="nb">trim</span><span class="p">(</span><span class="nb">adjustl</span><span class="p">(</span><span class="n">attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">)))</span>
-      <span class="n">new_attribute</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">self</span><span class="p">%</span><span class="n">attributes_number</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">=</span> <span class="n">attribute</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">sanitize_value_</span><span class="p">)</span> <span class="k">then</span>
+<span class="k">        </span><span class="n">new_attribute</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">self</span><span class="p">%</span><span class="n">attributes_number</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">=</span> <span class="nb">trim</span><span class="p">(</span><span class="nb">adjustl</span><span class="p">(</span><span class="n">attribute</span><span class="p">(</span><span class="mi">2</span><span class="p">)))</span>
+      <span class="k">else</span>
+<span class="k">        </span><span class="n">new_attribute</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">self</span><span class="p">%</span><span class="n">attributes_number</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">=</span> <span class="n">attribute</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+      <span class="n">endif</span>
       <span class="k">call </span><span class="nb">move_alloc</span><span class="p">(</span><span class="n">from</span><span class="o">=</span><span class="n">new_attribute</span><span class="p">,</span> <span class="n">to</span><span class="o">=</span><span class="n">self</span><span class="p">%</span><span class="n">attribute</span><span class="p">)</span>
       <span class="n">self</span><span class="p">%</span><span class="n">attributes_number</span> <span class="o">=</span> <span class="n">self</span><span class="p">%</span><span class="n">attributes_number</span> <span class="o">+</span> <span class="mi">1</span>
     <span class="n">endif</span>
   <span class="k">else</span>
 <span class="k">    call </span><span class="n">self</span><span class="p">%</span><span class="n">alloc_attributes</span><span class="p">(</span><span class="n">Na</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
     <span class="n">self</span><span class="p">%</span><span class="n">attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">=</span> <span class="nb">trim</span><span class="p">(</span><span class="nb">adjustl</span><span class="p">(</span><span class="n">attribute</span><span class="p">(</span><span class="mi">1</span><span class="p">)))</span>
-    <span class="n">self</span><span class="p">%</span><span class="n">attribute</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">=</span> <span class="n">attribute</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">sanitize_value_</span><span class="p">)</span> <span class="k">then</span>
+<span class="k">      </span><span class="n">self</span><span class="p">%</span><span class="n">attribute</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">=</span> <span class="nb">trim</span><span class="p">(</span><span class="nb">adjustl</span><span class="p">(</span><span class="n">attribute</span><span class="p">(</span><span class="mi">2</span><span class="p">)))</span>
+    <span class="k">else</span>
+<span class="k">      </span><span class="n">self</span><span class="p">%</span><span class="n">attribute</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">=</span> <span class="n">attribute</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">endif</span>
   <span class="n">endif</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
   <span class="n">endsubroutine</span> <span class="n">add_single_attribute</span>
