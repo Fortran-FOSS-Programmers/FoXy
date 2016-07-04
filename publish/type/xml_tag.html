@@ -2856,7 +2856,7 @@ private elemental function <a href='../proc/start_tag.html'>start_tag</a>(self, 
          
     
     <h3>
-private pure function <a href='../proc/stringify%7E2.html'>stringify</a>(self, is_indented, is_content_indented) result(stringed)
+private pure function <a href='../proc/stringify%7E2.html'>stringify</a>(self, is_indented, is_content_indented, only_start, only_content, only_end) result(stringed)
     
     
     
@@ -2920,6 +2920,51 @@ private pure function <a href='../proc/stringify%7E2.html'>stringify</a>(self, i
   
 </tr>
 
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>only_start</strong></td><td><p>Write only start tag.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>only_content</strong></td><td><p>Write only content.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>only_end</strong></td><td><p>Write only end tag.</p></td>
+  
+</tr>
+
 </tbody>
 </table>
 
@@ -2972,7 +3017,7 @@ private pure function <a href='../proc/stringify%7E2.html'>stringify</a>(self, i
          
     
     <h3>
-private subroutine <a href='../proc/write_tag.html'>write_tag</a>(self, unit, is_indented, is_content_indented, form, end_record, iostat, iomsg)
+private subroutine <a href='../proc/write_tag.html'>write_tag</a>(self, unit, is_indented, is_content_indented, form, end_record, only_start, only_content, only_end, iostat, iomsg)
     
     
     
@@ -3078,6 +3123,51 @@ private subroutine <a href='../proc/write_tag.html'>write_tag</a>(self, unit, is
   
   <td></td><td>::</td>
   <td><strong>end_record</strong></td><td><p>Ending record.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>only_start</strong></td><td><p>Write only start tag.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>only_content</strong></td><td><p>Write only content.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" ></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>only_end</strong></td><td><p>Write only end tag.</p></td>
   
 </tr>
 

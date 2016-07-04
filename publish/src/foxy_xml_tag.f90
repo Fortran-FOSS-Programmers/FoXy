@@ -353,41 +353,64 @@ contains
   !---------------------------------------------------------------------------------------------------------------------------------
   endfunction start_tag
 
-  pure function stringify(self, is_indented, is_content_indented) result(stringed)
+  pure function stringify(self, is_indented, is_content_indented, only_start, only_content, only_end) result(stringed)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Convert the whole tag into a string.
   !---------------------------------------------------------------------------------------------------------------------------------
   class(xml_tag), intent(in)           :: self                 !< XML tag.
   logical,        intent(in), optional :: is_indented          !< Activate content indentation.
   logical,        intent(in), optional :: is_content_indented  !< Activate content indentation.
+  logical,        intent(in), optional :: only_start           !< Write only start tag.
+  logical,        intent(in), optional :: only_content         !< Write only content.
+  logical,        intent(in), optional :: only_end             !< Write only end tag.
   character(len=:), allocatable        :: stringed             !< Output string containing the whole tag.
   logical                              :: is_content_indented_ !< Activate content indentation.
-  integer(I4P)                         :: a                    !< Counter.
+  logical                              :: only_start_          !< Write only start tag.
+  logical                              :: only_content_        !< Write only content.
+  logical                              :: only_end_            !< Write only end tag.
   !---------------------------------------------------------------------------------------------------------------------------------
 
   !---------------------------------------------------------------------------------------------------------------------------------
   is_content_indented_ = .false. ; if (present(is_content_indented)) is_content_indented_ = is_content_indented
-  stringed = ''
-  if (self%tag_name%is_allocated()) then
-    if (self%is_self_closing) then
-      stringed = self%self_closing_tag(is_indented=is_indented)
-    else
-      stringed = self%start_tag(is_indented=is_indented)
-      if (self%tag_content%is_allocated()) then
-        if (is_content_indented_) then
-          stringed = stringed//new_line('a')//repeat(' ', self%indent+2)//&
-                     self%tag_content//new_line('a')//repeat(' ', self%indent)
-        else
-          stringed = stringed//self%tag_content
-        endif
+  only_start_ = .false. ; if (present(only_start)) only_start_ = only_start
+  only_content_ = .false. ; if (present(only_content)) only_content_ = only_content
+  only_end_ = .false. ; if (present(only_end)) only_end_ = only_end
+  if (only_start_) then
+    stringed = self%start_tag(is_indented=is_indented)
+  elseif (only_content_) then
+    if (self%tag_content%is_allocated()) then
+      if (is_content_indented_) then
+        stringed = repeat(' ', self%indent+2)//self%tag_content
+      else
+        stringed = self%tag_content%chars()
       endif
-      stringed = stringed//self%end_tag()
+    endif
+  elseif (only_end_) then
+    stringed = self%end_tag(is_indented=is_indented)
+  else
+    stringed = ''
+    if (self%tag_name%is_allocated()) then
+      if (self%is_self_closing) then
+        stringed = self%self_closing_tag(is_indented=is_indented)
+      else
+        stringed = self%start_tag(is_indented=is_indented)
+        if (self%tag_content%is_allocated()) then
+          if (is_content_indented_) then
+            stringed = stringed//new_line('a')//repeat(' ', self%indent+2)//&
+                       self%tag_content//new_line('a')//repeat(' ', self%indent)
+          else
+            stringed = stringed//self%tag_content
+          endif
+        endif
+        stringed = stringed//self%end_tag()
+      endif
     endif
   endif
   !---------------------------------------------------------------------------------------------------------------------------------
   endfunction stringify
 
-  subroutine write_tag(self, unit, is_indented, is_content_indented, form, end_record, iostat, iomsg)
+  subroutine write_tag(self, unit, is_indented, is_content_indented, form, end_record, only_start, only_content, only_end, &
+                       iostat, iomsg)
   !---------------------------------------------------------------------------------------------------------------------------------
   !< Write tag to unit file.
   !---------------------------------------------------------------------------------------------------------------------------------
@@ -397,6 +420,9 @@ contains
   logical,        intent(in),  optional :: is_content_indented !< Activate content indentation.
   character(*),   intent(in),  optional :: form                !< Format.
   character(*),   intent(in),  optional :: end_record          !< Ending record.
+  logical,        intent(in),  optional :: only_start          !< Write only start tag.
+  logical,        intent(in),  optional :: only_content        !< Write only content.
+  logical,        intent(in),  optional :: only_end            !< Write only end tag.
   integer(I4P),   intent(out), optional :: iostat              !< IO status.
   character(*),   intent(out), optional :: iomsg               !< IO message.
   type(string)                          :: form_               !< Format.
@@ -414,11 +440,17 @@ contains
   end_record_ = '' ; if (present(end_record)) end_record_ = end_record
   select case(form_%chars())
   case('UNFORMATTED')
-    write(unit=unit, iostat=iostat_, iomsg=iomsg_)self%stringify(is_indented=is_indented, &
-                                                                 is_content_indented=is_content_indented)//end_record
+    write(unit=unit, iostat=iostat_, iomsg=iomsg_)self%stringify(is_indented=is_indented,                 &
+                                                                 is_content_indented=is_content_indented, &
+                                                                 only_start=only_start,                   &
+                                                                 only_content=only_content,               &
+                                                                 only_end=only_end)//end_record_
   case('FORMATTED')
-    write(unit=unit, fmt='(A)', iostat=iostat_, iomsg=iomsg_)self%stringify(is_indented=is_indented, &
-                                                                            is_content_indented=is_content_indented)//end_record
+    write(unit=unit, fmt='(A)', iostat=iostat_, iomsg=iomsg_)self%stringify(is_indented=is_indented,                 &
+                                                                            is_content_indented=is_content_indented, &
+                                                                            only_start=only_start,                   &
+                                                                            only_content=only_content,               &
+                                                                            only_end=only_end)//end_record_
   endselect
   if (present(iostat)) iostat = iostat_
   if (present(iomsg)) iomsg = iomsg_

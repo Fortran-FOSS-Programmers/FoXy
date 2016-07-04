@@ -821,7 +821,7 @@
     
     <div class="col-lg-9" id='text'>
     <h2>
-private subroutine write_tag(self, unit, is_indented, is_content_indented, form, end_record, iostat, iomsg)
+private subroutine write_tag(self, unit, is_indented, is_content_indented, form, end_record, only_start, only_content, only_end, iostat, iomsg)
     
     
     
@@ -930,6 +930,51 @@ private subroutine write_tag(self, unit, is_indented, is_content_indented, form,
   
   <td></td><td>::</td>
   <td><strong>end_record</strong></td><td><p>Ending record.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" id="variable-only_start%7E2"></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>only_start</strong></td><td><p>Write only start tag.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" id="variable-only_content%7E2"></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>only_content</strong></td><td><p>Write only content.</p></td>
+  
+</tr>
+
+  
+  
+  
+  
+<tr>
+  
+  <td><span class="anchor" id="variable-only_end%7E2"></span>logical,</td>
+  <td>intent(in),</td>
+  <td>optional</td>
+  
+  <td></td><td>::</td>
+  <td><strong>only_end</strong></td><td><p>Write only end tag.</p></td>
   
 </tr>
 
@@ -1067,7 +1112,8 @@ private subroutine write_tag(self, unit, is_indented, is_content_indented, form,
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="highlight"><pre><span></span>  <span class="k">subroutine </span><span class="n">write_tag</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">unit</span><span class="p">,</span> <span class="n">is_indented</span><span class="p">,</span> <span class="n">is_content_indented</span><span class="p">,</span> <span class="n">form</span><span class="p">,</span> <span class="n">end_record</span><span class="p">,</span> <span class="n">iostat</span><span class="p">,</span> <span class="n">iomsg</span><span class="p">)</span>
+    <div class="highlight"><pre><span></span>  <span class="k">subroutine </span><span class="n">write_tag</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">unit</span><span class="p">,</span> <span class="n">is_indented</span><span class="p">,</span> <span class="n">is_content_indented</span><span class="p">,</span> <span class="n">form</span><span class="p">,</span> <span class="n">end_record</span><span class="p">,</span> <span class="n">only_start</span><span class="p">,</span> <span class="n">only_content</span><span class="p">,</span> <span class="n">only_end</span><span class="p">,</span> <span class="p">&amp;</span>
+                       <span class="n">iostat</span><span class="p">,</span> <span class="n">iomsg</span><span class="p">)</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
   <span class="c">!&lt; Write tag to unit file.</span>
   <span class="c">!---------------------------------------------------------------------------------------------------------------------------------</span>
@@ -1077,6 +1123,9 @@ private subroutine write_tag(self, unit, is_indented, is_content_indented, form,
   <span class="kt">logical</span><span class="p">,</span>        <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span>  <span class="k">optional</span> <span class="kd">::</span> <span class="n">is_content_indented</span> <span class="c">!&lt; Activate content indentation.</span>
   <span class="kt">character</span><span class="p">(</span><span class="o">*</span><span class="p">),</span>   <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span>  <span class="k">optional</span> <span class="kd">::</span> <span class="n">form</span>                <span class="c">!&lt; Format.</span>
   <span class="kt">character</span><span class="p">(</span><span class="o">*</span><span class="p">),</span>   <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span>  <span class="k">optional</span> <span class="kd">::</span> <span class="n">end_record</span>          <span class="c">!&lt; Ending record.</span>
+  <span class="kt">logical</span><span class="p">,</span>        <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span>  <span class="k">optional</span> <span class="kd">::</span> <span class="n">only_start</span>          <span class="c">!&lt; Write only start tag.</span>
+  <span class="kt">logical</span><span class="p">,</span>        <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span>  <span class="k">optional</span> <span class="kd">::</span> <span class="n">only_content</span>        <span class="c">!&lt; Write only content.</span>
+  <span class="kt">logical</span><span class="p">,</span>        <span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span>  <span class="k">optional</span> <span class="kd">::</span> <span class="n">only_end</span>            <span class="c">!&lt; Write only end tag.</span>
   <span class="kt">integer</span><span class="p">(</span><span class="n">I4P</span><span class="p">),</span>   <span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="k">optional</span> <span class="kd">::</span> <span class="n">iostat</span>              <span class="c">!&lt; IO status.</span>
   <span class="kt">character</span><span class="p">(</span><span class="o">*</span><span class="p">),</span>   <span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="k">optional</span> <span class="kd">::</span> <span class="n">iomsg</span>               <span class="c">!&lt; IO message.</span>
   <span class="k">type</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>                          <span class="kd">::</span> <span class="n">form_</span>               <span class="c">!&lt; Format.</span>
@@ -1094,11 +1143,17 @@ private subroutine write_tag(self, unit, is_indented, is_content_indented, form,
   <span class="n">end_record_</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span> <span class="p">;</span> <span class="k">if</span> <span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">end_record</span><span class="p">))</span> <span class="n">end_record_</span> <span class="o">=</span> <span class="n">end_record</span>
   <span class="k">select case</span><span class="p">(</span><span class="n">form_</span><span class="p">%</span><span class="n">chars</span><span class="p">())</span>
   <span class="k">case</span><span class="p">(</span><span class="s1">&#39;UNFORMATTED&#39;</span><span class="p">)</span>
-    <span class="k">write</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">,</span> <span class="n">iostat</span><span class="o">=</span><span class="n">iostat_</span><span class="p">,</span> <span class="n">iomsg</span><span class="o">=</span><span class="n">iomsg_</span><span class="p">)</span><span class="n">self</span><span class="p">%</span><span class="n">stringify</span><span class="p">(</span><span class="n">is_indented</span><span class="o">=</span><span class="n">is_indented</span><span class="p">,</span> <span class="p">&amp;</span>
-                                                                 <span class="n">is_content_indented</span><span class="o">=</span><span class="n">is_content_indented</span><span class="p">)</span><span class="o">//</span><span class="n">end_record</span>
+    <span class="k">write</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">,</span> <span class="n">iostat</span><span class="o">=</span><span class="n">iostat_</span><span class="p">,</span> <span class="n">iomsg</span><span class="o">=</span><span class="n">iomsg_</span><span class="p">)</span><span class="n">self</span><span class="p">%</span><span class="n">stringify</span><span class="p">(</span><span class="n">is_indented</span><span class="o">=</span><span class="n">is_indented</span><span class="p">,</span>                 <span class="p">&amp;</span>
+                                                                 <span class="n">is_content_indented</span><span class="o">=</span><span class="n">is_content_indented</span><span class="p">,</span> <span class="p">&amp;</span>
+                                                                 <span class="n">only_start</span><span class="o">=</span><span class="n">only_start</span><span class="p">,</span>                   <span class="p">&amp;</span>
+                                                                 <span class="n">only_content</span><span class="o">=</span><span class="n">only_content</span><span class="p">,</span>               <span class="p">&amp;</span>
+                                                                 <span class="n">only_end</span><span class="o">=</span><span class="n">only_end</span><span class="p">)</span><span class="o">//</span><span class="n">end_record_</span>
   <span class="k">case</span><span class="p">(</span><span class="s1">&#39;FORMATTED&#39;</span><span class="p">)</span>
-    <span class="k">write</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;(A)&#39;</span><span class="p">,</span> <span class="n">iostat</span><span class="o">=</span><span class="n">iostat_</span><span class="p">,</span> <span class="n">iomsg</span><span class="o">=</span><span class="n">iomsg_</span><span class="p">)</span><span class="n">self</span><span class="p">%</span><span class="n">stringify</span><span class="p">(</span><span class="n">is_indented</span><span class="o">=</span><span class="n">is_indented</span><span class="p">,</span> <span class="p">&amp;</span>
-                                                                            <span class="n">is_content_indented</span><span class="o">=</span><span class="n">is_content_indented</span><span class="p">)</span><span class="o">//</span><span class="n">end_record</span>
+    <span class="k">write</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;(A)&#39;</span><span class="p">,</span> <span class="n">iostat</span><span class="o">=</span><span class="n">iostat_</span><span class="p">,</span> <span class="n">iomsg</span><span class="o">=</span><span class="n">iomsg_</span><span class="p">)</span><span class="n">self</span><span class="p">%</span><span class="n">stringify</span><span class="p">(</span><span class="n">is_indented</span><span class="o">=</span><span class="n">is_indented</span><span class="p">,</span>                 <span class="p">&amp;</span>
+                                                                            <span class="n">is_content_indented</span><span class="o">=</span><span class="n">is_content_indented</span><span class="p">,</span> <span class="p">&amp;</span>
+                                                                            <span class="n">only_start</span><span class="o">=</span><span class="n">only_start</span><span class="p">,</span>                   <span class="p">&amp;</span>
+                                                                            <span class="n">only_content</span><span class="o">=</span><span class="n">only_content</span><span class="p">,</span>               <span class="p">&amp;</span>
+                                                                            <span class="n">only_end</span><span class="o">=</span><span class="n">only_end</span><span class="p">)</span><span class="o">//</span><span class="n">end_record_</span>
   <span class="n">endselect</span>
   <span class="k">if</span> <span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">iostat</span><span class="p">))</span> <span class="n">iostat</span> <span class="o">=</span> <span class="n">iostat_</span>
   <span class="k">if</span> <span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">iomsg</span><span class="p">))</span> <span class="n">iomsg</span> <span class="o">=</span> <span class="n">iomsg_</span>
