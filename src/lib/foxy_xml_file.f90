@@ -68,18 +68,20 @@ contains
   pure function content(self, name)
   !< Return tag content of tag named *name*.
   !<
-  !< @note If there is no value, the *tag_content* string is returned deallocated.
+  !< @note If there is no value, the *tag_content* string is returned empty, but allocated.
   class(xml_file), intent(in)   :: self    !< XML file.
   character(*),    intent(in)   :: name    !< Tag name.
   character(len=:), allocatable :: content !< Tag content.
   integer(I4P)                  :: t       !< Counter.
 
+  if (allocated(content)) deallocate(content)
   if (self%Nt>0) then
     do t=1, self%Nt
-      content = self%tag(t)%content(name=name)
+      call self%tag(t)%get_content(name=name, content=content)
       if (allocated(content)) exit
     enddo
   endif
+  if (.not.allocated(content)) content = ''
   endfunction content
 
   pure function stringify(self) result(string)

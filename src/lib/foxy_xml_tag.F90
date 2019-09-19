@@ -37,7 +37,7 @@ type :: xml_tag
                              add_multiple_attributes, &
                              add_stream_attributes       !< Add attributes name/value pairs.
     procedure, pass(self) :: attributes                  !< Return attributes name/value pairs as string.
-    procedure, pass(self) :: content                     !< Return tag content.
+    procedure, pass(self) :: get_content                 !< Return tag content.
     generic               :: delete_attributes =>     &
                              delete_single_attribute, &
                              delete_multiple_attributes  !< Delete attributes name/value pairs.
@@ -137,15 +137,16 @@ contains
   endif
   endfunction attributes
 
-  pure function content(self, name)
+  pure subroutine get_content(self, name, content)
   !< Return tag content of self (or its nested tags) if named *name*.
   !<
   !< @note If there is no value, the *content* string is returned deallocated.
-  class(xml_tag), intent(in)    :: self    !< XML tag.
-  character(*),   intent(in)    :: name    !< Searched tag name.
-  character(len=:), allocatable :: content !< Tag content.
-  type(xml_tag)                 :: tag     !< Dummy XML tag.
+  class(xml_tag),                intent(in)  :: self    !< XML tag.
+  character(*),                  intent(in)  :: name    !< Searched tag name.
+  character(len=:), allocatable, intent(out) :: content !< Tag content.
+  type(xml_tag)                              :: tag     !< Dummy XML tag.
 
+  if (allocated(content)) deallocate(content)
   if (self%tag_name%is_allocated()) then
     if (self%tag_name==name) then
       if (self%tag_content%is_allocated()) content = self%tag_content%chars()
@@ -156,7 +157,7 @@ contains
       endif
     endif
   endif
-  endfunction content
+  endsubroutine get_content
 
   pure function end_tag(self, is_indented) result(tag_)
   !< Return `</tag_name>` end tag.
@@ -723,18 +724,25 @@ contains
   integer(I4P), optional, intent(out)   :: tstart   !< Starting index of tag inside the source.
   integer(I4P), optional, intent(out)   :: tend     !< Ending index of tag inside the source.
   type(xml_tag)                         :: tag      !< Dummy XML tag.
-  integer(I4P)                          :: tstartd  !< Starting index of tag inside the source.
-  integer(I4P)                          :: tendd    !< Ending index of tag inside the source.
+  integer(I4P)                          :: tstart_  !< Starting index of tag inside the source, local variable.
+  integer(I4P)                          :: tend_    !< Ending index of tag inside the source, local variable.
   logical                               :: found    !< Flag for inquiring search result.
+  integer(I4P)                          :: tstart_c !< Starting index of tag inside the current slice of source.
+  integer(I4P)                          :: tend_c   !< Starting index of tag inside the current slice of source.
+  integer(I4P)                          :: i
 
   call self%free
   self%tag_name = tag_name
-  tstartd = 1
-  tendd   = 0
+  tstart_ = 1
+  tend_   = 0
   found = .false.
-  Tag_Search: do while ((.not.found).or.(len(source(tendd + 1:))<self%tag_name%len()))
-    call tag%parse(source=source(tendd + 1:), tstart=tstartd, tend=tendd)
-    if (tstartd==0.and.tendd==0) then
+  tstart_c = 0
+  tend_c = 0
+  Tag_Search: do
+    call tag%parse(source=source(tend_ + 1:), tstart=tstart_c, tend=tend_c)
+    tstart_ = tstart_ + tend_
+    tend_ = tend_ + tend_c
+    if (tstart_c==0.and.tend_c==0) then
       exit Tag_Search ! no tag found
     else
       if (tag%tag_name%is_allocated()) then
@@ -743,14 +751,15 @@ contains
         endif
       endif
     endif
+    if (found) exit Tag_Search
   enddo Tag_Search
   if (found) then
     self = tag
   else
     call self%free
   endif
-  if (present(tstart)) tstart = tstartd
-  if (present(tend  )) tend   = tendd
+  if (present(tstart)) tstart = tstart_
+  if (present(tend  )) tend   = tend_
   endsubroutine search
 
   ! assignment (=)
