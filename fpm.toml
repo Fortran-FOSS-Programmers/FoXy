@@ -1,0 +1,23 @@
+name = "FoXy"
+version = "0.0.8"
+author = "Stefano Zaghi"
+copyright = "Copyright © 2016, Stefano Zaghi"
+license = "Multiple licenses"
+description = "Fortran XML parser for poor people"
+maintainer = "Stefano Zaghi"
+homepage = "https://github.com/Fortran-FOSS-Programmers/FoXy"
+
+[library]
+source-dir = "src/lib"
+
+[install]
+library = true
+
+[dependencies]
+[dependencies.StringiFor]
+git = "https://github.com/szaghi/StringiFor"
+rev = "25570c36964ef49942537af942603962c3f26b68"
+
+[dependencies.PENF]
+git = "https://github.com/szaghi/PENF"
+rev = "65061235982495b158412b70c05b228af4320d94"
