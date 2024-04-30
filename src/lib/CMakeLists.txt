@@ -11,7 +11,7 @@ set(LIB FoXy)
 add_library(${LIB}
         foxy.f90
         foxy_xml_file.f90
-        foxy_xml_tag.f90
+        foxy_xml_tag.F90
         )
 add_library(${NAMESPACE}${LIB} ALIAS ${LIB})
 target_link_libraries(${LIB} PENF::PENF FACE::FACE BeFoR64::BeFoR64 StringiFor::StringiFor)
