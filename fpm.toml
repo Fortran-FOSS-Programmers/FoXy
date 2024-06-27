@@ -16,7 +16,7 @@ library = true
 [dependencies]
 [dependencies.StringiFor]
 git = "https://github.com/szaghi/StringiFor"
-rev = "25570c36964ef49942537af942603962c3f26b68"
+rev = "726dd77c4c58e0f2eb89824f18aac8b33db2d590"
 
 [dependencies.PENF]
 git = "https://github.com/szaghi/PENF"
