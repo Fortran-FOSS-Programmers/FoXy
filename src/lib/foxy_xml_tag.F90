@@ -27,9 +27,13 @@ type :: xml_tag
   type(string)              :: tag_name                !< Tag name.
   type(string)              :: tag_content             !< Tag content.
   type(string), allocatable :: attribute(:,:)          !< Attributes names/values pairs, [1:2, 1:].
-  integer(I4P)              :: attributes_number=0     !< Number of defined attributes.
-  integer(I4P)              :: indent=0                !< Number of indent-white-spaces.
+  integer(I4P)              :: attributes_number=0_I4P !< Number of defined attributes.
+  integer(I4P)              :: indent=0_I4P            !< Number of indent-white-spaces.
   logical                   :: is_self_closing=.false. !< Self closing tag flag.
+  integer(I4P)              :: level=0_I4P             !< Tag hierarchy level.
+  integer(I4P)              :: id=0_I4P                !< Uniq tag ID.
+  integer(I4P)              :: parent_id=0_I4P         !< Uniq ID of parent tag.
+  integer(I4P), allocatable :: child_ID(:)             !< Uniq ID of children tags.
   contains
     ! public methods
     generic               :: add_attributes =>        &
@@ -43,11 +47,12 @@ type :: xml_tag
                              delete_multiple_attributes  !< Delete attributes name/value pairs.
     procedure, pass(self) :: delete_content              !< Delete tag conent.
     procedure, pass(self) :: end_tag                     !< Return `</tag_name>` end tag.
-    procedure, pass(self) :: free                        !< Free dynamic memory.
+    procedure, pass(self) :: free                        !< Free (reset) tag.
     procedure, pass(self) :: is_attribute_present        !< Return .true. it the queried attribute name is defined.
     procedure, pass(self) :: is_parsed                   !< Check is tag is correctly parsed, i.e. its *tag_name* is allocated.
     procedure, pass(self) :: name                        !< Return tag name.
     procedure, pass(self) :: parse                       !< Parse the tag contained into a source string.
+    procedure, pass(self) :: parse_tag_name              !< Parse the tag name contained into a string.
     procedure, pass(self) :: self_closing_tag            !< Return `<tag_name.../>` self closing tag.
     procedure, pass(self) :: set                         !< Set tag data.
     procedure, pass(self) :: start_tag                   !< Return `<tag_name...>` start tag.
@@ -64,7 +69,6 @@ type :: xml_tag
     procedure, pass(self), private :: get                        !< Get the tag value and attributes from source.
     procedure, pass(self), private :: get_value                  !< Get the tag value from source after tag_name has been set.
     procedure, pass(self), private :: get_attributes             !< Get the attributes values from source.
-    procedure, pass(self), private :: parse_tag_name             !< Parse the tag name contained into a string.
     procedure, pass(self), private :: parse_attributes_names     !< Parse the tag attributes names contained into a string.
     procedure, pass(self), private :: search                     !< Search tag named *tag_name* into a string.
     ! operators
@@ -172,18 +176,26 @@ contains
   endfunction end_tag
 
   elemental subroutine free(self)
-  !< Free dynamic memory.
+  !< Free (reset) tag.
   class(xml_tag), intent(inout) :: self !< XML tag.
+  integer(I4P)                  :: a    !< Counter.
 
   call self%tag_name%free
   call self%tag_content%free
-  if (allocated(self%attribute)) then
-    call self%attribute%free
-    deallocate(self%attribute)
+  if (self%attributes_number>0_I4P) then
+     do a=1, self%attributes_number
+        call self%attribute(1,a)%free
+        call self%attribute(2,a)%free
+     enddo
+     deallocate(self%attribute)
+     self%attributes_number = 0_I4P
   endif
-  self%attributes_number = 0
-  self%indent = 0
+  self%indent = 0_I4P
   self%is_self_closing = .false.
+  self%level = 0_I4P
+  self%id = 0_I4P
+  self%parent_id = 0_I4P
+  if (allocated(self%child_ID)) deallocate(self%child_ID)
   endsubroutine free
 
   elemental function is_parsed(self)
@@ -229,6 +241,60 @@ contains
   if (present(tstart)) tstart = tstartd
   if (present(tend  )) tend   = tendd
   endsubroutine parse
+
+  elemental subroutine parse_tag_name(self, source, tstart, tend)
+  !< Parse the tag name contained into a string.
+  !<
+  !< It is assumed that the first tag contained into the source is parsed, the others eventually present are omitted.
+  !< Valid syntax are:
+  !< + `<tag_name att1="att1 val" att2="att2 val"...>...</tag_name>`
+  !< + `<tag_name att1="att1 val" att2="att2 val".../>`
+  !< @note Inside the attributes value the symbols `<` and `>` are not allowed.
+  class(xml_tag),         intent(inout) :: self    !< XML tag.
+  character(*),           intent(in)    :: source  !< String containing the input.
+  integer(I4P), optional, intent(out)   :: tstart  !< Starting index of tag inside the source.
+  integer(I4P), optional, intent(out)   :: tend    !< Ending index of tag inside the source.
+  integer(I4P)                          :: tstartd !< Starting index of tag inside the source.
+  integer(I4P)                          :: tendd   !< Ending index of tag inside the source.
+  character(len=1)                      :: c1      !< Dummy string for parsing file.
+  character(len=:), allocatable         :: c2      !< Dummy string for parsing file.
+  integer(I4P)                          :: c       !< Counter.
+  integer(I4P)                          :: s       !< Counter.
+
+  call self%tag_name%free
+  tstartd = 0
+  tendd   = 0
+  c = 1
+  Tag_Search: do while(c<=len(source))
+    c1 = source(c:c)
+    if (c1=='<') then
+      tstartd = c
+      c2 = c1
+      Tag_Name: do while(c<len(source))
+        c = c + 1 ; c1 = source(c:c)
+        c2 = c2//c1
+        if (c1=='>') then
+          tendd = c
+          exit Tag_Name
+        endif
+      enddo Tag_Name
+      s = index(string=c2, substring=' ')
+      if (s>0) then ! there are attributes
+        self%tag_name = c2(2:s-1)
+      else
+        if (index(string=c2, substring='/>')>0) then ! self closing tag
+          self%tag_name = c2(2:len(c2)-2)
+        else
+          self%tag_name = c2(2:len(c2)-1)
+        endif
+      endif
+      exit Tag_Search
+    endif
+    c = c + 1
+  enddo Tag_Search
+  if (present(tstart)) tstart = tstartd
+  if (present(tend  )) tend   = tendd
+  endsubroutine parse_tag_name
 
   pure subroutine set(self, name, attribute, attributes, attributes_stream, sanitize_attributes_value, content, &
                       indent, is_content_indented, is_self_closing)
@@ -661,59 +727,6 @@ contains
   endif
   endsubroutine parse_attributes_names
 
-  elemental subroutine parse_tag_name(self, source, tstart, tend)
-  !< Parse the tag name contained into a string.
-  !<
-  !< It is assumed that the first tag contained into the source is parsed, the others eventually present are omitted.
-  !< Valid syntax are:
-  !< + `<tag_name att1="att1 val" att2="att2 val"...>...</tag_name>`
-  !< + `<tag_name att1="att1 val" att2="att2 val".../>`
-  !< @note Inside the attributes value the symbols `<` and `>` are not allowed.
-  class(xml_tag),         intent(inout) :: self    !< XML tag.
-  character(*),           intent(in)    :: source  !< String containing the input.
-  integer(I4P), optional, intent(out)   :: tstart  !< Starting index of tag inside the source.
-  integer(I4P), optional, intent(out)   :: tend    !< Ending index of tag inside the source.
-  integer(I4P)                          :: tstartd !< Starting index of tag inside the source.
-  integer(I4P)                          :: tendd   !< Ending index of tag inside the source.
-  character(len=1)                      :: c1      !< Dummy string for parsing file.
-  character(len=:), allocatable         :: c2      !< Dummy string for parsing file.
-  integer(I4P)                          :: c       !< Counter.
-  integer(I4P)                          :: s       !< Counter.
-
-  tstartd = 0
-  tendd   = 0
-  c = 1
-  Tag_Search: do while(c<=len(source))
-    c1 = source(c:c)
-    if (c1=='<') then
-      tstartd = c
-      c2 = c1
-      Tag_Name: do while(c<len(source))
-        c = c + 1 ; c1 = source(c:c)
-        c2 = c2//c1
-        if (c1=='>') then
-          tendd = c
-          exit Tag_Name
-        endif
-      enddo Tag_Name
-      s = index(string=c2, substring=' ')
-      if (s>0) then ! there are attributes
-        self%tag_name = c2(2:s-1)
-      else
-        if (index(string=c2, substring='/>')>0) then ! self closing tag
-          self%tag_name = c2(2:len(c2)-2)
-        else
-          self%tag_name = c2(2:len(c2)-1)
-        endif
-      endif
-      exit Tag_Search
-    endif
-    c = c + 1
-  enddo Tag_Search
-  if (present(tstart)) tstart = tstartd
-  if (present(tend  )) tend   = tendd
-  endsubroutine parse_tag_name
-
   elemental subroutine search(self, tag_name, source, tstart, tend)
   !< Search tag named *tag_name* into a string and, in case it is found, store into self.
   !<
@@ -781,6 +794,10 @@ contains
   lhs%attributes_number = rhs%attributes_number
   lhs%indent = rhs%indent
   lhs%is_self_closing = rhs%is_self_closing
+  lhs%level = rhs%level
+  lhs%id = rhs%id
+  lhs%parent_id = rhs%parent_id
+  if (allocated(rhs%child_ID)) lhs%child_ID = rhs%child_ID
   endsubroutine assign_tag
 
   ! finalize

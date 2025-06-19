@@ -19,6 +19,7 @@ type, public:: xml_file
     ! public methods
     procedure :: free       !< Free dynamic memory.
     procedure :: parse      !< Parse xml data from string or file.
+    procedure :: parse_ppp  !< Poor People Parser, by BigG and Raz.
     procedure :: content    !< Return tag content of tag named *name*.
     procedure :: stringify  !< Convert the whole file data into a string.
     procedure :: add_tag    !< Add tag to XML file.
@@ -166,6 +167,44 @@ contains
     tstart = tstart + tend
   enddo
   endsubroutine parse_from_string
+
+  subroutine parse_ppp(self, source)
+  !< Poor People Parser, by BigG and Raz.
+  !< Parse xml data from a chunk of source string (file stringified for IO on device).
+  class(xml_file), intent(inout) :: self         !< XML file handler.
+  character(*),    intent(in)    :: source       !< String containing xml data.
+  integer(I4P)                   :: ts, te       !< Tag character counter.
+  integer(I4P)                   :: t            !< Tag counter.
+  integer(I4P)                   :: tags_number  !< Number of tags parsed.
+  type(xml_tag), allocatable     :: start_tag(:) !< Start tags.
+
+  call self%free
+  tags_number = 0_I4P
+  t  = 1_I4P
+  ts = 1_I4P
+  te = len(source)
+  allocate(start_tag(1))
+  search_start_tags: do
+     call start_tag(t)%parse_tag_name(source=source(ts:), tend=te)
+     if (start_tag(t)%is_parsed()) then
+        start_tag = [start_tag, xml_tag()]
+        t = t + 1
+        tags_number = tags_number + 1
+        exit search_start_tags
+     elseif (t>1) then
+        start_tag = start_tag(1:t-1)
+     else
+        deallocate(start_tag)
+     endif
+     ts = ts + te
+     if (ts>=len(source)) exit search_start_tags
+  enddo search_start_tags
+  if (allocated(start_tag)) then
+     do t=1, tags_number
+        print*, 'number: ',t, ' name: '//start_tag(t)%name()
+     enddo
+  endif
+  endsubroutine parse_ppp
 
   ! non TBP
   function load_file_as_stream(filename, delimiter_start, delimiter_end, fast_read, iostat, iomsg) result(stream)
