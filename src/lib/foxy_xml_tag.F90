@@ -23,9 +23,10 @@ type :: xml_tag
   !< It is worth noting that the syntax is case sensitive and that the attributes are optional. Each attribute name must be followed
   !< by '="' without any additional white spaces and its value must be termined by '"'. Each attribute is separated by one or more
   !< white spaces.
-  private
+  ! private
   type(string)              :: tag_name                !< Tag name.
   type(string)              :: tag_content             !< Tag content.
+  integer(I4P)              :: cont_i(2)=[0_I4P,0_I4P] !< Content indexes.
   type(string), allocatable :: attribute(:,:)          !< Attributes names/values pairs, [1:2, 1:].
   integer(I4P)              :: attributes_number=0_I4P !< Number of defined attributes.
   integer(I4P)              :: indent=0_I4P            !< Number of indent-white-spaces.
@@ -33,7 +34,8 @@ type :: xml_tag
   integer(I4P)              :: level=0_I4P             !< Tag hierarchy level.
   integer(I4P)              :: id=0_I4P                !< Uniq tag ID.
   integer(I4P)              :: parent_id=0_I4P         !< Uniq ID of parent tag.
-  integer(I4P), allocatable :: child_ID(:)             !< Uniq ID of children tags.
+  integer(I4P)              :: children_number=0_I4P   !< Number of children tags.
+  integer(I4P), allocatable :: child_id(:)             !< Uniq ID of children tags.
   contains
     ! public methods
     generic               :: add_attributes =>        &
@@ -195,6 +197,7 @@ contains
   self%level = 0_I4P
   self%id = 0_I4P
   self%parent_id = 0_I4P
+  self%children_number = 0_I4P
   if (allocated(self%child_ID)) deallocate(self%child_ID)
   endsubroutine free
 
@@ -266,51 +269,58 @@ contains
   tendd   = 0
   c = 1
   Tag_Search: do while(c<=len(source))
-    c1 = source(c:c)
-    if (c1=='<') then
-      tstartd = c
-      c2 = c1
-      Tag_Name: do while(c<len(source))
-        c = c + 1 ; c1 = source(c:c)
-        c2 = c2//c1
-        if (c1=='>') then
-          tendd = c
-          exit Tag_Name
-        endif
-      enddo Tag_Name
-      s = index(string=c2, substring=' ')
-      if (s>0) then ! there are attributes
-        self%tag_name = c2(2:s-1)
-      else
-        if (index(string=c2, substring='/>')>0) then ! self closing tag
-          self%tag_name = c2(2:len(c2)-2)
+     c1 = source(c:c)
+     if (c1=='<'.and.source(c+1:c+1)/='/') then
+        tstartd = c
+        c2 = c1
+        Tag_Name: do while(c<len(source))
+           c = c + 1 ; c1 = source(c:c)
+           c2 = c2//c1
+           if (c1=='>') then
+              tendd = c
+              exit Tag_Name
+           endif
+        enddo Tag_Name
+        s = index(string=c2, substring=' ')
+        if (s>0) then ! there are attributes
+           self%tag_name = c2(2:s-1)
         else
-          self%tag_name = c2(2:len(c2)-1)
+           if (index(string=c2, substring='/>')>0) then ! self closing tag
+              self%tag_name = c2(2:len(c2)-2)
+           else
+              self%tag_name = c2(2:len(c2)-1)
+           endif
         endif
-      endif
-      exit Tag_Search
-    endif
-    c = c + 1
+        exit Tag_Search
+     endif
+     c = c + 1
   enddo Tag_Search
   if (present(tstart)) tstart = tstartd
   if (present(tend  )) tend   = tendd
   endsubroutine parse_tag_name
 
   pure subroutine set(self, name, attribute, attributes, attributes_stream, sanitize_attributes_value, content, &
-                      indent, is_content_indented, is_self_closing)
+                      indent, is_content_indented, is_self_closing, id, level, parent_id,                       &
+                      attributes_stream_alloc, content_alloc)
   !< Set tag data.
-  class(xml_tag), intent(inout)        :: self                      !< XML tag.
-  character(*),   intent(in), optional :: name                      !< Tag name.
-  character(*),   intent(in), optional :: attribute(1:)             !< Attribute name/value pair [1:2].
-  character(*),   intent(in), optional :: attributes(1:,1:)         !< Attributes list of name/value pairs [1:2,1:].
-  character(*),   intent(in), optional :: attributes_stream         !< Attributes list of name/value pairs as single stream.
-  logical,        intent(in), optional :: sanitize_attributes_value !< Sanitize attributes value.
-  character(*),   intent(in), optional :: content                   !< Tag value.
-  integer(I4P),   intent(in), optional :: indent                    !< Number of indent-white-spaces.
-  logical,        intent(in), optional :: is_content_indented       !< Activate value indentation.
-  logical,        intent(in), optional :: is_self_closing           !< The tag is self closing.
-  logical                              :: is_content_indented_      !< Activate value indentation.
+  class(xml_tag),            intent(inout)        :: self                      !< XML tag.
+  character(*),              intent(in), optional :: name                      !< Tag name.
+  character(*),              intent(in), optional :: attribute(1:)             !< Attribute name/value pair [1:2].
+  character(*),              intent(in), optional :: attributes(1:,1:)         !< Attributes list of name/value pairs [1:2,1:].
+  character(*),              intent(in), optional :: attributes_stream         !< Attributes list of name/value pairs as stream.
+  logical,                   intent(in), optional :: sanitize_attributes_value !< Sanitize attributes value.
+  character(*),              intent(in), optional :: content                   !< Tag value.
+  integer(I4P),              intent(in), optional :: indent                    !< Number of indent-white-spaces.
+  logical,                   intent(in), optional :: is_content_indented       !< Activate value indentation.
+  logical,                   intent(in), optional :: is_self_closing           !< The tag is self closing.
+  integer(I4P),              intent(in), optional :: id                        !< Uniq ID.
+  integer(I4P),              intent(in), optional :: level                     !< Tag hierarchy level.
+  integer(I4P),              intent(in), optional :: parent_id                 !< Parent uniq ID.
+  character(:), allocatable, intent(in), optional :: attributes_stream_alloc   !< Attributes list stream, allocatable input.
+  character(:), allocatable, intent(in), optional :: content_alloc             !< Tag value, allocatable input.
+  logical                                         :: is_content_indented_      !< Activate value indentation.
 
+  is_content_indented_ = .false. ; if (present(is_content_indented)) is_content_indented_ = is_content_indented
   if (present(name)) self%tag_name = name
   if (present(attribute)) call self%add_single_attribute(attribute=attribute, sanitize_value=sanitize_attributes_value)
   if (present(attributes)) call self%add_multiple_attributes(attributes=attributes, sanitize_values=sanitize_attributes_value)
@@ -318,7 +328,6 @@ contains
                                                                   sanitize_values=sanitize_attributes_value)
   if (present(indent)) self%indent = indent
   if (present(content)) then
-    is_content_indented_ = .false. ; if (present(is_content_indented)) is_content_indented_ = is_content_indented
     if (is_content_indented_) then
       self%tag_content = new_line('a')//repeat(' ', self%indent+2)//content//new_line('a')
     else
@@ -326,6 +335,22 @@ contains
     endif
   endif
   if (present(is_self_closing)) self%is_self_closing = is_self_closing
+  if (present(id)) self%id = id
+  if (present(level)) self%level = level
+  if (present(parent_id)) self%parent_id = parent_id
+  if (present(attributes_stream_alloc)) then
+     if (allocated(attributes_stream_alloc)) call self%add_stream_attributes(attributes_stream=attributes_stream_alloc, &
+                                                                             sanitize_values=sanitize_attributes_value)
+  endif
+  if (present(content_alloc)) then
+     if (allocated(content_alloc)) then
+        if (is_content_indented_) then
+          self%tag_content = new_line('a')//repeat(' ', self%indent+2)//content_alloc//new_line('a')
+        else
+          self%tag_content = content_alloc
+        endif
+     endif
+  endif
   endsubroutine set
 
   pure function self_closing_tag(self, is_indented) result(tag_)
@@ -356,7 +381,7 @@ contains
   endif
   endfunction start_tag
 
-  pure function stringify(self, is_indented, is_content_indented, only_start, only_content, only_end) result(stringed)
+  pure function stringify(self, is_indented, is_content_indented, only_start, only_content, only_end, linearize) result(stringed)
   !< Convert the whole tag into a string.
   class(xml_tag), intent(in)           :: self                 !< XML tag.
   logical,        intent(in), optional :: is_indented          !< Activate content indentation.
@@ -364,46 +389,64 @@ contains
   logical,        intent(in), optional :: only_start           !< Write only start tag.
   logical,        intent(in), optional :: only_content         !< Write only content.
   logical,        intent(in), optional :: only_end             !< Write only end tag.
+  logical,        intent(in), optional :: linearize            !< Return a "linearized" string of tags without the XML hieararchy.
+  logical                              :: linearize_           !< Linearize sentinel, local var.
   character(len=:), allocatable        :: stringed             !< Output string containing the whole tag.
   logical                              :: is_content_indented_ !< Activate content indentation.
   logical                              :: only_start_          !< Write only start tag.
   logical                              :: only_content_        !< Write only content.
   logical                              :: only_end_            !< Write only end tag.
 
-  is_content_indented_ = .false. ; if (present(is_content_indented)) is_content_indented_ = is_content_indented
-  only_start_ = .false. ; if (present(only_start)) only_start_ = only_start
-  only_content_ = .false. ; if (present(only_content)) only_content_ = only_content
-  only_end_ = .false. ; if (present(only_end)) only_end_ = only_end
-  if (only_start_) then
-    stringed = self%start_tag(is_indented=is_indented)
-  elseif (only_content_) then
-    if (self%tag_content%is_allocated()) then
-      if (is_content_indented_) then
-        stringed = repeat(' ', self%indent+2)//self%tag_content
-      else
-        stringed = self%tag_content%chars()
-      endif
-    endif
-  elseif (only_end_) then
-    stringed = self%end_tag(is_indented=is_indented)
+  linearize_ = .false. ; if (present(linearize)) linearize_ = linearize
+  if (linearize_) then
+     stringed = ''
+                                   stringed = stringed//'name:            "'//self%tag_name                  //'"'//new_line('a')
+     if (self%attributes_number>0) stringed = stringed//'attributes:      "'//self%attributes()              //'"'//new_line('a')
+                                   stringed = stringed//'content s,e:     "'//trim(str(self%cont_i))         //'"'//new_line('a')
+                                   stringed = stringed//'content:         "'//self%tag_content               //'"'//new_line('a')
+                                   stringed = stringed//'indent:          "'//trim(str(self%indent))         //'"'//new_line('a')
+                                   stringed = stringed//'is self closing: "'//trim(str(self%is_self_closing))//'"'//new_line('a')
+                                   stringed = stringed//'level:           "'//trim(str(self%level))          //'"'//new_line('a')
+                                   stringed = stringed//'id:              "'//trim(str(self%id))             //'"'//new_line('a')
+                                   stringed = stringed//'parent id:       "'//trim(str(self%parent_id))      //'"'//new_line('a')
+                                   stringed = stringed//'children number: "'//trim(str(self%children_number))//'"'//new_line('a')
+     if (allocated(self%child_id)) stringed = stringed//'children ids:    "'//trim(str(self%child_id))       //'"'//new_line('a')
   else
-    stringed = ''
-    if (self%tag_name%is_allocated()) then
-      if (self%is_self_closing) then
-        stringed = self%self_closing_tag(is_indented=is_indented)
-      else
-        stringed = self%start_tag(is_indented=is_indented)
-        if (self%tag_content%is_allocated()) then
-          if (is_content_indented_) then
-            stringed = stringed//new_line('a')//repeat(' ', self%indent+2)//&
-                       self%tag_content//new_line('a')//repeat(' ', self%indent)
-          else
-            stringed = stringed//self%tag_content
-          endif
-        endif
-        stringed = stringed//self%end_tag()
-      endif
-    endif
+     is_content_indented_ = .false. ; if (present(is_content_indented)) is_content_indented_ = is_content_indented
+     only_start_ = .false. ; if (present(only_start)) only_start_ = only_start
+     only_content_ = .false. ; if (present(only_content)) only_content_ = only_content
+     only_end_ = .false. ; if (present(only_end)) only_end_ = only_end
+     if (only_start_) then
+       stringed = self%start_tag(is_indented=is_indented)
+     elseif (only_content_) then
+       if (self%tag_content%is_allocated()) then
+         if (is_content_indented_) then
+           stringed = repeat(' ', self%indent+2)//self%tag_content
+         else
+           stringed = self%tag_content%chars()
+         endif
+       endif
+     elseif (only_end_) then
+       stringed = self%end_tag(is_indented=is_indented)
+     else
+       stringed = ''
+       if (self%tag_name%is_allocated()) then
+         if (self%is_self_closing) then
+           stringed = self%self_closing_tag(is_indented=is_indented)
+         else
+           stringed = self%start_tag(is_indented=is_indented)
+           if (self%tag_content%is_allocated()) then
+             if (is_content_indented_) then
+               stringed = stringed//new_line('a')//repeat(' ', self%indent+2)//&
+                          self%tag_content//new_line('a')//repeat(' ', self%indent)
+             else
+               stringed = stringed//self%tag_content
+             endif
+           endif
+           stringed = stringed//self%end_tag()
+         endif
+       endif
+     endif
   endif
   endfunction stringify
 
@@ -797,6 +840,7 @@ contains
   lhs%level = rhs%level
   lhs%id = rhs%id
   lhs%parent_id = rhs%parent_id
+  lhs%children_number = rhs%children_number
   if (allocated(rhs%child_ID)) lhs%child_ID = rhs%child_ID
   endsubroutine assign_tag
 

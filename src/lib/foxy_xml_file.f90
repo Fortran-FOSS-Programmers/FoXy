@@ -13,20 +13,21 @@ type, public:: xml_file
   !< @todo The "delete" facility is incomplete: nested tags are not taken into account. Better support will with the
   !< "dom" facility.
   private
-  integer(I4P)               :: Nt = 0 !< Number of XML tags.
-  type(xml_tag), allocatable :: tag(:) !< XML tags array.
+  type(xml_tag), allocatable :: tag(:)   !< XML tags array.
+  integer(I4P)               :: nt=0_I4P !< Number of XML tags.
   contains
     ! public methods
-    procedure :: free       !< Free dynamic memory.
-    procedure :: parse      !< Parse xml data from string or file.
-    procedure :: parse_ppp  !< Poor People Parser, by BigG and Raz.
-    procedure :: content    !< Return tag content of tag named *name*.
-    procedure :: stringify  !< Convert the whole file data into a string.
-    procedure :: add_tag    !< Add tag to XML file.
-    procedure :: delete_tag !< Add tag from XML file.
-    final     :: finalize   !< Free dynamic memory when finalizing.
+    procedure, pass(self) :: free                !< Free dynamic memory.
+    procedure, pass(self) :: parse               !< Parse xml file.
+    procedure, pass(self) :: content             !< Return tag content of tag named *name*.
+    procedure, pass(self) :: stringify           !< Convert the whole file data into a string.
+    procedure, pass(self) :: stringify_recursive !< Convert recursively tags with children into a string.
+    procedure, pass(self) :: add_tag             !< Add tag to XML file.
+    procedure, pass(self) :: delete_tag          !< Add tag from XML file.
+    final                 :: finalize            !< Free dynamic memory when finalizing.
     ! private methods
-    procedure, private :: parse_from_string !< Parse xml data from string.
+    procedure, pass(self), private :: add_child         !< Add child ID to tag children list.
+    procedure, pass(self), private :: parse_from_string !< Parse xml data from string.
 endtype xml_file
 contains
   ! public methods
@@ -37,8 +38,8 @@ contains
   if (allocated(self%tag)) then
     call self%tag%free
     deallocate(self%tag)
-    self%Nt = 0
   endif
+  self%Nt = 0_I4P
   endsubroutine free
 
   subroutine finalize(file)
@@ -85,40 +86,82 @@ contains
   if (.not.allocated(content)) content = ''
   endfunction content
 
-  pure function stringify(self) result(string)
+  function stringify(self, linearize) result(string)
   !< Convert the whole file data into a string.
-  class(xml_file), intent(in)   :: self       !< XML file.
-  character(len=:), allocatable :: string     !< Output string containing the whole xml file.
-  character(len=:), allocatable :: tag_string !< Output string containing the current tag.
-  integer(I4P)                  :: t          !< Counter.
+  class(xml_file), intent(in)           :: self       !< XML file.
+  logical,         intent(in), optional :: linearize  !< Return a "linearized" string of tags without the XML hieararchy.
+  logical                               :: linearize_ !< Linearize sentinel, local var.
+  character(len=:), allocatable         :: string     !< Output string containing the whole xml file.
+  character(len=:), allocatable         :: tag_string !< Output string containing the current tag.
+  integer(I4P)                          :: t          !< Counter.
+  logical, allocatable                  :: is_done(:) !< List of stringified tags.
 
+  linearize_ = .false. ; if (present(linearize)) linearize_ = linearize
   string = ''
-  if (self%Nt>0) then
-    do t=1, self%Nt - 1
-      tag_string = self%tag(t)%stringify()
-      string = string//tag_string//new_line('a')
-    enddo
-    tag_string = self%tag(self%Nt)%stringify()
-    string = string//tag_string
+  if (linearize_) then
+     if (self%nt>0) then
+        do t=1, self%nt
+           string = string//self%tag(t)%stringify(linearize=.true.)//new_line('a')
+        enddo
+     endif
+  else
+     if (self%nt>0) then
+        allocate(is_done(self%nt)) ; is_done = .false.
+        do t=1, self%nt
+           if (is_done(t)) cycle
+           if (self%tag(t)%children_number>0) then
+              tag_string = ''
+              call self%stringify_recursive(tag=self%tag(t), is_done=is_done, tag_string=tag_string)
+              if (tag_string(1:1)==new_line('a')) tag_string = tag_string(2:)
+           else
+              tag_string = self%tag(t)%stringify(is_indented=.true.)
+           endif
+           string = string//tag_string//new_line('a')
+           is_done(t) = .true.
+        enddo
+     endif
   endif
+  if (string(len(string):len(string))==new_line('a')) string = string(:len(string)-1)
   endfunction stringify
 
-  elemental subroutine add_tag(self, tag)
+  recursive pure subroutine stringify_recursive(self, tag, is_done, tag_string)
+  !< Convert recursively tags with children into a string.
+  class(xml_file),               intent(in)    :: self       !< XML file.
+  type(xml_tag),                 intent(in)    :: tag        !< XML tag with children.
+  logical,                       intent(inout) :: is_done(:) !< List of stringified tags.
+  character(len=:), allocatable, intent(inout) :: tag_string !< Output string containing the current tag.
+  integer(I4P)                                 :: t          !< Counter.
+
+  if (tag%children_number>0) then
+     tag_string = tag_string//new_line('a')//tag%stringify(is_indented=.true., only_start=.true.)
+     do t=1, tag%children_number
+        call self%stringify_recursive(tag=self%tag(tag%child_id(t)), is_done=is_done, tag_string=tag_string)
+        is_done(tag%child_id(t)) = .true.
+     enddo
+     tag_string = tag_string//new_line('a')//tag%stringify(is_indented=.true., only_end=.true.)
+  else
+     tag_string = tag_string//new_line('a')//tag%stringify(is_indented=.true.)
+  endif
+  endsubroutine stringify_recursive
+
+  ! elemental subroutine add_tag(self, tag)
+  subroutine add_tag(self, tag)
   !< Add tag to XML file.
   class(xml_file), intent(inout) :: self       !< XML file.
   type(xml_tag),   intent(in)    :: tag        !< XML tag.
   type(xml_tag), allocatable     :: tag_new(:) !< New (extended) tags array.
 
-  if (self%Nt>0_I4P) then
-    allocate(tag_new(1:self%Nt + 1))
-    tag_new(1:self%Nt) = self%tag(1:self%Nt)
-    tag_new(self%Nt + 1) = tag
+  if (self%nt>0_I4P) then
+    allocate(tag_new(1:self%nt + 1))
+    tag_new(1:self%nt) = self%tag(1:self%nt)
+    tag_new(self%nt + 1) = tag
   else
     allocate(tag_new(1:1))
     tag_new(1) = tag
   endif
+
   call move_alloc(from=tag_new, to=self%tag)
-  self%Nt = self%Nt + 1
+  self%nt = self%nt + 1
   endsubroutine add_tag
 
   elemental subroutine delete_tag(self, name)
@@ -149,64 +192,234 @@ contains
   endsubroutine delete_tag
 
   ! private methods
-  subroutine parse_from_string(self, source_string)
-  !< Parse xml data from string.
-  class(xml_file), intent(inout) :: self          !< XML file.
-  character(*),    intent(in)    :: source_string !< String containing xml data.
-  type(xml_tag)                  :: tag           !< Dummy xml tag.
-  integer(I4P)                   :: tstart        !< Counter for tracking string parsing.
-  integer(I4P)                   :: tend          !< Counter for tracking string parsing.
+   subroutine parse_from_string(self, source_string)
+   !< Parse xml data from a chunk of source string (file stringified for IO on device).
+   class(xml_file), intent(inout) :: self                    !< XML file handler.
+   character(*),    intent(in)    :: source_string           !< String containing xml data.
+   integer(I4P)                   :: pos, start_pos, end_pos !< Position indexes.
+   character(:), allocatable      :: tag_name                !< Tag name buffer.
+   character(:), allocatable      :: attributes_str          !< Tag attributes string buffer.
+   character(:), allocatable      :: tag_content             !< Tag content string buffer.
+   integer(I4P)                   :: current_level           !< Nesting level counter.
+   logical                        :: is_closing_tag          !< Sentinel for closing tag.
+   logical                        :: is_self_closing         !< Sentinel for self closing tag.
+   type(xml_tag)                  :: tag                     !< XML tag handler.
+   integer(I4P)                   :: parent_id               !< Uniq parent tag ID.
+   integer(I4P), allocatable      :: parent_stack(:)         !< Stack of parents ID.
 
-  tstart = 1
-  tend = 0
-  do while(tstart<len(source_string))
-    call tag%free
-    call tag%parse(source=source_string(tstart:), tend=tend)
-    if (tend==0) exit
-    if (tag%is_parsed()) call self%add_tag(tag)
-    tstart = tstart + tend
-  enddo
-  endsubroutine parse_from_string
+   call self%free
+   pos = 1_I4P
+   current_level = 0_I4P
+   allocate(parent_stack(1))
+   parent_stack = 0_I4P
+   do while (pos <= len_trim(source_string))
+      ! next tag start
+      start_pos = index(source_string(pos:), '<')
+      if (start_pos == 0) exit
+      start_pos = pos + start_pos - 1
 
-  subroutine parse_ppp(self, source)
-  !< Poor People Parser, by BigG and Raz.
-  !< Parse xml data from a chunk of source string (file stringified for IO on device).
-  class(xml_file), intent(inout) :: self         !< XML file handler.
-  character(*),    intent(in)    :: source       !< String containing xml data.
-  integer(I4P)                   :: ts, te       !< Tag character counter.
-  integer(I4P)                   :: t            !< Tag counter.
-  integer(I4P)                   :: tags_number  !< Number of tags parsed.
-  type(xml_tag), allocatable     :: start_tag(:) !< Start tags.
+      ! skip comment, XML header
+      if (start_pos + 3 <= len_trim(source_string)) then
+         if (source_string(start_pos:start_pos+3) == '<!--'.or.source_string(start_pos:start_pos+1) == '<?') then
+            end_pos = index(source_string(start_pos+1:), '>')
+            if (end_pos == 0) exit
+            pos = start_pos + end_pos + 1
+            cycle
+         endif
+      endif
+      ! close current tag
+      end_pos = index(source_string(start_pos:), '>')
+      if (end_pos == 0) exit
+      end_pos = start_pos + end_pos - 1
 
-  call self%free
-  tags_number = 0_I4P
-  t  = 1_I4P
-  ts = 1_I4P
-  te = len(source)
-  allocate(start_tag(1))
-  search_start_tags: do
-     call start_tag(t)%parse_tag_name(source=source(ts:), tend=te)
-     if (start_tag(t)%is_parsed()) then
-        start_tag = [start_tag, xml_tag()]
-        t = t + 1
-        tags_number = tags_number + 1
-        exit search_start_tags
-     elseif (t>1) then
-        start_tag = start_tag(1:t-1)
-     else
-        deallocate(start_tag)
-     endif
-     ts = ts + te
-     if (ts>=len(source)) exit search_start_tags
-  enddo search_start_tags
-  if (allocated(start_tag)) then
-     do t=1, tags_number
-        print*, 'number: ',t, ' name: '//start_tag(t)%name()
-     enddo
-  endif
-  endsubroutine parse_ppp
+      ! parse tag
+      call parse_tag(tag_str         = source_string(start_pos:end_pos), &
+                     tag_name        = tag_name,                         &
+                     attributes_str  = attributes_str,                   &
+                     is_closing      = is_closing_tag,                   &
+                     is_self_closing = is_self_closing)
+      if (allocated(tag_name)) then
+         if (is_closing_tag) then
+            current_level = current_level - 1
+         else
+            ! add new tag to XML tags list
+            call tag%free
+            call self%add_tag(tag=tag)
+            current_level = current_level + 1
+            ! get parent/child id
+            if (current_level>1) then
+               if (parent_stack(current_level-1)>0)  then
+                  parent_id = parent_stack(current_level-1)
+                  call self%add_child(parent_id=parent_stack(current_level - 1), child_id=self%nt)
+               endif
+            elseif (current_level==1) then
+               parent_id = 0_I4P
+            endif
+            ! parent_stack(current_level) = self%nt
+            if (current_level==1) then
+               parent_stack(1) = self%nt
+            else
+               if (current_level>1) parent_stack = [parent_stack(1:current_level-1),self%nt]
+            endif
+            if (.not.is_self_closing) then
+               ! get tag content
+               call get_tag_content(source=source_string, tag_name=tag_name, start_pos=end_pos + 1, content=tag_content)
+            endif
+            call self%tag(self%nt)%set(name                      = tag_name,            &
+                                       sanitize_attributes_value = .true.,              &
+                                       indent                    = (current_level-1)*2, &
+                                       is_self_closing           = is_self_closing,     &
+                                       id                        = self%nt,             &
+                                       level                     = current_level,       &
+                                       parent_id                 = parent_id,           &
+                                       attributes_stream_alloc   = attributes_str,      &
+                                       content_alloc             = tag_content)
+            if (is_self_closing) current_level = current_level - 1
+         endif
+      endif
+      pos = end_pos + 1
+   enddo
+   endsubroutine parse_from_string
 
-  ! non TBP
+   subroutine add_child(self, parent_id, child_id)
+   !< Add child ID to tag children list.
+   class(xml_file), intent(inout) :: self      !< XML file handler.
+   integer(I4P),    intent(in)    :: child_id  !< Child ID.
+   integer(I4P),    intent(in)    :: parent_id !< Parent ID.
+
+   if (parent_id > 0 .and. parent_id <= self%nt) then
+      if (allocated(self%tag(parent_id)%child_id)) then
+         self%tag(parent_id)%child_id = [self%tag(parent_id)%child_id, child_id]
+      else
+         self%tag(parent_id)%child_id = [child_id]
+      endif
+      self%tag(parent_id)%children_number = size(self%tag(parent_id)%child_id)
+   endif
+   endsubroutine add_child
+
+   ! non TBP
+   subroutine find_matching_end_tag(source, start_pos, tag_name, end_pos)
+   character(*),              intent(in)  :: source        !< Source containing tag content.
+   character(*),              intent(in)  :: tag_name      !< Tag name.
+   integer(I4P),              intent(in)  :: start_pos     !< Start tag content position.
+   integer(I4P),              intent(out) :: end_pos       !< End tag position.
+   character(:), allocatable              :: open_tag      !< Open tag.
+   character(:), allocatable              :: end_tag       !< End tag.
+   integer(I4P)                           :: pos, temp_pos !< Position counter.
+   integer(I4P)                           :: tag_count     !< Tags counter.
+
+   end_tag = '</'//trim(tag_name)//'>'
+   open_tag = '<'//trim(tag_name)
+   tag_count = 1
+   pos = start_pos
+   end_pos = 0
+
+   do while (pos <= len_trim(source) .and. tag_count > 0)
+      ! search next tag with the same name
+      temp_pos = index(source(pos:), trim(open_tag)) ! relative position
+      if (temp_pos > 0) then
+         temp_pos = pos + temp_pos - 1 ! absolute position
+         ! check if it is open tag
+         if (temp_pos + len_trim(open_tag) <= len_trim(source)) then
+            if (source(temp_pos+len_trim(open_tag):temp_pos+len_trim(open_tag)) == '>' .or. &
+                source(temp_pos+len_trim(open_tag):temp_pos+len_trim(open_tag)) == ' ') then
+               ! open tag
+               tag_count = tag_count + 1           ! update tags counter
+               pos = temp_pos + len_trim(open_tag) ! update position after tag
+               cycle
+            endif
+         endif
+      endif
+
+      ! search next end tag
+      temp_pos = index(source(pos:), trim(end_tag)) ! relative position
+      if (temp_pos > 0) then
+         temp_pos = pos + temp_pos - 1 ! absolute position
+         tag_count = tag_count - 1     ! update tags counter
+         if (tag_count == 0) then
+            ! found matching end tag
+            end_pos = temp_pos
+            return
+         endif
+         pos = temp_pos + len_trim(end_tag) ! update position after tag
+      else
+         exit
+      endif
+   enddo
+   endsubroutine find_matching_end_tag
+
+   subroutine get_tag_content(source, tag_name, start_pos, content, end_pos)
+   !< Get tag content.
+   character(*),              intent(in)            :: source       !< Source containing tag content.
+   character(*),              intent(in)            :: tag_name     !< Tag name.
+   integer,                   intent(in)            :: start_pos    !< Start tag content position.
+   character(:), allocatable, intent(out)           :: content      !< Extracted tag content.
+   integer(I4P),              intent(out), optional :: end_pos      !< End tag content position.
+   character(:), allocatable                        :: end_tag      !< End tag.
+   integer(I4P)                                     :: end_pos_     !< End tag content position, local var.
+   integer(I4P)                                     :: next_pos     !< Next tag start position.
+   character(:), allocatable                        :: temp_content !< Buffer.
+
+   end_tag = '</'//trim(tag_name)//'>'
+   content = ''
+
+   call find_matching_end_tag(source=source, start_pos=start_pos, tag_name=tag_name, end_pos=end_pos_)
+
+   if (present(end_pos)) end_pos = end_pos_
+   if (end_pos_ > start_pos) then
+      ! search first nested tag, if any
+      next_pos = index(source(start_pos:end_pos_-1), '<')
+
+      if (next_pos > 0) then
+         ! find nested tag
+         next_pos = start_pos + next_pos - 2
+         temp_content = trim(adjustl(source(start_pos:next_pos)))
+         if (len(temp_content) > 0) content = temp_content
+      else
+         ! no nested tag
+         temp_content = trim(adjustl(source(start_pos:end_pos_-1)))
+         if (len(temp_content) > 0) content = temp_content
+      endif
+   endif
+   endsubroutine get_tag_content
+
+   subroutine parse_tag(tag_str, tag_name, attributes_str, is_closing, is_self_closing)
+   !< Parse current tag, only name and attributes.
+   character(*),              intent(in)  :: tag_str         !< Tag string.
+   character(:), allocatable, intent(out) :: tag_name        !< Parsed tag name.
+   character(:), allocatable, intent(out) :: attributes_str  !< Parsed attributes list.
+   logical,                   intent(out) :: is_closing      !< Sentinel for closing tag.
+   logical,                   intent(out) :: is_self_closing !< Sentinel for self closing tag.
+   character(:), allocatable              :: clean_tag       !< Clean tag string.
+   integer(I4P)                           :: space_pos       !< Blank space position.
+
+   clean_tag = trim(adjustl(tag_str))
+   if (len(clean_tag) < 3) return
+
+   ! trim < and >
+   clean_tag = clean_tag(2:len(clean_tag)-1)
+
+   is_self_closing = (clean_tag(len(clean_tag):len(clean_tag)) == '/')
+   if (is_self_closing) then
+      is_closing = .false.
+   else
+      is_closing = (clean_tag(1:1) == '/')
+   endif
+
+   if (is_closing) clean_tag = clean_tag(2:)
+
+   if (is_self_closing) clean_tag = clean_tag(1:len(clean_tag)-1)
+
+   ! parse name and attributes
+   space_pos = index(clean_tag, ' ')
+   if (space_pos > 0) then
+      tag_name = clean_tag(1:space_pos-1)
+      attributes_str = clean_tag(space_pos+1:)
+   else
+      tag_name = clean_tag
+   endif
+   endsubroutine parse_tag
+
   function load_file_as_stream(filename, delimiter_start, delimiter_end, fast_read, iostat, iomsg) result(stream)
   !< Load file contents and store as single characters stream.
   character(*),           intent(in)  :: filename        !< File name.
