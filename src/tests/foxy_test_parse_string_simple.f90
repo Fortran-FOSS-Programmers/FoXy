@@ -1,5 +1,5 @@
 !< FoXy test.
-program parse_file_simple
+program foxy_test_parse_string_simple
 !< FoXy test.
 use foxy, only: xml_file
 
@@ -7,7 +7,6 @@ implicit none
 character(len=:), allocatable :: source         !< String containing the source XML data.
 character(len=:), allocatable :: parsed         !< String containing the parsed XML data.
 type(xml_file)                :: xfile          !< XML file handler.
-integer                       :: xunit          !< XML file unit.
 logical                       :: test_passed(1) !< List of passed tests.
 
 test_passed = .false.
@@ -24,20 +23,14 @@ source = '<first x="1" y="c" z="2">lorem ipsum...</first>'//new_line('a')//&
          '  </nested2>'//new_line('a')//&
          '</fift>'
 print "(A)", source
-open(newunit=xunit, file='parse_file_simple.xml', access='STREAM', form='UNFORMATTED')
-write(unit=xunit)source
-close(unit=xunit)
 
 print "(A)", 'Parsing file'
-call xfile%parse(filename='parse_file_simple.xml')
+call xfile%parse(string=source)
 print "(A)", 'Parsed data'
 parsed = xfile%stringify()
 print "(A)", parsed
 test_passed(1) = trim(source)==trim(parsed)
 print "(A,L1)", 'Is parsed data correct? ', test_passed(1)
 
-open(newunit=xunit, file='parse_file_simple.xml')
-close(unit=xunit, status='DELETE')
-
 print "(A,L1)", new_line('a')//'Are all tests passed? ', all(test_passed)
-endprogram parse_file_simple
+endprogram foxy_test_parse_string_simple

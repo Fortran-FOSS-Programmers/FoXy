@@ -1,20 +1,14 @@
 !< FoXy test.
-program create_tag
-!-----------------------------------------------------------------------------------------------------------------------------------
+program foxy_test_create_tag
 !< FoXy test.
-!-----------------------------------------------------------------------------------------------------------------------------------
 use foxy, only: xml_tag
-!-----------------------------------------------------------------------------------------------------------------------------------
 
-!-----------------------------------------------------------------------------------------------------------------------------------
 implicit none
 character(len=:), allocatable :: source         !< String containing the source XML data.
 character(len=:), allocatable :: parsed         !< String containing the parsed XML data.
 type(xml_tag)                 :: a_tag          !< XML tag handler.
 logical                       :: test_passed(4) !< List of passed tests.
-!-----------------------------------------------------------------------------------------------------------------------------------
 
-!-----------------------------------------------------------------------------------------------------------------------------------
 test_passed = .false.
 
 ! create using xml_tag overloaded procedures
@@ -58,6 +52,4 @@ test_passed(4) = trim(source)==trim(parsed)
 print "(A,L1)", parsed//' Is correct? ', test_passed(4)
 
 print "(A,L1)", new_line('a')//'Are all tests passed? ', all(test_passed)
-stop
-!-----------------------------------------------------------------------------------------------------------------------------------
-endprogram create_tag
+endprogram foxy_test_create_tag

@@ -22,7 +22,7 @@ A KISS pure Fortran Library for parsing XML files
 
 #### Compiler Support
 
-[![Compiler](https://img.shields.io/badge/GNU-v5.3.0+-orange.svg)]()
+[![Compiler](https://img.shields.io/badge/GNU-v14.2.0+-brightgreen.svg)]()
 [![Compiler](https://img.shields.io/badge/Intel-v16.x+-brightgreen.svg)]()
 [![Compiler](https://img.shields.io/badge/IBM%20XL-not%20tested-yellow.svg)]()
 [![Compiler](https://img.shields.io/badge/g95-not%20tested-yellow.svg)]()
@@ -73,30 +73,32 @@ Go to [Top](#top)
 [![Build Status](https://travis-ci.org/Fortran-FOSS-Programmers/FoXy.svg?branch=master)](https://travis-ci.org/Fortran-FOSS-Programmers/FoXy)
 [![Coverage Status](https://img.shields.io/codecov/c/github/Fortran-FOSS-Programmers/FoXy.svg)](http://codecov.io/github/Fortran-FOSS-Programmers/FoXy?branch=master)
 
-### Done
+### Features
 
-+ lint baseline code:
-  + purge doxygen, format docstrings for FORD;
-  + adopt best practice of [Rouson](http://www.cambridge.org/us/academic/subjects/engineering/engineering-general-interest/scientific-software-design-object-oriented-way?format=PB);
-  + clean the API: two modules, one main XML file object;
-+ parse input string:
-  + autoparse tags:
-    + autoparse tag's name;
-    + autoparse tag's value;
-    + autoparse tag's attributes names;
-    + autoparse tag's attributes values;
-+ lazy find tag value into file (once provided a tag name);
-+ parse input file;
-+ fix bug on tag's attributes name parsing.
++ [ ] Input:
+  + [ ] parse input file/string:
+    + [x] create linearized DOM (nested and repeated tags supported)
+    + [ ] lazy inquire tag into DOM;
++ [x] Output:
+    + [x] write tag (*atomically*) on file/string;
++ [x] Input/Output:
+    + [x] create tag structure:
+      + [x] start tag with name and attributes;
+      + [x] self closing tag;
+      + [x] nested tag;
+      + [x] tag content;
+      + [x] end tag;
+      + [x] tag DOM hierarchy (tag ID, parent ID, children IDs, level);
+      + [x] tag indent;
+    + [x] add tag to DOM;
+    + [x] delete tag from DOM;
 
 ### Doing
 
-+ implement nested tags delete;
-+ implement lazy find tag's value attribute into file (once provided a tag name and attribute name).
++ lazy inquire tag into DOM.
 
 ### Todo
 
-+ create team of collaborators;
 + profile the parser:
   + almost surely there are performance penalties;
 

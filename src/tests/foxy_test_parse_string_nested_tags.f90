@@ -1,5 +1,5 @@
 !< FoXy test.
-program parse_string_nested_tags
+program foxy_test_parse_string_nested_tags
 !< FoXy test.
 use foxy, only: xml_file
 
@@ -23,11 +23,15 @@ source = '<tag1 level="1">lorem ipsum...</tag1>'//new_line('a')//&
          '<tag5>'//new_line('a')//&
          '  <tag6 level="2">content of tag6</tag6>'//new_line('a')//&
          '  <tag7 level="2">'//new_line('a')//&
-         '    <tag7 level="3" type="nested">content of tag7 nested</tag8>'//new_line('a')//&
+         '    <tag7 level="3" type="nested">content of tag7 nested</tag7>'//new_line('a')//&
          '    <tag8 level="3">content of tag8</tag8>'//new_line('a')//&
+         '    <tag7 level="3" type="nested repeat">content of tag7 nested repeat</tag7>'//new_line('a')//&
          '    <tag9 level="3">'//new_line('a')//&
          '      <tag10 level="4">content of tag10</tag10>'//new_line('a')//&
          '    </tag9>'//new_line('a')//&
+         '    <tag7 level="3" type="nested">'//new_line('a')//&
+         '      <tag7 level="4" type="nested double">content of tag7 nested double</tag7>'//new_line('a')//&
+         '    </tag7>'//new_line('a')//&
          '  </tag7>'//new_line('a')//&
          '</tag5>'//new_line('a')//&
          '<tag11 level="1" type="self_closing"/>'
@@ -52,4 +56,4 @@ write(f,'(A)') parsed
 close(f)
 
 print "(A,L1)", new_line('a')//'Are all tests passed? ', all(test_passed)
-endprogram parse_string_nested_tags
+endprogram foxy_test_parse_string_nested_tags

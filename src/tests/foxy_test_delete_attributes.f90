@@ -1,20 +1,14 @@
 !< FoXy test.
-program delete_attributes
-!-----------------------------------------------------------------------------------------------------------------------------------
+program foxy_test_delete_attributes
 !< FoXy test.
-!-----------------------------------------------------------------------------------------------------------------------------------
 use foxy, only: xml_tag
-!-----------------------------------------------------------------------------------------------------------------------------------
 
-!-----------------------------------------------------------------------------------------------------------------------------------
 implicit none
 character(len=:), allocatable :: source         !< String containing the source XML data.
 character(len=:), allocatable :: parsed         !< String containing the parsed XML data.
 type(xml_tag)                 :: a_tag          !< XML tag handler.
 logical                       :: test_passed(4) !< List of passed tests.
-!-----------------------------------------------------------------------------------------------------------------------------------
 
-!-----------------------------------------------------------------------------------------------------------------------------------
 test_passed = .false.
 
 print "(A)", 'source'
@@ -54,6 +48,4 @@ test_passed(4) = trim(adjustl(source))==trim(adjustl(parsed))
 print "(A,L1)", parsed//' Is correct? ', test_passed(4)
 
 print "(A,L1)", new_line('a')//'Are all tests passed? ', all(test_passed)
-stop
-!-----------------------------------------------------------------------------------------------------------------------------------
-endprogram delete_attributes
+endprogram foxy_test_delete_attributes

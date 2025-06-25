@@ -1,12 +1,8 @@
 !< FoXy test.
-program write_tag
-!-----------------------------------------------------------------------------------------------------------------------------------
+program foxy_test_write_tag
 !< FoXy test.
-!-----------------------------------------------------------------------------------------------------------------------------------
 use foxy
-!-----------------------------------------------------------------------------------------------------------------------------------
 
-!-----------------------------------------------------------------------------------------------------------------------------------
 implicit none
 character(len=:), allocatable :: source         !< String containing the source XML data.
 character(len=:), allocatable :: parsed         !< String containing the parsed XML data.
@@ -14,9 +10,7 @@ type(xml_tag)                 :: a_tag          !< XML tag handler.
 type(xml_file)                :: xfile          !< XML file handler.
 integer                       :: xunit          !< XML file unit.
 logical                       :: test_passed(3) !< List of passed tests.
-!-----------------------------------------------------------------------------------------------------------------------------------
 
-!-----------------------------------------------------------------------------------------------------------------------------------
 test_passed = .false.
 
 print "(A)", 'source'
@@ -66,6 +60,4 @@ open(newunit=xunit, file='parse_file_simple.xml')
 close(unit=xunit, status='DELETE')
 
 print "(A,L1)", new_line('a')//'Are all tests passed? ', all(test_passed)
-stop
-!-----------------------------------------------------------------------------------------------------------------------------------
-endprogram write_tag
+endprogram foxy_test_write_tag
