@@ -1,0 +1,20 @@
+[
+  {
+    "text": "src/lib",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "foxy",
+        "link": "/api/src/lib/foxy"
+      },
+      {
+        "text": "foxy_xml_file",
+        "link": "/api/src/lib/foxy_xml_file"
+      },
+      {
+        "text": "foxy_xml_tag",
+        "link": "/api/src/lib/foxy_xml_tag"
+      }
+    ]
+  }
+]

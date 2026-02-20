@@ -1,126 +1,113 @@
-<a name="top"></a>
-
 # FoXy
 
-[![License](https://img.shields.io/badge/license-GNU%20GeneraL%20Public%20License%20v3,%20GPLv3-blue.svg)]()
-[![License](https://img.shields.io/badge/license-BSD2-red.svg)]()
-[![License](https://img.shields.io/badge/license-BSD3-red.svg)]()
-[![License](https://img.shields.io/badge/license-MIT-red.svg)]()
+**Fortran XML parser for poor people** — a KISS pure Fortran 2008+ OOP library for parsing and emitting [XML](https://en.wikipedia.org/wiki/XML) files and tags.
 
-[![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)]()
-[![Build Status](https://travis-ci.org/Fortran-FOSS-Programmers/FoXy.svg?branch=master)](https://travis-ci.org/Fortran-FOSS-Programmers/FoXy)
-[![Coverage Status](https://img.shields.io/codecov/c/github/Fortran-FOSS-Programmers/FoXy.svg)](http://codecov.io/github/Fortran-FOSS-Programmers/FoXy?branch=master)
-
-### FoXy, Fortran XML parser for poor people
-
-A KISS pure Fortran Library for parsing XML files
-
-- FoXy is a pure Fortran (KISS) library for modern Fortran projects;
-- FoXy is Fortran 2008+ standard compliant;
-- FoXy is OOP designed;
-- FoXy is a Free, Open Source Project.
-
-#### Compiler Support
-
-[![Compiler](https://img.shields.io/badge/GNU-v14.2.0+-brightgreen.svg)]()
-[![Compiler](https://img.shields.io/badge/Intel-v16.x+-brightgreen.svg)]()
-[![Compiler](https://img.shields.io/badge/IBM%20XL-not%20tested-yellow.svg)]()
-[![Compiler](https://img.shields.io/badge/g95-not%20tested-yellow.svg)]()
-[![Compiler](https://img.shields.io/badge/NAG-not%20tested-yellow.svg)]()
-[![Compiler](https://img.shields.io/badge/PGI-not%20tested-yellow.svg)]()
+[![CI](https://github.com/Fortran-FOSS-Programmers/FoXy/actions/workflows/ci.yml/badge.svg)](https://github.com/Fortran-FOSS-Programmers/FoXy/actions)
+[![Coverage](https://img.shields.io/codecov/c/github/Fortran-FOSS-Programmers/FoXy.svg)](https://app.codecov.io/gh/Fortran-FOSS-Programmers/FoXy)
+[![GitHub tag](https://img.shields.io/github/tag/Fortran-FOSS-Programmers/FoXy.svg)](https://github.com/Fortran-FOSS-Programmers/FoXy/releases)
+[![License](https://img.shields.io/badge/license-GPLv3%20%7C%20BSD%20%7C%20MIT-blue.svg)](#copyrights)
 
 ---
 
-[What is FoXy?](#what-is-foxy) | [Aims](#Aims) | [Status](#status) | [Documentation](#documentation) | [Copyrights](#copyrights)
+## Features
+
+- Parse XML from a **string** or a **file** into a linearised DOM with full hierarchy tracking
+- Nested tags and repeated tags with the same name supported
+- Create tags programmatically with attributes, text content, and nesting
+- Emit tags to string or write atomically to a file unit
+- Self-closing tags, indentation, and partial emission (start / content / end separately)
+- Add and delete tags and attributes by name
+- OOP designed — two clean types (`xml_tag`, `xml_file`), all functionality as type-bound procedures
+- No C bindings, no wrappers — pure Fortran 2008+ with `implicit none` throughout
+- Multi build system: fpm, FoBiS.py, CMake
+
+**[Documentation](https://Fortran-FOSS-Programmers.github.io/FoXy/)** | **[API Reference](https://Fortran-FOSS-Programmers.github.io/FoXy/api/)**
 
 ---
 
-## What is FoXy?
+## Authors
 
-Modern Fortran standards (2003+) have introduced better support for strings manipulations. Exploiting such new Fortran capabilities, FoXy is aimed to provide an easy to use module library to parse and emit [XML](https://en.wikipedia.org/wiki/XML) files and or tags.
+- Stefano Zaghi — [@szaghi](https://github.com/szaghi)
+- Fortran FOSS Programmers — [https://github.com/Fortran-FOSS-Programmers](https://github.com/Fortran-FOSS-Programmers)
 
-## Aims
-
-Other programming languages have many libraries for XML parsing, Fortran has less options, but some there are:
-
-+ [xml-fortran](http://xml-fortran.sourceforge.net/) of Arjen Markus;
-+ [xml-f90](https://github.com/rscircus/xmlf90) of Alberto Garcia;
-+ [fox](https://github.com/andreww/fox) of Andrew Walker that is an improved fork of [xml-f90](https://github.com/rscircus/xmlf90) of Alberto Garcia;
-+ [tixi](https://github.com/DLR-SC/tixi) from DLR Simulation and Software Technology (C-binding).
-
-All of the above are great codes, but lack in some points that we would like to have:
-
-+ actively maintained;
-+ designed for modern Fortran:
-  + OOP designed;
-  + exploiting new features of Fortran (e.g. deferred length allocatable characters);
-  + recreate a pure Fortran representation of the XML data (e.g. tree structure exploiting);
-+ parallel architectures supported (threads/processes safety ensured);
-+ extensively tested (strong unit-test regression);
-+ comprehensively documented;
-+ pure Fortran:
-  + no wrapper;
-  + no bindings, no `ISO_C_BINDING`;
-+ be FOSS.
-
-In some sense or other, the afore-mentioned Fortran libraries miss somethings.
-
-Go to [Top](#top)
-
-## Status
-
-[![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)]()
-[![Build Status](https://travis-ci.org/Fortran-FOSS-Programmers/FoXy.svg?branch=master)](https://travis-ci.org/Fortran-FOSS-Programmers/FoXy)
-[![Coverage Status](https://img.shields.io/codecov/c/github/Fortran-FOSS-Programmers/FoXy.svg)](http://codecov.io/github/Fortran-FOSS-Programmers/FoXy?branch=master)
-
-### Features
-
-+ [ ] Input:
-  + [ ] parse input file/string:
-    + [x] create linearized DOM (nested and repeated tags supported)
-    + [ ] lazy inquire tag into DOM;
-+ [x] Output:
-    + [x] write tag (*atomically*) on file/string;
-+ [x] Input/Output:
-    + [x] create tag structure:
-      + [x] start tag with name and attributes;
-      + [x] self closing tag;
-      + [x] nested tag;
-      + [x] tag content;
-      + [x] end tag;
-      + [x] tag DOM hierarchy (tag ID, parent ID, children IDs, level);
-      + [x] tag indent;
-    + [x] add tag to DOM;
-    + [x] delete tag from DOM;
-
-### Doing
-
-+ lazy inquire tag into DOM.
-
-### Todo
-
-+ profile the parser:
-  + almost surely there are performance penalties;
-
-Go to [Top](#top)
-
-## Documentation
-
-Besides this README file the FoXy documentation is contained into its own [wiki](https://github.com/Fortran-FOSS-Programmers/FoXy/wiki). Detailed documentation of the API is contained into the [GitHub Pages](http://Fortran-FOSS-Programmers.github.io/FoXy/index.html) that can also be created locally by means of [ford tool](https://github.com/cmacmackin/ford).
-
-Go to [Top](#top)
+Contributions are welcome — see the [Contributing](https://Fortran-FOSS-Programmers.github.io/FoXy/guide/contributing) page.
 
 ## Copyrights
 
-FoXy is an open source project, it is distributed under a multi-licensing system:
+This project is distributed under a multi-licensing system:
 
-+ for FOSS projects:
-  - [GPL v3](http://www.gnu.org/licenses/gpl-3.0.html);
-+ for closed source/commercial projects:
-  - [BSD 2-Clause](http://opensource.org/licenses/BSD-2-Clause);
-  - [BSD 3-Clause](http://opensource.org/licenses/BSD-3-Clause);
-  - [MIT](http://opensource.org/licenses/MIT).
+- **FOSS projects**: [GPL v3](http://www.gnu.org/licenses/gpl-3.0.html)
+- **Closed source / commercial**: [BSD 2-Clause](http://opensource.org/licenses/BSD-2-Clause), [BSD 3-Clause](http://opensource.org/licenses/BSD-3-Clause), or [MIT](http://opensource.org/licenses/MIT)
 
-Anyone is interest to use, to develop or to contribute to FoXy is welcome, feel free to select the license that best matches your soul!
+> Anyone interested in using, developing, or contributing to FoXy is welcome — pick the license that best fits your needs.
 
-Go to [Top](#top)
+---
+
+## Quick start
+
+Parse an XML string and query a tag's content:
+
+```fortran
+use foxy, only: xml_file
+implicit none
+type(xml_file)                :: xfile
+character(len=:), allocatable :: val
+
+call xfile%parse(string= &
+  '<config>'//new_line('A')// &
+  '  <dt unit="s">0.01</dt>'//new_line('A')// &
+  '  <nstep>1000</nstep>'//new_line('A')// &
+  '</config>')
+
+val = xfile%content('dt')
+print *, val   ! 0.01
+```
+
+Create and emit a tag programmatically:
+
+```fortran
+use foxy, only: xml_tag
+implicit none
+type(xml_tag) :: tag
+
+tag = xml_tag(name='point', &
+              attributes=reshape([['x','1'],['y','2'],['z','3']], [2,3]))
+print *, tag%stringify()   ! <point x="1" y="2" z="3"/>
+```
+
+---
+
+## Install
+
+### fpm (recommended)
+
+Add FoXy as a dependency in your `fpm.toml`:
+
+```toml
+[dependencies]
+FoXy = { git = "https://github.com/Fortran-FOSS-Programmers/FoXy" }
+```
+
+### Clone and build with FoBiS.py
+
+```sh
+git clone --recursive https://github.com/Fortran-FOSS-Programmers/FoXy.git
+cd FoXy
+FoBiS.py build -mode tests-gnu && bash scripts/run_tests.sh
+```
+
+### Clone and build with CMake
+
+```sh
+git clone --recursive https://github.com/Fortran-FOSS-Programmers/FoXy.git
+cd FoXy
+mkdir build && cd build
+cmake ..
+make && make install
+```
+
+| Tool | Command |
+|------|---------|
+| fpm | `fpm build && fpm test` |
+| FoBiS.py | `FoBiS.py build -mode tests-gnu` |
+| CMake | `cmake .. && make` |
