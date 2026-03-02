@@ -1,4 +1,9 @@
 # Changelog
+## [v0.2.7](https://github.com/szaghi/FLAP/tree/v0.2.7) (2026-03-02)
+[Full Changelog](https://github.com/szaghi/FLAP/compare/v0.2.6...v0.2.7)
+### CI/CD
+- Replace make step with fobis as FoXy has no Makefile ([`a41eff2`](https://github.com/szaghi/FLAP/commit/a41eff2c6af7ed959c97f2367e0d8b540211840e))
+
 ## [v0.2.6](https://github.com/szaghi/FLAP/tree/v0.2.6) (2026-03-02)
 [Full Changelog](https://github.com/szaghi/FLAP/compare/v0.2.5...v0.2.6)
 ### Bug fixes
