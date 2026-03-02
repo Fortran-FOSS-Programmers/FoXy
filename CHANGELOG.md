@@ -1,4 +1,13 @@
 # Changelog
+## [v0.2.8](https://github.com/szaghi/FLAP/tree/v0.2.8) (2026-03-02)
+[Full Changelog](https://github.com/szaghi/FLAP/compare/v0.2.7...v0.2.8)
+### Bug fixes
+-  fix(install): run FoBiS.py fetch after wget tarball extraction
+
+  The release tarball excludes third-party sources (now managed
+  by FoBiS fetch rather than git submodules), so dependencies
+  must be fetched before building when using the wget path. ([`b8e24e4`](https://github.com/szaghi/FLAP/commit/b8e24e498ad3be3e2ad76ba5c681b1ba11e04c78))
+
 ## [v0.2.7](https://github.com/szaghi/FLAP/tree/v0.2.7) (2026-03-02)
 [Full Changelog](https://github.com/szaghi/FLAP/compare/v0.2.6...v0.2.7)
 ### CI/CD
