@@ -1,4 +1,15 @@
 # Changelog
+## [v0.2.2](https://github.com/szaghi/FLAP/tree/v0.2.2) (2026-03-02)
+[Full Changelog](https://github.com/szaghi/FLAP/compare/v0.2.1...v0.2.2)
+### CI/CD
+- Migrate to FoBiS fetch and overhaul CI/CD workflows ([`d6c344e`](https://github.com/szaghi/FLAP/commit/d6c344e4422ccb5e8eb3fc121bbd196f9305832e))
+
+### Documentation
+- Refactor README style and update install instructions ([`16509d8`](https://github.com/szaghi/FLAP/commit/16509d8f723cf9012f9b761e1cf97e308a593ddd))
+
+### Miscellaneous
+- Include VERSION file in release commit ([`0a9a9c9`](https://github.com/szaghi/FLAP/commit/0a9a9c99624c10ef35e17a505d0668e2ebba8e94))
+
 ## [v0.2.1](https://github.com/szaghi/FLAP/tree/v0.2.1) (2026-02-20)
 [Full Changelog](https://github.com/szaghi/FLAP/compare/v0.2.0...v0.2.1)
 ### Documentation
