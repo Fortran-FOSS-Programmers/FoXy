@@ -1,4 +1,29 @@
 # Changelog
+## [v0.2.4](https://github.com/szaghi/FLAP/tree/v0.2.4) (2026-03-02)
+[Full Changelog](https://github.com/szaghi/FLAP/compare/v0.2.3...v0.2.4)
+### CI/CD
+- Fix workflow triggers for portability and GITHUB_TOKEN limit ([`bcf692e`](https://github.com/szaghi/FLAP/commit/bcf692e8af34254c07dce21084228818010bccad))
+
+### Miscellaneous
+- Bump rollup from 4.58.0 to 4.59.0 in /docs
+
+Bumps [rollup](https://github.com/rollup/rollup) from 4.58.0 to 4.59.0.
+- [Release notes](https://github.com/rollup/rollup/releases)
+- [Changelog](https://github.com/rollup/rollup/blob/master/CHANGELOG.md)
+- [Commits](https://github.com/rollup/rollup/compare/v4.58.0...v4.59.0)
+
+---
+updated-dependencies:
+- dependency-name: rollup
+  dependency-version: 4.59.0
+  dependency-type: indirect
+...
+
+Signed-off-by: dependabot[bot] <support@github.com> ([`6140a2a`](https://github.com/szaghi/FLAP/commit/6140a2af78b51f00ff552ad330f5050c9f2205a3))
+- Merge pull request [#13](https://github.com/szaghi/FLAP/issues/13) from Fortran-FOSS-Programmers/dependabot/npm_and_yarn/docs/rollup-4.59.0
+
+Bump rollup from 4.58.0 to 4.59.0 in /docs ([`60a5c83`](https://github.com/szaghi/FLAP/commit/60a5c83d95b00a53869210773de2921f2081d05d))
+
 ## [v0.2.3](https://github.com/szaghi/FLAP/tree/v0.2.3) (2026-03-02)
 [Full Changelog](https://github.com/szaghi/FLAP/compare/v0.2.2...v0.2.3)
 ### CI/CD
