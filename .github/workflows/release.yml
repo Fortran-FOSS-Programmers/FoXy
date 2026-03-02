@@ -6,16 +6,7 @@ on:
 
 jobs:
 
-  docs:
-    uses: ./.github/workflows/docs.yml
-    secrets: inherit
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-
   release:
-    needs: [docs]
     runs-on: ubuntu-latest
     permissions:
       contents: write
