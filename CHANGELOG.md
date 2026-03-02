@@ -1,4 +1,9 @@
 # Changelog
+## [v0.2.3](https://github.com/szaghi/FLAP/tree/v0.2.3) (2026-03-02)
+[Full Changelog](https://github.com/szaghi/FLAP/compare/v0.2.2...v0.2.3)
+### CI/CD
+- Drop redundant docs deployment on tag push ([`cb177e0`](https://github.com/szaghi/FLAP/commit/cb177e063a091ed9e6910f5e3cf22083cf9047a3))
+
 ## [v0.2.2](https://github.com/szaghi/FLAP/tree/v0.2.2) (2026-03-02)
 [Full Changelog](https://github.com/szaghi/FLAP/compare/v0.2.1...v0.2.2)
 ### CI/CD
