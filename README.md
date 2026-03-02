@@ -1,27 +1,20 @@
 # FoXy
 
-**Fortran XML parser for poor people** — a KISS pure Fortran 2008+ OOP library for parsing and emitting [XML](https://en.wikipedia.org/wiki/XML) files and tags.
+>#### Fortran XML parser for poor people
+>a KISS pure Fortran 2008+ OOP library for parsing and emitting [XML](https://en.wikipedia.org/wiki/XML) files and tags.
 
-[![CI](https://github.com/Fortran-FOSS-Programmers/FoXy/actions/workflows/ci.yml/badge.svg)](https://github.com/Fortran-FOSS-Programmers/FoXy/actions)
-[![Coverage](https://img.shields.io/codecov/c/github/Fortran-FOSS-Programmers/FoXy.svg)](https://app.codecov.io/gh/Fortran-FOSS-Programmers/FoXy)
-[![GitHub tag](https://img.shields.io/github/tag/Fortran-FOSS-Programmers/FoXy.svg)](https://github.com/Fortran-FOSS-Programmers/FoXy/releases)
+[![GitHub tag](https://img.shields.io/github/v/tag/Fortran-FOSS-Programmers/FoXy)](https://github.com/Fortran-FOSS-Programmers/FoXy/tags)
+[![GitHub issues](https://img.shields.io/github/issues/Fortran-FOSS-Programmers/FoXy)](https://github.com/Fortran-FOSS-Programmers/FoXy/issues)
+[![CI](https://github.com/Fortran-FOSS-Programmers/FoXy/actions/workflows/ci.yml/badge.svg)](https://github.com/Fortran-FOSS-Programmers/FoXy/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https://Fortran-FOSS-Programmers.github.io/FoXy/coverage.json)](https://github.com/Fortran-FOSS-Programmers/FoXy/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-GPLv3%20%7C%20BSD%20%7C%20MIT-blue.svg)](#copyrights)
 
----
+| 📄 **Parse XML**<br>From string or file into a linearised DOM with full hierarchy tracking; nested and repeated same-name tags supported | 🏗️ **Programmatic creation**<br>Build tags with attributes, text content, and nesting; emit to string or write atomically to a file unit | ✏️ **Flexible emission**<br>Self-closing tags, indentation control, partial emission — start tag, content, and end tag separately | 🔧 **Manipulation**<br>Add and delete tags and attributes by name |
+|:---:|:---:|:---:|:---:|
+| 🎯 **OOP design**<br>Two clean types — `xml_tag` and `xml_file` — all functionality as type-bound procedures | 🔒 **Pure Fortran**<br>No C bindings, no wrappers — pure Fortran 2008+ with `implicit none` throughout | 🔓 **Multi-licensed**<br>GPL v3 · BSD 2/3-Clause · MIT | 📦 **Multiple build systems**<br>fpm, FoBiS.py, CMake |
 
-## Features
-
-- Parse XML from a **string** or a **file** into a linearised DOM with full hierarchy tracking
-- Nested tags and repeated tags with the same name supported
-- Create tags programmatically with attributes, text content, and nesting
-- Emit tags to string or write atomically to a file unit
-- Self-closing tags, indentation, and partial emission (start / content / end separately)
-- Add and delete tags and attributes by name
-- OOP designed — two clean types (`xml_tag`, `xml_file`), all functionality as type-bound procedures
-- No C bindings, no wrappers — pure Fortran 2008+ with `implicit none` throughout
-- Multi build system: fpm, FoBiS.py, CMake
-
-**[Documentation](https://Fortran-FOSS-Programmers.github.io/FoXy/)** | **[API Reference](https://Fortran-FOSS-Programmers.github.io/FoXy/api/)**
+>#### [Documentation](https://Fortran-FOSS-Programmers.github.io/FoXy/)
+> For full (guide, API reference, examples, etc...) see the [FoXy website](https://Fortran-FOSS-Programmers.github.io/FoXy/).
 
 ---
 
@@ -79,35 +72,46 @@ print *, tag%stringify()   ! <point x="1" y="2" z="3"/>
 
 ## Install
 
-### fpm (recommended)
+### FoBiS
 
-Add FoXy as a dependency in your `fpm.toml`:
+**Standalone** — clone, fetch dependencies, and build:
+
+```bash
+git clone https://github.com/Fortran-FOSS-Programmers/FoXy && cd FoXy
+FoBiS.py fetch                        # fetch PENF, StringiFor, BeFoR64, FACE
+FoBiS.py build -mode tests-gnu && bash scripts/run_tests.sh
+```
+
+**As a project dependency** — declare FoXy in your `fobos` and run `fetch`:
+
+```ini
+[dependencies]
+deps_dir = src/third_party
+FoXy = https://github.com/Fortran-FOSS-Programmers/FoXy
+```
+
+```bash
+FoBiS.py fetch           # fetch and build
+FoBiS.py fetch --update  # re-fetch and rebuild
+```
+
+### fpm
+
+Add to your `fpm.toml`:
 
 ```toml
 [dependencies]
 FoXy = { git = "https://github.com/Fortran-FOSS-Programmers/FoXy" }
 ```
 
-### Clone and build with FoBiS.py
-
-```sh
-git clone --recursive https://github.com/Fortran-FOSS-Programmers/FoXy.git
-cd FoXy
-FoBiS.py build -mode tests-gnu && bash scripts/run_tests.sh
+```bash
+fpm build
+fpm test
 ```
 
-### Clone and build with CMake
+### CMake
 
-```sh
-git clone --recursive https://github.com/Fortran-FOSS-Programmers/FoXy.git
-cd FoXy
-mkdir build && cd build
-cmake ..
-make && make install
+```bash
+git clone https://github.com/Fortran-FOSS-Programmers/FoXy && cd FoXy
+cmake -B build && cmake --build build
 ```
-
-| Tool | Command |
-|------|---------|
-| fpm | `fpm build && fpm test` |
-| FoBiS.py | `FoBiS.py build -mode tests-gnu` |
-| CMake | `cmake .. && make` |
