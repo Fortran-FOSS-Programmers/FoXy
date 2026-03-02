@@ -1,4 +1,9 @@
 # Changelog
+## [v0.2.9](https://github.com/szaghi/FLAP/tree/v0.2.9) (2026-03-02)
+[Full Changelog](https://github.com/szaghi/FLAP/compare/v0.2.8...v0.2.9)
+### CI/CD
+- Add branches filter alongside tags-ignore to fix push trigger ([`37e2200`](https://github.com/szaghi/FLAP/commit/37e2200b598cf1d430aa358409a2b2e8f4995166))
+
 ## [v0.2.8](https://github.com/szaghi/FLAP/tree/v0.2.8) (2026-03-02)
 [Full Changelog](https://github.com/szaghi/FLAP/compare/v0.2.7...v0.2.8)
 ### Bug fixes
