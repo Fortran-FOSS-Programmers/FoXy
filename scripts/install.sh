@@ -165,6 +165,12 @@ elif [[ "$DOWNLOAD" != "0" && "$BUILD" != "0" ]]; then
   projectdownload
   if [[ "$DOWNLOAD" == "wget" ]]; then
     cd "$EXTRACTED"
+    if [[ -f .deps_config.ini || -f src/third_party/.deps_config.ini ]]; then
+      command -v FoBiS.py &>/dev/null || error "FoBiS.py not found (needed for fetch)."
+      info "Fetching dependencies…"
+      FoBiS.py fetch
+      success "Dependencies fetched"
+    fi
   else
     cd "$PROJECT"
   fi
