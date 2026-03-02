@@ -10,7 +10,9 @@ jobs:
     uses: ./.github/workflows/docs.yml
     secrets: inherit
     permissions:
-      contents: write
+      contents: read
+      pages: write
+      id-token: write
 
   release:
     needs: [docs]
@@ -22,8 +24,6 @@ jobs:
 
     - name: Checkout repository
       uses: actions/checkout@v4
-      with:
-        submodules: 'true'
 
     # ── Release artefact ─────────────────────────────────────────────────────
     - name: Build release tarball

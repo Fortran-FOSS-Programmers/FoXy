@@ -1,16 +1,16 @@
-### Coverage analysis of *foxy_test_add_attributes.f90*
+### Coverage analysis of *foxy_test_delete_attributes.f90*
 
 |Lines| | |
 | --- | --- | --- |
-|Executable lines            |32| |
-|Executed lines              |32|100%|
+|Executable lines            |39| |
+|Executed lines              |39|100%|
 |Unexecuted lines            |0|0%|
-|Average hits / executed     |4.96875| |
+|Average hits / executed     |8.307692307692308| |
 
 ```mermaid
 pie showData
     title Lines (100% covered)
-    "Executed" : 32
+    "Executed" : 39
     "Unexecuted" : 0
 ```
 
