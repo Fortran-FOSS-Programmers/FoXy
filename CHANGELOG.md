@@ -1,4 +1,9 @@
 # Changelog
+## [v0.2.6](https://github.com/szaghi/FLAP/tree/v0.2.6) (2026-03-02)
+[Full Changelog](https://github.com/szaghi/FLAP/compare/v0.2.5...v0.2.6)
+### Bug fixes
+- Derive extracted dir from tarball name to avoid broken pipe ([`06fa4bc`](https://github.com/szaghi/FLAP/commit/06fa4bc1b7194e69219aeb96b718821efad9d305))
+
 ## [v0.2.5](https://github.com/szaghi/FLAP/tree/v0.2.5) (2026-03-02)
 [Full Changelog](https://github.com/szaghi/FLAP/compare/v0.2.4...v0.2.5)
 ### New features
