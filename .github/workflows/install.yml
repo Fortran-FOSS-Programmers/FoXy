@@ -16,13 +16,16 @@ jobs:
       TAG: ${{ github.event.workflow_run.head_branch }}
 
     steps:
-    - name: INSTALL SCRIPT + make
+    - name: Install FoBiS.py
+      run: pip install FoBiS.py
+
+    - name: INSTALL SCRIPT + fobis
       run: |
         WORKDIR=$(mktemp -d)
         cd "$WORKDIR"
         wget $(curl -s https://api.github.com/repos/$GITHUB_REPOSITORY/releases/tags/$TAG | jq -r '.assets[] | select(.name | test("install.sh"; "i")) | .browser_download_url')
         chmod +x install.sh
-        ./install.sh --download wget --build make
+        ./install.sh --download wget --build fobis
 
     - name: INSTALL SCRIPT + cmake
       run: |
