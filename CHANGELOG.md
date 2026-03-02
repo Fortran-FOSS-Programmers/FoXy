@@ -1,4 +1,9 @@
 # Changelog
+## [v0.2.5](https://github.com/szaghi/FLAP/tree/v0.2.5) (2026-03-02)
+[Full Changelog](https://github.com/szaghi/FLAP/compare/v0.2.4...v0.2.5)
+### New features
+- Add general-purpose install script ([`d021f1c`](https://github.com/szaghi/FLAP/commit/d021f1c9d06c5aaa6b36c14ba7289b4b193340a0))
+
 ## [v0.2.4](https://github.com/szaghi/FLAP/tree/v0.2.4) (2026-03-02)
 [Full Changelog](https://github.com/szaghi/FLAP/compare/v0.2.3...v0.2.4)
 ### CI/CD
