@@ -118,8 +118,8 @@ projectdownload() {
     [[ -z "$TARBALL_URL" ]] && error "No tarball found for ${TAG} in ${REPO}."
 
     TARBALL="${TARBALL_URL##*/}"
+    EXTRACTED="${TARBALL%.tar.gz}"
     wget "$TARBALL_URL"
-    EXTRACTED=$(tar tf "$TARBALL" | head -1 | cut -d/ -f1)
     tar xf "$TARBALL"
     rm -f "$TARBALL"
     [[ $VERBOSE -eq 1 ]] && info "Extracted into: ${EXTRACTED}"
