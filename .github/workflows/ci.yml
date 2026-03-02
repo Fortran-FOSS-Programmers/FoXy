@@ -2,7 +2,8 @@ name: CI
 
 on:
   push:
-    tags-ignore: ["**"]
+    branches: ["**"]
+    tags-ignore: ["**"]   # tags are handled by release.yml
   pull_request:
 
 jobs:

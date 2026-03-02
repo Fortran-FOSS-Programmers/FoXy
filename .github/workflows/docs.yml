@@ -2,7 +2,8 @@ name: Docs
 
 on:
   push:
-    tags-ignore: ["**"]
+    branches: ["**"]
+    tags-ignore: ["**"]   # tags are handled by release.yml
   workflow_dispatch:
   workflow_call:
 
