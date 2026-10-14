@@ -3,6 +3,7 @@ module foxy_xml_file
 !< FoXy XML file class.
 use foxy_xml_entities, only : xml_unescape
 use foxy_xml_tag, only : xml_tag
+use foxy_xml_tree, only : tree_attribute, tree_build_children, tree_children, tree_find_all
 use penf
 
 implicit none
@@ -42,11 +43,9 @@ type, public:: xml_file
       ! private methods
       procedure, pass(self), private :: append_inline       !< Append a tag with its subtree, without layout.
       procedure, pass(self), private :: append_inline_body  !< Append a tag text, children and their tails, without layout.
-      procedure, pass(self), private :: build_children      !< Build the children IDs lists from the parents IDs.
       procedure, pass(self), private :: direct_text         !< Return a tag text plus its children tails (raw).
       procedure, pass(self), private :: is_mixed            !< Check if a tag has mixed content.
       procedure, pass(self), private :: raw_text            !< Return a tag stored text (raw).
-      procedure, pass(self), private :: children_named      !< Return the IDs of the children named *name* of given tags.
       procedure, pass(self), private :: content_by_id       !< Return tag content of the tag with a given ID.
       procedure, pass(self), private :: content_by_name     !< Return tag content of tag named *name*.
       procedure, pass(self), private :: parse_from_string   !< Parse xml data from string.
@@ -89,11 +88,7 @@ contains
    character(*),    intent(in)   :: name  !< Attribute name.
    character(len=:), allocatable :: value !< Attribute value.
 
-   if (id<1.or.id>self%nt) then
-      value = ''
-   else
-      value = self%tag(id)%get_attribute(name=name)
-   endif
+   value = tree_attribute(tag=self%tag, nt=self%nt, id=id, name=name)
    endfunction attribute
 
    pure function children(self, id) result(ids)
@@ -103,13 +98,8 @@ contains
    class(xml_file), intent(in) :: self   !< XML file.
    integer(I4P),    intent(in) :: id     !< Tag ID.
    integer(I4P), allocatable   :: ids(:) !< Children IDs, empty if there are none.
-   integer(I4P)                :: t      !< Counter.
 
-   if (id<0.or.id>self%nt) then
-      allocate(ids(0))
-      return
-   endif
-   ids = pack(tags_indexes(self%nt), [(self%tag(t)%get_parent_id()==id, t=1, self%nt)])
+   ids = tree_children(tag=self%tag, nt=self%nt, id=id)
    endfunction children
 
    pure function content_by_id(self, id) result(content)
@@ -154,41 +144,13 @@ contains
    !<   of the previous one; all the tags matching a segment are explored, thus repeated parents are handled.
    !<
    !< @note If both *name* and *path* are passed, *path* is used; if none is passed, no tag is returned.
-   class(xml_file), intent(in)           :: self    !< XML file.
-   character(*),    intent(in), optional :: name    !< Tag name.
-   character(*),    intent(in), optional :: path    !< Tags path, e.g. `origin/latitude/value`.
-   integer(I4P),    intent(in), optional :: parent  !< Parent tag ID, 0 for the document root.
-   integer(I4P), allocatable             :: ids(:)  !< Matching tags IDs, empty if there are none.
-   character(len=:), allocatable         :: rest    !< Path segments still to match.
-   character(len=:), allocatable         :: segment !< Current path segment.
-   integer(I4P)                          :: t       !< Counter.
+   class(xml_file), intent(in)           :: self   !< XML file.
+   character(*),    intent(in), optional :: name   !< Tag name.
+   character(*),    intent(in), optional :: path   !< Tags path, e.g. `origin/latitude/value`.
+   integer(I4P),    intent(in), optional :: parent !< Parent tag ID, 0 for the document root.
+   integer(I4P), allocatable             :: ids(:) !< Matching tags IDs, empty if there are none.
 
-   allocate(ids(0))
-   if (present(parent)) then
-      if (parent<0.or.parent>self%nt) return
-   endif
-   if (present(path)) then
-      rest = path
-      call next_path_segment(rest=rest, segment=segment)
-   elseif (present(name)) then
-      rest = ''
-      segment = name
-   else
-      return
-   endif
-   if (len(segment)==0) return
-   ! first segment
-   if (present(parent)) then
-      ids = self%children_named(parents=[parent], name=segment)
-   else
-      ids = pack(tags_indexes(self%nt), [(self%tag(t)%name()==segment, t=1, self%nt)])
-   endif
-   ! following segments, direct children of the previous ones
-   do while (len(rest)>0.and.size(ids)>0)
-      call next_path_segment(rest=rest, segment=segment)
-      if (len(segment)==0) exit
-      ids = self%children_named(parents=ids, name=segment)
-   enddo
+   ids = tree_find_all(tag=self%tag, nt=self%nt, name=name, path=path, parent=parent)
    endfunction find_all
 
    pure function content_by_name(self, name) result(content)
@@ -455,36 +417,6 @@ contains
    enddo
    endsubroutine append_inline_body
 
-   pure subroutine build_children(self)
-   !< Build the children IDs lists (in document order) of all tags from their parents IDs, in O(n).
-   !<
-   !< @note Appending each child to its parent list while parsing costs O(children^2) for a parent with many children.
-   class(xml_file), intent(inout) :: self      !< XML file handler.
-   integer(I4P), allocatable      :: filled(:) !< Number of children IDs already stored, per tag.
-   integer(I4P)                   :: parent_id !< Parent ID.
-   integer(I4P)                   :: t         !< Counter.
-
-   do t=1, self%nt
-      self%tag(t)%children_number = 0_I4P
-      if (allocated(self%tag(t)%child_id)) deallocate(self%tag(t)%child_id)
-   enddo
-   do t=1, self%nt
-      parent_id = self%tag(t)%get_parent_id()
-      if (parent_id>0) self%tag(parent_id)%children_number = self%tag(parent_id)%children_number + 1
-   enddo
-   do t=1, self%nt
-      if (self%tag(t)%children_number>0) allocate(self%tag(t)%child_id(self%tag(t)%children_number))
-   enddo
-   allocate(filled(self%nt), source=0_I4P)
-   do t=1, self%nt
-      parent_id = self%tag(t)%get_parent_id()
-      if (parent_id>0) then
-         filled(parent_id) = filled(parent_id) + 1
-         self%tag(parent_id)%child_id(filled(parent_id)) = t
-      endif
-   enddo
-   endsubroutine build_children
-
    pure function direct_text(self, t) result(text)
    !< Return the direct (raw) text of a tag: its text plus the tails of its children, the children text excluded.
    class(xml_file), intent(in)   :: self   !< XML file.
@@ -527,27 +459,6 @@ contains
    call self%tag(t)%get_content(name=self%tag(t)%name(), content=text)
    if (.not.allocated(text)) text = ''
    endfunction raw_text
-
-   pure function children_named(self, parents, name) result(ids)
-   !< Return the IDs (in document order) of the tags named *name* that are direct children of any of *parents*.
-   class(xml_file), intent(in) :: self       !< XML file handler.
-   integer(I4P),    intent(in) :: parents(:) !< Parents IDs, 0 for the document root.
-   character(*),    intent(in) :: name       !< Tag name.
-   integer(I4P), allocatable   :: ids(:)     !< Children IDs.
-   logical,      allocatable   :: is_parent(:) !< Flag of parents, [0:nt].
-   logical,      allocatable   :: is_match(:)  !< Flag of matching tags.
-   integer(I4P)                :: t          !< Counter.
-
-   allocate(is_parent(0:self%nt), source=.false.)
-   do t=1, size(parents, dim=1)
-      is_parent(parents(t)) = .true.
-   enddo
-   allocate(is_match(self%nt), source=.false.)
-   do t=1, self%nt
-      if (is_parent(self%tag(t)%get_parent_id())) is_match(t) = self%tag(t)%name()==name
-   enddo
-   ids = pack(tags_indexes(self%nt), is_match)
-   endfunction children_named
 
    pure subroutine parse_from_string(self, source_string, sanitize, problem)
    !< Parse xml data from a string, with a single pass tokenizer.
@@ -756,7 +667,7 @@ contains
    enddo
    if (depth>0) call record_problem(problem, source_string, stack_start(1), 'unclosed tag <'//self%tag(stack(1))%name()//'>')
    call flush_text(self=self, owner=owner, is_tail=is_tail, text=text, is_parent=.false.)
-   call self%build_children
+   call tree_build_children(tag=self%tag, nt=self%nt)
    endsubroutine parse_from_string
 
    recursive pure subroutine stringify_recursive(self, tag, is_done, buffer, n)
@@ -793,15 +704,6 @@ contains
    endsubroutine finalize
 
    ! non TBP
-   pure function tags_indexes(nt) result(indexes)
-   !< Return the tags indexes [1:nt].
-   integer(I4P), intent(in)  :: nt         !< Number of tags.
-   integer(I4P), allocatable :: indexes(:) !< Tags indexes.
-   integer(I4P)              :: t          !< Counter.
-
-   indexes = [(t, t=1, nt)]
-   endfunction tags_indexes
-
    pure subroutine append(buffer, n, piece)
    !< Append a piece to a buffer of used length *n*, doubling its capacity when full.
    character(len=:), allocatable, intent(inout) :: buffer !< Buffer.
@@ -1051,25 +953,6 @@ contains
       stripped = string(first:last)
    endif
    endfunction strip_blanks
-
-   pure subroutine next_path_segment(rest, segment)
-   !< Pop the next not empty `/`-separated segment from a tags path.
-   character(len=:), allocatable, intent(inout) :: rest    !< Path segments still to pop.
-   character(len=:), allocatable, intent(out)   :: segment !< Popped segment, empty if there are no more.
-   integer(I4P)                                 :: s       !< Separator position.
-
-   segment = ''
-   do while (len(rest)>0.and.len(segment)==0)
-      s = index(rest, '/')
-      if (s==0) then
-         segment = rest
-         rest = ''
-      else
-         segment = rest(:s-1)
-         rest = rest(s+1:)
-      endif
-   enddo
-   endsubroutine next_path_segment
 
    function load_file_as_stream(filename, delimiter_start, delimiter_end, fast_read, iostat, iomsg) result(stream)
    !< Load file contents and store as single characters stream.
