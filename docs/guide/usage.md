@@ -176,6 +176,33 @@ character(len=:), allocatable :: val
 val = xfile%content('a')   ! returns 'hello'
 ```
 
+`content(name)` returns the content of the **first** tag named `name` anywhere in the document. When the same name
+appears under different parents, look tags up by path or parent and read them by ID.
+
+### Find tags by path, parent, or name
+
+Tags are identified by an integer ID (their index in the document, `0` meaning the document root):
+
+```fortran
+use penf, only : I4P
+integer(I4P), allocatable :: ids(:)
+integer(I4P)              :: id
+
+! <origin><latitude><value>36.5</value></latitude></origin>
+! <magnitude publicID="m1"><mag><value>1.5</value></mag></magnitude>
+id  = xfile%find(path='origin/latitude/value')    ! first segment at any depth, the others direct children
+val = xfile%content(id=id)                        ! '36.5'
+
+id  = xfile%find(name='magnitude')                ! first tag named 'magnitude', 0 if none
+val = xfile%attribute(id=id, name='publicID')     ! 'm1', '' if not defined
+ids = xfile%find_all(name='value')                ! all matches, in document order
+ids = xfile%find_all(name='mag', parent=id)       ! only direct children of tag `id`
+ids = xfile%children(id)                          ! direct children IDs; children(0) are the root tags
+```
+
+When a path segment matches several tags (e.g. many `origin` tags), all of them are explored, so
+`find_all(path='origin/latitude/value')` returns the latitudes of every origin.
+
 ### Linearised output (debug)
 
 ```fortran

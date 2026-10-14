@@ -51,6 +51,7 @@ type :: xml_tag
       procedure, pass(self) :: end_tag                     !< Return `</tag_name>` end tag.
       procedure, pass(self) :: free                        !< Free (reset) tag.
       procedure, pass(self) :: get_content                 !< Return tag content.
+      procedure, pass(self) :: get_attribute               !< Return the value of the attribute named *name*.
       procedure, pass(self) :: get_id                      !< Return tag uniq ID.
       procedure, pass(self) :: get_parent_id               !< Return parent tag uniq ID.
       procedure, pass(self) :: is_attribute_present        !< Return .true. it the queried attribute name is defined.
@@ -248,6 +249,24 @@ contains
       endif
    endif
    endsubroutine get_content
+
+   pure function get_attribute(self, name) result(value)
+   !< Return the value of the attribute named *name*.
+   !<
+   !< @note If the attribute is not defined (or has no value), an empty string is returned.
+   class(xml_tag), intent(in)    :: self  !< XML tag.
+   character(*),   intent(in)    :: name  !< Attribute name.
+   character(len=:), allocatable :: value !< Attribute value.
+   integer(I4P)                  :: a     !< Counter.
+
+   value = ''
+   do a=1, self%attributes_number
+      if (self%attribute(1, a)==name) then
+         if (self%attribute(2, a)%is_allocated()) value = self%attribute(2, a)%chars()
+         exit
+      endif
+   enddo
+   endfunction get_attribute
 
    elemental function get_id(self) result(id)
    !< Return tag uniq ID.

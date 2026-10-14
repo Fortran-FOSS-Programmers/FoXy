@@ -60,6 +60,8 @@ tag = xml_tag(name, content=inner_tag, ...)
 | `tag%is_attribute_present(name)` | Logical: attribute exists? |
 | `tag%is_parsed()` | Logical: tag name is allocated? |
 | `tag%get_content(name, content)` | Retrieve text content of self or a named nested tag |
+| `tag%get_attribute(name)` | Return the value of attribute `name`, `''` if not defined |
+| `tag%get_id()` / `tag%get_parent_id()` | Return the tag ID / its parent ID (`0` for a root tag) |
 | `tag%write(unit, [form], [is_indented], [is_content_indented], [only_start], [only_content], [only_end], [end_record])` | Write to file unit |
 | `tag%free()` | Reset all fields |
 
@@ -83,6 +85,11 @@ Defined in `src/lib/foxy_xml_file.f90`. Holds a flat `tag(:)` array with hierarc
 | `xfile%parse([string=], [filename=])` | Parse XML from string or file; clears previous data |
 | `xfile%stringify([linearize])` | Serialise full DOM to string |
 | `xfile%content(name)` | Return text content of first tag named `name`, without leading/trailing blanks |
+| `xfile%content(id=)` | Return text content of the tag with ID `id`, without leading/trailing blanks |
+| `xfile%find([name=], [path=], [parent=])` | Return the ID of the first matching tag, `0` if none |
+| `xfile%find_all([name=], [path=], [parent=])` | Return the IDs of all matching tags, in document order |
+| `xfile%children(id)` | Return the IDs of the direct children of tag `id` (`0`: root tags) |
+| `xfile%attribute(id, name)` | Return the value of attribute `name` of tag `id`, `''` if not defined |
 | `xfile%add_tag(tag)` | Append a root tag to the DOM (its ID is its index) |
 | `xfile%delete_tag(name)` | Remove first tag named `name` with its whole subtree; remaining IDs are renumbered |
 | `xfile%free()` | Deallocate all data |

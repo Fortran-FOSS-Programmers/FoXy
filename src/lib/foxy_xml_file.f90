@@ -15,13 +15,22 @@ type, public:: xml_file
    contains
       ! public methods
       procedure, pass(self) :: add_tag    !< Add tag to XML file.
-      procedure, pass(self) :: content    !< Return tag content of tag named *name*.
+      procedure, pass(self) :: attribute  !< Return the value of an attribute of the tag with a given ID.
+      procedure, pass(self) :: children   !< Return the IDs of the children of the tag with a given ID.
+      generic               :: content => &
+                               content_by_name, &
+                               content_by_id      !< Return tag content, by tag name or ID.
       procedure, pass(self) :: delete_tag !< Add tag from XML file.
+      procedure, pass(self) :: find       !< Return the ID of the first tag matching a name or a path.
+      procedure, pass(self) :: find_all   !< Return the IDs of all tags matching a name or a path.
       procedure, pass(self) :: free       !< Free dynamic memory.
       procedure, pass(self) :: parse      !< Parse xml file.
       procedure, pass(self) :: stringify  !< Convert the whole file data into a string.
       ! private methods
       procedure, pass(self), private :: add_child           !< Add child ID to tag children list.
+      procedure, pass(self), private :: children_named      !< Return the IDs of the children named *name* of given tags.
+      procedure, pass(self), private :: content_by_id       !< Return tag content of the tag with a given ID.
+      procedure, pass(self), private :: content_by_name     !< Return tag content of tag named *name*.
       procedure, pass(self), private :: parse_from_string   !< Parse xml data from string.
       procedure, pass(self), private :: stringify_recursive !< Convert recursively tags with children into a string.
       ! operators
@@ -53,7 +62,121 @@ contains
    self%nt = self%nt + 1
    endsubroutine add_tag
 
-   pure function content(self, name)
+   pure function attribute(self, id, name) result(value)
+   !< Return the value of the attribute named *name* of the tag with ID *id*.
+   !<
+   !< @note If the tag or the attribute does not exist, an empty string is returned.
+   class(xml_file), intent(in)   :: self  !< XML file.
+   integer(I4P),    intent(in)   :: id    !< Tag ID.
+   character(*),    intent(in)   :: name  !< Attribute name.
+   character(len=:), allocatable :: value !< Attribute value.
+
+   if (id<1.or.id>self%nt) then
+      value = ''
+   else
+      value = self%tag(id)%get_attribute(name=name)
+   endif
+   endfunction attribute
+
+   pure function children(self, id) result(ids)
+   !< Return the IDs of the direct children of the tag with ID *id*, in document order.
+   !<
+   !< @note The ID 0 is the document root: its children are the root tags.
+   class(xml_file), intent(in) :: self   !< XML file.
+   integer(I4P),    intent(in) :: id     !< Tag ID.
+   integer(I4P), allocatable   :: ids(:) !< Children IDs, empty if there are none.
+   integer(I4P)                :: t      !< Counter.
+
+   allocate(ids(0))
+   if (id<0.or.id>self%nt) return
+   do t=1, self%nt
+      if (self%tag(t)%get_parent_id()==id) ids = [ids, t]
+   enddo
+   endfunction children
+
+   pure function content_by_id(self, id) result(content)
+   !< Return tag content of the tag with ID *id*.
+   !<
+   !< @note Only the tag own content is returned, without leading and trailing blanks; if the tag does not exist or has no
+   !< content, an empty string is returned.
+   class(xml_file), intent(in)   :: self    !< XML file.
+   integer(I4P),    intent(in)   :: id      !< Tag ID.
+   character(len=:), allocatable :: content !< Tag content.
+
+   if (id>=1.and.id<=self%nt) call self%tag(id)%get_content(name=self%tag(id)%name(), content=content)
+   if (allocated(content)) then
+      content = strip_blanks(content)
+   else
+      content = ''
+   endif
+   endfunction content_by_id
+
+   pure function find(self, name, path, parent) result(id)
+   !< Return the ID of the first tag (in document order) matching *name* or *path*, 0 if there is none.
+   !<
+   !< @note See *find_all* for the matching rules.
+   class(xml_file), intent(in)           :: self   !< XML file.
+   character(*),    intent(in), optional :: name   !< Tag name.
+   character(*),    intent(in), optional :: path   !< Tags path, e.g. `origin/latitude/value`.
+   integer(I4P),    intent(in), optional :: parent !< Parent tag ID, 0 for the document root.
+   integer(I4P)                          :: id     !< Tag ID.
+   integer(I4P), allocatable             :: ids(:) !< Matching tags IDs.
+
+   ids = self%find_all(name=name, path=path, parent=parent)
+   id = 0_I4P
+   if (size(ids)>0) id = ids(1)
+   endfunction find
+
+   pure function find_all(self, name, path, parent) result(ids)
+   !< Return the IDs of all tags (in document order) matching *name* or *path*.
+   !<
+   !< Matching rules:
+   !<
+   !< + *name*: tags named *name* at any depth or, if *parent* is passed, only the direct children of *parent*;
+   !< + *path*: `/`-separated tags names; the first one is matched as *name*, each following one must be a direct child
+   !<   of the previous one; all the tags matching a segment are explored, thus repeated parents are handled.
+   !<
+   !< @note If both *name* and *path* are passed, *path* is used; if none is passed, no tag is returned.
+   class(xml_file), intent(in)           :: self    !< XML file.
+   character(*),    intent(in), optional :: name    !< Tag name.
+   character(*),    intent(in), optional :: path    !< Tags path, e.g. `origin/latitude/value`.
+   integer(I4P),    intent(in), optional :: parent  !< Parent tag ID, 0 for the document root.
+   integer(I4P), allocatable             :: ids(:)  !< Matching tags IDs, empty if there are none.
+   character(len=:), allocatable         :: rest    !< Path segments still to match.
+   character(len=:), allocatable         :: segment !< Current path segment.
+   integer(I4P)                          :: t       !< Counter.
+
+   allocate(ids(0))
+   if (present(parent)) then
+      if (parent<0.or.parent>self%nt) return
+   endif
+   if (present(path)) then
+      rest = path
+      call next_path_segment(rest=rest, segment=segment)
+   elseif (present(name)) then
+      rest = ''
+      segment = name
+   else
+      return
+   endif
+   if (len(segment)==0) return
+   ! first segment
+   if (present(parent)) then
+      ids = self%children_named(parents=[parent], name=segment)
+   else
+      do t=1, self%nt
+         if (self%tag(t)%name()==segment) ids = [ids, t]
+      enddo
+   endif
+   ! following segments, direct children of the previous ones
+   do while (len(rest)>0.and.size(ids)>0)
+      call next_path_segment(rest=rest, segment=segment)
+      if (len(segment)==0) exit
+      ids = self%children_named(parents=ids, name=segment)
+   enddo
+   endfunction find_all
+
+   pure function content_by_name(self, name) result(content)
    !< Return tag content of tag named *name*.
    !<
    !< @note If there is no value, the *tag_content* string is returned empty, but allocated.
@@ -76,7 +199,7 @@ contains
    else
       content = ''
    endif
-   endfunction content
+   endfunction content_by_name
 
    elemental subroutine delete_tag(self, name)
    !< Delete the first tag named *name*, together with its whole subtree, from XML file.
@@ -213,6 +336,22 @@ contains
 
    if (parent_id > 0 .and. parent_id <= self%nt) call self%tag(parent_id)%add_child_id(child_id=child_id)
    endsubroutine add_child
+
+   pure function children_named(self, parents, name) result(ids)
+   !< Return the IDs (in document order) of the tags named *name* that are direct children of any of *parents*.
+   class(xml_file), intent(in) :: self       !< XML file handler.
+   integer(I4P),    intent(in) :: parents(:) !< Parents IDs, 0 for the document root.
+   character(*),    intent(in) :: name       !< Tag name.
+   integer(I4P), allocatable   :: ids(:)     !< Children IDs.
+   integer(I4P)                :: t          !< Counter.
+
+   allocate(ids(0))
+   do t=1, self%nt
+      if (any(parents==self%tag(t)%get_parent_id())) then
+         if (self%tag(t)%name()==name) ids = [ids, t]
+      endif
+   enddo
+   endfunction children_named
 
    pure subroutine parse_from_string(self, source_string)
    !< Parse xml data from a chunk of source string (file stringified for IO on device).
@@ -438,6 +577,25 @@ contains
       stripped = string(first:last)
    endif
    endfunction strip_blanks
+
+   pure subroutine next_path_segment(rest, segment)
+   !< Pop the next not empty `/`-separated segment from a tags path.
+   character(len=:), allocatable, intent(inout) :: rest    !< Path segments still to pop.
+   character(len=:), allocatable, intent(out)   :: segment !< Popped segment, empty if there are no more.
+   integer(I4P)                                 :: s       !< Separator position.
+
+   segment = ''
+   do while (len(rest)>0.and.len(segment)==0)
+      s = index(rest, '/')
+      if (s==0) then
+         segment = rest
+         rest = ''
+      else
+         segment = rest(:s-1)
+         rest = rest(s+1:)
+      endif
+   enddo
+   endsubroutine next_path_segment
 
    function load_file_as_stream(filename, delimiter_start, delimiter_end, fast_read, iostat, iomsg) result(stream)
    !< Load file contents and store as single characters stream.
