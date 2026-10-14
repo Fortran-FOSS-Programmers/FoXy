@@ -95,7 +95,7 @@ source positions `pos(3)` (start, content, end), indentation, self-closing flag,
 **`xml_file`** holds a flat `tag(:)` array (linearised DOM, not a tree of pointers) and a count `nt`. Key methods:
 `parse()`, `stringify()`, `save()`, `add_tag()`, `delete_tag()`, `content()`.
 
-There are **two parsers**:
+There is **one parser**, used everywhere:
 - the document parser: `xml_tokenizer%feed` (`foxy_xml_tokenizer`), a single-pass, quotes-aware tokenizer with the
   stack of open tags, reports each token to an `xml_builder`; the source may be fed in pieces (it returns what it
   consumed; long text/comments/CDATA/PIs are reported in pieces, tags whole), positions are absolute `I8P`.
@@ -109,8 +109,11 @@ There are **two parsers**:
   `is_stopped` flag checked by the tokenizer after each start tag); `content(id)` reads the direct text from the file
   (children cut out using the end-tag `>` positions in `last(:)`), `text_range`/`content_range` give the byte ranges.
   `foxy_test_index` checks the index against the DOM (tags, attributes, content) down to 1-character chunks.
-- `xml_tag%parse`/`search` — the older single-tag parser, still used by `xml_tag%get_content` (and so by
-  `xml_file%content`) to look up nested tags by name.
+- single tags: `xml_tag%parse`, `xml_tag%get_content(name)` (nested tags set as content string, the
+  `xml_file%content(name)` fallback) and attributes streams (`'<_ '//stream//'/>'`) feed the same tokenizer to a
+  `tag_builder` (`foxy_xml_tag`), which keeps the first tag (or the first one named so) and stops the tokenizer when it
+  is complete (`is_stopped` is checked after start and end tags). The tokenizer and the builders are `pure`, so the
+  `xml_tag` procedures stay `pure`/`elemental`.
 
 Typed accessors (`get_attribute`/`get_content` of `xml_file` and `xml_index`, generic over `I1P`…`I8P`, `R4P`, `R8P`,
 logical scalars and rank-1 allocatable numeric lists) share `foxy_xml_values`: one pass checks the token characters

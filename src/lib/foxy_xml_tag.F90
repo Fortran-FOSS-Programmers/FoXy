@@ -2,6 +2,7 @@
 module foxy_xml_tag
 !< FoXy XML tag class.
 use foxy_xml_entities, only : xml_unescape
+use foxy_xml_tokenizer, only : xml_builder, xml_tokenizer
 use penf
 use stringifor
 
@@ -21,9 +22,9 @@ type :: xml_tag
    !<   <Tag_Name att#1_Name="att#1_val" att#2_Name="att#2_val"... att#Nt_Name="att#Nt_val">Tag_Content</Tag_Name>
    !<```
    !<
-   !< It is worth noting that the syntax is case sensitive and that the attributes are optional. Each attribute name must be
-   !< followed by '="' without any additional white spaces and its value must be termined by '"'. Each attribute is separated
-   !< by one or more white spaces.
+   !< It is worth noting that the syntax is case sensitive and that the attributes are optional. Sources (*parse*,
+   !< *get_content*, attributes streams) are read by the document tokenizer: attribute values are single or double quoted,
+   !< blanks are allowed around `=`.
    private
    type(string)                      :: tag_name                   !< Tag name.
    type(string)                      :: tag_content                !< Tag content.
@@ -64,7 +65,6 @@ type :: xml_tag
       procedure, pass(self) :: is_parsed                   !< Check is tag is correctly parsed, i.e. its *tag_name* is allocated.
       procedure, pass(self) :: name                        !< Return tag name.
       procedure, pass(self) :: parse                       !< Parse the tag contained into a source string.
-      procedure, pass(self) :: parse_tag_name              !< Parse the tag name contained into a string.
       procedure, pass(self) :: self_closing_tag            !< Return `<tag_name.../>` self closing tag.
       procedure, pass(self) :: set                         !< Set tag data.
       procedure, pass(self) :: start_tag                   !< Return `<tag_name...>` start tag.
@@ -76,14 +76,8 @@ type :: xml_tag
       procedure, pass(self), private :: add_attribute_value        !< Add one attribute, value stored exactly.
       procedure, pass(self), private :: add_multiple_attributes    !< Add list of attributes name/value pairs.
       procedure, pass(self), private :: add_stream_attributes      !< Add list of attributes name/value pairs passed as stream.
-      procedure, pass(self), private :: alloc_attributes           !< Allocate (prepare for filling) dynamic memory of attributes.
       procedure, pass(self), private :: delete_single_attribute    !< Delete one attribute name/value pair.
       procedure, pass(self), private :: delete_multiple_attributes !< Delete list of attributes name/value pairs.
-      procedure, pass(self), private :: get                        !< Get the tag value and attributes from source.
-      procedure, pass(self), private :: get_value                  !< Get the tag value from source after tag_name has been set.
-      procedure, pass(self), private :: get_attributes             !< Get the attributes values from source.
-      procedure, pass(self), private :: parse_attributes_names     !< Parse the tag attributes names contained into a string.
-      procedure, pass(self), private :: search                     !< Search tag named *tag_name* into a string.
       ! operators
       procedure, pass(lhs), private :: assign_tag !< Assignment between two tags.
       final                         :: finalize   !< Free dynamic memory when finalizing.
@@ -93,6 +87,27 @@ interface xml_tag
    !< Overload *xml_tag* with creator procedures.
    module procedure create_tag_flat, create_tag_nested
 endinterface
+
+type, extends(xml_builder) :: tag_builder
+   !< Builder of a single tag of a source, driven by the tokenizer: the first tag or, if *name* is allocated, the first tag
+   !< with that name (tags inside CDATA sections, comments and PIs excluded); the tokenizer stops once it is complete.
+   character(len=:), allocatable :: name                   !< Name of the searched tag, unallocated for the first tag.
+   logical                       :: sanitize=.false.       !< Trim leading and trailing spaces of attribute values.
+   type(xml_tag)                 :: tag                    !< Found tag: name and attributes.
+   integer(I4P)                  :: id=0_I4P               !< Tokenizer ID of the found tag, 0 if none.
+   integer(I8P)                  :: start=0_I8P            !< Position of the start tag `<`.
+   integer(I8P)                  :: open_end=0_I8P         !< Position of the start tag `>`, 0 if unterminated.
+   integer(I8P)                  :: end_start=0_I8P        !< Position of the end tag `<`, 0 if none.
+   integer(I8P)                  :: end_end=0_I8P          !< Position of the end tag `>`, 0 if none.
+   logical                       :: is_self_closing=.false. !< The found tag is self closing.
+   contains
+      procedure, pass(self) :: start_tag     => tag_start_tag     !< A start tag begins.
+      procedure, pass(self) :: attribute     => tag_attribute     !< An attribute of the current start tag.
+      procedure, pass(self) :: start_tag_end => tag_start_tag_end !< The current start tag is complete.
+      procedure, pass(self) :: end_tag       => tag_end_tag       !< An open tag is closed by its end tag.
+      procedure, pass(self) :: data          => tag_data          !< Character data or other markup: ignored.
+      procedure, pass(self) :: problem       => tag_problem       !< A problem of malformed input: ignored.
+endtype tag_builder
 contains
    ! creator procedures overloading *xml_tag* name
    pure function create_tag_flat(name, attribute, attributes, attributes_stream, sanitize_attributes_value, pos, content,     &
@@ -239,20 +254,21 @@ contains
    pure subroutine get_content(self, name, content)
    !< Return tag content of self (or its nested tags) if named *name*.
    !<
+   !< @note A nested tag is the first tag named *name* in the content string (tags inside CDATA sections, comments and
+   !< PIs excluded); its content is returned raw, as in the string.
    !< @note If there is no value, the *content* string is returned deallocated.
    class(xml_tag),                intent(in)  :: self    !< XML tag.
    character(*),                  intent(in)  :: name    !< Searched tag name.
    character(len=:), allocatable, intent(out) :: content !< Tag content.
-   type(xml_tag)                              :: tag     !< Dummy XML tag.
+   type(tag_builder)                          :: builder !< Single tag builder.
 
-   if (allocated(content)) deallocate(content)
    if (self%tag_name%is_allocated()) then
       if (self%tag_name==name) then
          if (self%tag_content%is_allocated()) content = self%tag_content%chars()
       else
          if (self%tag_content%is_allocated()) then
-            call tag%search(tag_name=name, source=self%tag_content%chars())
-            if (tag%tag_content%is_allocated()) content = tag%tag_content%chars()
+            call scan_tag(source=self%tag_content%chars(), name=name, sanitize=.false., builder=builder)
+            if (builder%id>0) call tag_content(source=self%tag_content%chars(), builder=builder, content=content)
          endif
       endif
    endif
@@ -354,90 +370,54 @@ contains
    endfunction name
 
    elemental subroutine parse(self, source, tstart, tend)
-   !< Parse the tag contained into a source string.
+   !< Parse the first tag contained into a source string: its name, attributes (values as in the source) and content (raw,
+   !< nested tags included); the other tags eventually present are omitted.
    !<
-   !< It is assumed that the first tag contained into the source string is parsed, the others eventually present are omitted.
    !< Valid syntax are:
-   !< + `<tag_name att1="att1 val" att2="att2 val"...>...</tag_name>`
-   !< + `<tag_name att1="att1 val" att2="att2 val".../>`
-   !< @note Inside the attributes value the symbols `<` and `>` are not allowed.
-   class(xml_tag),         intent(inout) :: self      !< XML tag.
-   character(*),           intent(in)    :: source    !< String containing the input.
-   integer(I4P), optional, intent(out)   :: tstart    !< Starting index of tag inside the string.
-   integer(I4P), optional, intent(out)   :: tend      !< Ending index of tag inside the string.
-   integer(I4P)                          :: tstartd   !< Starting index of tag inside the string.
-   integer(I4P)                          :: tendd     !< Ending index of tag inside the string.
-
-   tstartd = 0
-   tendd   = 0
-   call self%parse_tag_name(source=source, tstart=tstartd, tend=tendd)
-   if (self%tag_name%is_allocated()) then
-      if (index(string=source(tstartd:tendd), substring='=')>0) call self%parse_attributes_names(source=source(tstartd:tendd))
-      if (index(string=source, substring='</'//self%tag_name//'>')>0) &
-         tendd = index(string=source, substring='</'//self%tag_name//'>') + len('</'//self%tag_name//'>') - 1
-      call self%get(source=source(tstartd:tendd))
-   endif
-   if (present(tstart)) tstart = tstartd
-   if (present(tend  )) tend   = tendd
-   endsubroutine parse
-
-   elemental subroutine parse_tag_name(self, source, tstart, tend)
-   !< Parse the tag name contained into a string.
+   !< + `<tag_name att1="att1 val" att2='att2 val'...>...</tag_name>`
+   !< + `<tag_name att1="att1 val" att2='att2 val'.../>`
    !<
-   !< It is assumed that the first tag contained into the source is parsed, the others eventually present are omitted.
-   !< Valid syntax are:
-   !< + `<tag_name att1="att1 val" att2="att2 val"...>...</tag_name>`
-   !< + `<tag_name att1="att1 val" att2="att2 val".../>`
-   !< @note Inside the attributes value the symbols `<` and `>` are not allowed.
+   !< @note The source is read by the document tokenizer: `<`, `>`, `=` and the other quote kind are allowed in attribute
+   !< values, the content ends at the matching end tag (nested tags with the same name included) or, if the tag is
+   !< unclosed, at the source end. The tag positions *pos* are set; the name, attributes and content are replaced (the
+   !< name is unallocated if there is no tag).
    class(xml_tag),         intent(inout) :: self    !< XML tag.
    character(*),           intent(in)    :: source  !< String containing the input.
-   integer(I4P), optional, intent(out)   :: tstart  !< Starting index of tag inside the source.
-   integer(I4P), optional, intent(out)   :: tend    !< Ending index of tag inside the source.
-   integer(I4P)                          :: tstartd !< Starting index of tag inside the source.
-   integer(I4P)                          :: tendd   !< Ending index of tag inside the source.
-   character(len=1)                      :: c1      !< Dummy string for parsing file.
-   character(len=:), allocatable         :: c2      !< Dummy string for parsing file.
-   integer(I4P)                          :: c       !< Counter.
-   integer(I4P)                          :: s       !< Counter.
-   logical                               :: is_tag_start !< Flag for a start tag at the current character.
+   integer(I8P), optional, intent(out)   :: tstart  !< Starting index of tag inside the string, 0 if there is no tag.
+   integer(I8P), optional, intent(out)   :: tend    !< Ending index of tag inside the string, 0 if there is no tag.
+   type(tag_builder)                     :: builder !< Single tag builder.
+   character(len=:), allocatable         :: content !< Tag content.
+   integer(I8P)                          :: tend_   !< Ending index of tag inside the string, local variable.
 
+   call scan_tag(source=source, sanitize=.false., builder=builder)
    call self%tag_name%free
-   tstartd = 0
-   tendd   = 0
-   c = 1
-   Tag_Search: do while(c<=len(source))
-      c1 = source(c:c)
-      ! .and. does not short-circuit: guard the look-ahead, source(c+1:c+1) is out of bounds at the last character
-      is_tag_start = .false.
-      if (c1=='<'.and.c<len(source)) is_tag_start = source(c+1:c+1)/='/'
-      if (is_tag_start) then
-         tstartd = c
-         c2 = c1
-         Tag_Name: do while(c<len(source))
-            c = c + 1 ; c1 = source(c:c)
-            c2 = c2//c1
-            if (c1=='>') then
-               tendd = c
-               exit Tag_Name
-            endif
-         enddo Tag_Name
-         s = index(string=c2, substring=' ')
-         if (s>0) then ! there are attributes
-            self%tag_name = c2(2:s-1)
-         else
-            if (index(string=c2, substring='/>')>0) then ! self closing tag
-               self%tag_name = c2(2:len(c2)-2)
-            else
-               self%tag_name = c2(2:len(c2)-1)
-            endif
-         endif
-         exit Tag_Search
+   call self%tag_content%free
+   if (allocated(self%attribute)) deallocate(self%attribute)
+   self%attributes_number = 0_I4P
+   self%is_self_closing = .false.
+   tend_ = 0_I8P
+   if (builder%id>0) then
+      self%tag_name = builder%tag%tag_name
+      if (builder%tag%attributes_number>0) self%attribute = builder%tag%attribute(:, 1:builder%tag%attributes_number)
+      self%attributes_number = builder%tag%attributes_number
+      self%is_self_closing = builder%is_self_closing
+      call tag_content(source=source, builder=builder, content=content)
+      if (allocated(content)) self%tag_content = content
+      if (builder%is_self_closing) then
+         self%pos = [builder%start, builder%open_end, -1_I8P]
+         tend_ = builder%open_end
+      elseif (builder%end_end>0) then
+         self%pos = [builder%start, builder%open_end, builder%end_start]
+         tend_ = builder%end_end
+      else
+         self%pos = [builder%start, builder%open_end, 0_I8P]
+         tend_ = len(source, kind=I8P)
       endif
-      c = c + 1
-   enddo Tag_Search
-   if (present(tstart)) tstart = tstartd
-   if (present(tend  )) tend   = tendd
-   endsubroutine parse_tag_name
+   endif
+   if (present(tstart)) tstart = builder%start
+   if (present(tend  )) tend   = tend_
+   endsubroutine parse
+
 
    pure subroutine set(self, name, attribute, attributes, attributes_stream, sanitize_attributes_value, content, &
                        pos, indent, is_content_indented, is_self_closing, id, level, parent_id,                  &
@@ -700,54 +680,25 @@ contains
    endsubroutine add_multiple_attributes
 
    pure subroutine add_stream_attributes(self, attributes_stream, sanitize_values)
-   !< Add list of attributes name/value pairs passed as stream.
+   !< Add list of attributes name/value pairs passed as stream, e.g. `x="1" y='a > b'`.
    !<
-   !< @note The character `=` cannot compare into the attributes names of values.
+   !< @note The stream is read by the document tokenizer as the attributes of a start tag: values are single or double
+   !< quoted (`<`, `>`, `=` and the other quote kind allowed), blanks are allowed around `=`; values are stored as in the
+   !< stream (unless sanitized), an existing attribute is updated.
    class(xml_tag), intent(inout)        :: self              !< XML tag.
    character(*),   intent(in)           :: attributes_stream !< Attribute name/value pair list passed as stream.
    logical,        intent(in), optional :: sanitize_values   !< Sanitize attribute values.
-   type(string)                         :: attributes_string !< Attribute name/value pair list as string.
-   type(string)                         :: tokens(1:3)       !< Attributes tokenized by `=`.
-   type(string)                         :: attribute(1:2)    !< Attribute name/value pair.
-   logical                              :: continue_to_parse !< Sentinel to stop attributes stream parsing.
-   integer(I4P)                         :: max_chars         !< Counter.
+   type(tag_builder)                    :: builder           !< Single tag builder.
+   logical                              :: sanitize_values_  !< Sanitize attribute values, local variable.
+   integer(I4P)                         :: a                 !< Counter.
 
-   attributes_string = attributes_stream
-   continue_to_parse = .true.
-   do while(continue_to_parse)
-      tokens = attributes_string%partition(sep='=')
-      attribute(1) = trim(adjustl(tokens(1)))
-      if (attribute(1)/='') then
-         tokens(3) = tokens(3)%slice(istart=tokens(3)%index('"')+1, iend=tokens(3)%len())
-         attribute(2) = tokens(3)%slice(istart=1, iend=tokens(3)%index('"')-1)
-         tokens(3) = tokens(3)%slice(istart=tokens(3)%index('"')+1, iend=tokens(3)%len())
-         max_chars = max(attribute(1)%len(), attribute(2)%len())
-         attribute(1) = attribute(1)%fill(width=max_chars, right=.true., filling_char=' ')
-         attribute(2) = attribute(2)%fill(width=max_chars, right=.true., filling_char=' ')
-         call self%add_single_attribute(attribute=[attribute(1)//'', attribute(2)//''], sanitize_value=sanitize_values)
-         if (tokens(3)%index('=')>0) then
-            attributes_string = tokens(3)
-         else
-            continue_to_parse = .false.
-         endif
-      else
-         continue_to_parse = .false.
-      endif
+   sanitize_values_ = .false. ; if (present(sanitize_values)) sanitize_values_ = sanitize_values
+   call scan_tag(source='<_ '//attributes_stream//'/>', sanitize=sanitize_values_, builder=builder)
+   do a=1, builder%tag%attributes_number
+      call self%add_attribute_value(name=builder%tag%attribute(1, a)%chars(), value=builder%tag%attribute(2, a)%chars())
    enddo
    endsubroutine add_stream_attributes
 
-   elemental subroutine alloc_attributes(self, Na)
-   !< Allocate (prepare for filling) dynamic memory of attributes.
-   class(xml_tag),    intent(inout) :: self     !< XML tag.
-   integer(I4P),      intent(in)    :: Na       !< Number of attributes.
-
-   if (allocated(self%attribute)) then
-      call self%attribute%free
-      deallocate(self%attribute)
-   endif
-   allocate(self%attribute(1:2, 1:Na))
-   self%attributes_number = Na
-   endsubroutine alloc_attributes
 
    pure subroutine delete_content(self)
    !< Delete tag content.
@@ -799,149 +750,43 @@ contains
    enddo
    endsubroutine delete_multiple_attributes
 
-   elemental subroutine get(self, source)
-   !< Get the tag content and attributes from source after tag_name and attributes names have been set.
-   class(xml_tag), intent(inout) :: self   !< XML tag.
-   character(*),   intent(in)    :: source !< String containing data.
 
-   call self%get_value(source=source)
-   call self%get_attributes(source=source)
-   ! call self%get_nested()
-   endsubroutine get
 
-   elemental subroutine get_attributes(self, source)
-   !< Get the attributes values from source after tag_name and attributes names have been set.
-   class(xml_tag), intent(inout) :: self   !< XML tag.
-   character(*),   intent(in)    :: source !< String containing data.
-   integer                       :: a      !< Counter.
-   integer                       :: c1     !< Counter.
-   integer                       :: c2     !< Counter.
 
-   if (index(string=source, substring='<'//self%tag_name)>0) then
-      if (self%attributes_number>0) then ! parsing attributes
-         do a=1, self%attributes_number
-            c1 = index(string=source, substring=self%attribute(1, a)//'="') + self%attribute(1, a)%len() + 2
-            if (c1>self%attribute(1, a)%len() + 2) then
-               c2 = index(string=source(c1:), substring='"')
-               if (c2>0) then
-                  self%attribute(2, a) = source(c1:c1+c2-2)
-               else
-                  call self%attribute(2, a)%free
-               endif
-            else
-               call self%attribute(2, a)%free
-            endif
-         enddo
-      endif
-   endif
-   endsubroutine get_attributes
 
-   elemental subroutine get_value(self, source)
-   !< Get the tag value from source after tag_name has been set.
-   class(xml_tag), intent(inout) :: self   !< XML tag.
-   character(*),   intent(in)    :: source !< String containing data.
-   integer                       :: c1     !< Counter.
-   integer                       :: c2     !< Counter.
-
-   call self%tag_content%free
-   self%is_self_closing = .false.
-   if (index(string=source, substring='<'//self%tag_name)>0) then
-      c2 = index(string=source, substring='</'//self%tag_name//'>')
-      if (c2>0) then ! parsing tag value
-         c1 = index(string=source, substring='>')
-         if (c1+1<c2-1) self%tag_content = source(c1+1:c2-1)
-      else
-         self%is_self_closing = .true.
-      endif
-   endif
-   endsubroutine get_value
-
-   elemental subroutine parse_attributes_names(self, source)
-   !< Parse the tag attributes names contained into a string.
-   !<
-   !< Valid syntax is:
-   !< + `att1="att1 val" att2="att2 val"...`
-   !< @note Inside the attributes value the symbols `<` and `>` are not allowed.
-   class(xml_tag), intent(inout) :: self   !< XML tag.
-   character(*),   intent(in)    :: source !< String containing the input.
-   character(len=:), allocatable :: att    !< Dummy string for parsing file.
-   integer(I4P)                  :: c      !< Counter.
-   integer(I4P)                  :: s      !< Counter.
-   integer(I4P)                  :: a      !< Counter.
-   integer(I4P)                  :: Na     !< Counter.
-
-   Na = 0
-   c = 1
-   att_count: do while(c<=len(source))
-      if (source(c:c)=='=') Na = Na + 1
-      c = c + 1
-   enddo att_count
-   if (Na>0) then
-      call self%alloc_attributes(Na=Na)
-      c = index(string=source, substring=' ')
-      att = source(c:)
-      c = 1
-      a = 1
-      att_search: do while(c<=len(att))
-         if (att(c:c)=='=') then
-            s = max(0, index(string=att, substring=' '))
-            self%attribute(1, a) = trim(adjustl(att(s+1:c-1)))
-            att = att(c+1:)
-            c = 1
-            a = a + 1
-         endif
-         c = c + 1
-      enddo att_search
-   endif
-   endsubroutine parse_attributes_names
-
-   elemental subroutine search(self, tag_name, source, tstart, tend)
-   !< Search tag named *tag_name* into a string and, in case it is found, store into self.
-   !<
-   !< @note If *tag_name* is not found, self is returned empty.
-   class(xml_tag),         intent(inout) :: self     !< XML tag.
-   character(*),           intent(in)    :: tag_name !< Searched tag name.
-   character(*),           intent(in)    :: source   !< String containing the input.
-   integer(I4P), optional, intent(out)   :: tstart   !< Starting index of tag inside the source.
-   integer(I4P), optional, intent(out)   :: tend     !< Ending index of tag inside the source.
-   type(xml_tag)                         :: tag      !< Dummy XML tag.
-   integer(I4P)                          :: tstart_  !< Starting index of tag inside the source, local variable.
-   integer(I4P)                          :: tend_    !< Ending index of tag inside the source, local variable.
-   logical                               :: found    !< Flag for inquiring search result.
-   integer(I4P)                          :: tstart_c !< Starting index of tag inside the current slice of source.
-   integer(I4P)                          :: tend_c   !< Starting index of tag inside the current slice of source.
-   integer(I4P)                          :: i
-
-   call self%free
-   self%tag_name = tag_name
-   tstart_ = 1
-   tend_   = 0
-   found = .false.
-   tstart_c = 0
-   tend_c = 0
-   tag_search: do
-      call tag%parse(source=source(tend_ + 1:), tstart=tstart_c, tend=tend_c)
-      tstart_ = tstart_ + tend_
-      tend_ = tend_ + tend_c
-      if (tstart_c==0.and.tend_c==0) then
-         exit tag_search ! no tag found
-      else
-         if (tag%tag_name%is_allocated()) then
-            if (tag%tag_name==self%tag_name) found = .true.
-         endif
-      endif
-      if (found) exit tag_search
-   enddo tag_search
-   if (found) then
-      self = tag
-   else
-      call self%free
-   endif
-   if (present(tstart)) tstart = tstart_
-   if (present(tend  )) tend   = tend_
-   endsubroutine search
 
    ! non type-bound procedures
+   pure subroutine scan_tag(source, sanitize, builder, name)
+   !< Scan a source for its first tag or, if *name* is passed, its first tag with that name.
+   character(*),      intent(in)           :: source    !< Source.
+   logical,           intent(in)           :: sanitize  !< Trim leading and trailing spaces of attribute values.
+   type(tag_builder), intent(out)          :: builder   !< Single tag builder, the found tag.
+   character(*),      intent(in), optional :: name      !< Name of the searched tag.
+   type(xml_tokenizer)                     :: tokenizer !< Tokenizer.
+   integer(I8P)                            :: consumed  !< Characters consumed by the tokenizer.
+
+   if (present(name)) builder%name = name
+   builder%sanitize = sanitize
+   call tokenizer%feed(chars=source, offset=0_I8P, is_last=.true., builder=builder, consumed=consumed)
+   endsubroutine scan_tag
+
+   pure subroutine tag_content(source, builder, content)
+   !< Return the content (raw) of the tag found by a builder: up to its end tag or, if unclosed, to the source end;
+   !< unallocated if it is self closing or empty.
+   character(*),                  intent(in)  :: source  !< Source.
+   type(tag_builder),             intent(in)  :: builder !< Single tag builder, the found tag.
+   character(len=:), allocatable, intent(out) :: content !< Tag content.
+   integer(I8P)                               :: last    !< Last position of the content.
+
+   if (builder%is_self_closing.or.builder%open_end==0) return
+   if (builder%end_start>0) then
+      last = builder%end_start - 1
+   else
+      last = len(source, kind=I8P)
+   endif
+   if (last>builder%open_end) content = source(builder%open_end+1:last)
+   endsubroutine tag_content
+
    pure function blanks_as_spaces(string) result(normalized)
    !< Return string with each blank (tab, new line, carriage return) replaced by a space, a CR LF pair by one space.
    character(*), intent(in)      :: string     !< String.
@@ -968,6 +813,79 @@ contains
    enddo
    normalized = buffer(1:n)
    endfunction blanks_as_spaces
+
+   ! tag_builder methods
+   pure subroutine tag_start_tag(self, id, parent_id, level, name, start)
+   !< A start tag begins: it is the found tag if none is found yet and it is the searched one.
+   class(tag_builder), intent(inout) :: self      !< Single tag builder.
+   integer(I4P),       intent(in)    :: id        !< Tag ID (start tags count).
+   integer(I4P),       intent(in)    :: parent_id !< Parent tag ID, 0 for a root tag.
+   integer(I4P),       intent(in)    :: level     !< Tag level, 1 for a root tag.
+   character(*),       intent(in)    :: name      !< Tag name.
+   integer(I8P),       intent(in)    :: start     !< Position of `<`.
+
+   if (self%id>0) return
+   if (allocated(self%name)) then
+      if (name/=self%name) return
+   endif
+   self%id = id
+   self%start = start
+   self%tag%tag_name = name
+   endsubroutine tag_start_tag
+
+   pure subroutine tag_attribute(self, id, name, value)
+   !< An attribute of the current start tag: stored if it is of the found tag.
+   class(tag_builder), intent(inout) :: self  !< Single tag builder.
+   integer(I4P),       intent(in)    :: id    !< Tag ID.
+   character(*),       intent(in)    :: name  !< Attribute name.
+   character(*),       intent(in)    :: value !< Attribute value.
+
+   if (id==self%id) call self%tag%add_attribute_value(name=name, value=value, sanitize_value=self%sanitize)
+   endsubroutine tag_attribute
+
+   pure subroutine tag_start_tag_end(self, id, start, open_end, is_self_closing)
+   !< The current start tag is complete: a found self closing tag is complete, the tokenizer stops.
+   class(tag_builder), intent(inout) :: self            !< Single tag builder.
+   integer(I4P),       intent(in)    :: id              !< Tag ID.
+   integer(I8P),       intent(in)    :: start           !< Position of `<`.
+   integer(I8P),       intent(in)    :: open_end        !< Position of `>`.
+   logical,            intent(in)    :: is_self_closing !< The tag is self closing.
+
+   if (id/=self%id) return
+   self%open_end = open_end
+   self%is_self_closing = is_self_closing
+   if (is_self_closing) self%is_stopped = .true.
+   endsubroutine tag_start_tag_end
+
+   pure subroutine tag_end_tag(self, id, start, open_end, end_start, end_end)
+   !< An open tag is closed by its end tag: the found tag is complete, the tokenizer stops.
+   class(tag_builder), intent(inout) :: self      !< Single tag builder.
+   integer(I4P),       intent(in)    :: id        !< Tag ID.
+   integer(I8P),       intent(in)    :: start     !< Position of the start tag `<`.
+   integer(I8P),       intent(in)    :: open_end  !< Position of the start tag `>`.
+   integer(I8P),       intent(in)    :: end_start !< Position of the end tag `<`.
+   integer(I8P),       intent(in)    :: end_end   !< Position of the end tag `>`.
+
+   if (id/=self%id) return
+   self%end_start = end_start
+   self%end_end = end_end
+   self%is_stopped = .true.
+   endsubroutine tag_end_tag
+
+   pure subroutine tag_data(self, kind, chars, first)
+   !< Character data or other markup: ignored (the content is cut from the source).
+   class(tag_builder), intent(inout) :: self  !< Single tag builder.
+   integer(I4P),       intent(in)    :: kind  !< Data kind, DATA_*.
+   character(*),       intent(in)    :: chars !< Characters, as in the source.
+   integer(I8P),       intent(in)    :: first !< Position of the first character.
+   endsubroutine tag_data
+
+   pure subroutine tag_problem(self, pos, message)
+   !< A problem of malformed input: ignored (parsing is tolerant).
+   class(tag_builder), intent(inout) :: self    !< Single tag builder.
+   integer(I8P),       intent(in)    :: pos     !< Position of the problem.
+   character(*),       intent(in)    :: message !< Problem description.
+   endsubroutine tag_problem
 
    ! assignment (=)
    elemental subroutine assign_tag(lhs, rhs)

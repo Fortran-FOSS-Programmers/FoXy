@@ -36,7 +36,7 @@ character(*), parameter :: NAME_END = BLANKS//'/>=' !< Characters ending a tag o
 
 type, abstract :: xml_builder
    !< Builder driven by the tokenizer: one call per token (character data and similar in pieces).
-   logical :: is_stopped=.false. !< Set by the builder to stop the tokenizer (checked after each complete start tag).
+   logical :: is_stopped=.false. !< Set by the builder to stop the tokenizer (checked after each complete start or end tag).
    contains
       procedure(start_tag_interface),     pass(self), deferred :: start_tag     !< A start tag begins.
       procedure(attribute_interface),     pass(self), deferred :: attribute     !< An attribute of the current start tag.
@@ -241,6 +241,10 @@ contains
             self%depth = l - 1
          endif
          pos = k + e
+         if (builder%is_stopped) then ! the builder needs no more tokens
+            self%is_done = .true.
+            exit
+         endif
       else
          ! start or self closing tag: parsed whole before being reported (it may continue in the next piece)
          k = pos + 1
