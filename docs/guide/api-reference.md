@@ -64,7 +64,7 @@ tag = xml_tag(name, content=inner_tag, ...)
 | Method | Description |
 |--------|-------------|
 | `tag%set(...)` | Set any tag field after construction; `attribute_name=`/`attribute_value=` add one attribute with the value stored exactly (no padding as with the `attribute=` pair) |
-| `tag%parse(source)` | Parse first tag from `source` string |
+| `tag%parse(source, [tstart=], [tend=])` | Parse the first tag of `source` with the document tokenizer: name, attributes (single or double quoted, `<`, `>`, `=` allowed in values), content raw up to the matching end tag (to the source end if unclosed); `tstart`/`tend` (`integer(I8P)`) its first and last character, `0` if there is no tag; `pos` is set |
 | `tag%name()` | Return tag name as `character(:)` |
 | `tag%stringify([is_indented], [is_content_indented], [only_start], [only_content], [only_end], [linearize])` | Serialise to string |
 | `tag%start_tag([is_indented])` | Return `<name...>` |
@@ -73,13 +73,15 @@ tag = xml_tag(name, content=inner_tag, ...)
 | `tag%attributes()` | Return all attributes as `att1="v1" att2="v2"` string |
 | `tag%add_attributes(attribute=[name,val])` | Add or update one attribute |
 | `tag%add_attributes(attributes=matrix)` | Add or update multiple attributes |
+| `tag%add_attributes(attributes_stream=string, [sanitize_values=])` | Add or update the attributes of a stream as in a start tag, e.g. `x="1" y='a > b'` (values stored as written) |
 | `tag%delete_attributes(name)` | Delete one attribute |
 | `tag%delete_attributes(name=array)` | Delete multiple attributes |
 | `tag%delete_content()` | Clear text content |
 | `tag%is_attribute_present(name)` | Logical: attribute exists? |
 | `tag%is_parsed()` | Logical: tag name is allocated? |
-| `tag%get_content(name, content)` | Retrieve text content of self or a named nested tag |
+| `tag%get_content(name, content)` | Retrieve the content (raw) of self or of the first nested tag `name` in its content string (tags in CDATA, comments and PIs ignored); unallocated if none |
 | `tag%get_attribute(name)` | Return the value of attribute `name` (literal tabs, new lines and CRs as spaces, character references decoded), `''` if not defined |
+| `tag%get_level()` / `tag%get_indent()` / `tag%get_pos()` | Return the level (1 for a root tag), the indentation and the source positions (start `<`, start tag `>`, end tag `<`: `-1` if self-closing, `0` if unclosed) |
 | `tag%get_id()` / `tag%get_parent_id()` | Return the tag ID / its parent ID (`0` for a root tag) |
 | `tag%get_tail()` | Return the text after the end tag (mixed content), `''` if none |
 | `tag%write(unit, [form], [is_indented], [is_content_indented], [only_start], [only_content], [only_end], [end_record])` | Write to file unit |
@@ -114,7 +116,7 @@ Defined in `src/lib/foxy_xml_file.f90`. Holds a flat `tag(:)` array with hierarc
 | `xfile%get_attribute(id, name, value, [iostat=], [iomsg=])` | Get attribute `name` of tag `id` as a number or a logical: `value` integer (`I1P`…`I8P`), real (`R4P`, `R8P`) or logical (`true`/`false`/`1`/`0`), unchanged on error; or `values=`, an allocatable rank-1 integer or real array, the blank-separated list (`"0 10 0 10 0 0"`), empty on error. See [typed values](#typed-values) |
 | `xfile%get_content(id, value, [iostat=], [iomsg=])` | Get the content of tag `id` (as `content(id=)`) as a number, a logical or (`values=`) a list, as `get_attribute` |
 | `xfile%name(id)` / `xfile%parent(id)` / `xfile%level(id)` | Return the name (`''`), parent ID and level (1 for a root tag) of tag `id` (`0` if it does not exist) |
-| `xfile%add_tag(tag)` | Append a root tag to the DOM (its ID is its index) |
+| `xfile%add_tag(tag, [parent=], [id=])` | Append a tag as a root tag or as the last child of tag `parent` (one level deeper, indented 2 more spaces); `id` returns its ID (its index; `0` if `parent` is not a tag). Built documents number tags in insertion order |
 | `xfile%delete_tag(name)` | Remove first tag named `name` with its whole subtree; remaining IDs are renumbered |
 | `xfile%free()` | Deallocate all data |
 

@@ -49,7 +49,7 @@ title: Features
 - [x] Configurable indentation
 - [x] Add / delete attributes by name
 - [x] Delete tag content
-- [x] Add / delete tags from the DOM
+- [x] Add / delete tags from the DOM, at any level (`add_tag(parent=)`)
 
 ## Roadmap
 
@@ -57,6 +57,7 @@ title: Features
 - [x] Keep the prolog (XML declaration, DOCTYPE, comments and PIs before the root tag) when writing
 - [x] Keep comments and processing instructions inside the document when writing
 - [x] Report malformed input to the caller
+- [x] One tokenizer for documents, single tags (`xml_tag%parse`) and attributes streams
 
 ## XML Syntax Supported
 

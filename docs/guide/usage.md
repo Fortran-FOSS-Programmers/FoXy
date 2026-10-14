@@ -75,6 +75,10 @@ print *, tag%name()           ! → speed
 print *, tag%stringify()      ! → <speed unit="m/s">42.0</speed>
 ```
 
+`parse` reads the first tag with the same tokenizer as documents: values may be single quoted and hold `<`, `>` or `=`,
+the content (raw, nested tags included) ends at the matching end tag. The optional `tstart`/`tend` (`integer(I8P)`)
+return its first and last character in the source.
+
 ---
 
 ## Modifying Tags
@@ -369,16 +373,27 @@ after `<AppendedData encoding="raw">` are never read as XML.
 ## Building a DOM Programmatically
 
 ```fortran
-use foxy, only: xml_tag, xml_file
-type(xml_tag)  :: tag
+use foxy, only: I4P, xml_tag, xml_file
 type(xml_file) :: xfile
+integer(I4P)   :: root, solver
 
-call xfile%add_tag(xml_tag(name='config'))
-call xfile%add_tag(xml_tag(name='dt',    content='0.01'))
-call xfile%add_tag(xml_tag(name='nstep', content='1000'))
+call xfile%add_tag(xml_tag(name='config'), id=root)
+call xfile%add_tag(xml_tag(name='dt',    content='0.01'), parent=root)
+call xfile%add_tag(xml_tag(name='solver'), parent=root, id=solver)
+call xfile%add_tag(xml_tag(name='nstep', content='1000'), parent=solver)
 
 print *, xfile%stringify()
+! <config>
+!   <dt>0.01</dt>
+!   <solver>
+!     <nstep>1000</nstep>
+!   </solver>
+! </config>
 ```
+
+Without `parent` a tag is added as a root tag. Tags are appended: in a built document the IDs follow the insertion
+order (a parsed document numbers them in document order), and the hierarchy queries (`find`, `children`, ...) and
+`delete_tag` see the whole tree. For documents too large to hold, stream them with `xml_writer`.
 
 ### Saving to a file
 
