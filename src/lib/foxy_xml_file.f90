@@ -19,8 +19,10 @@ character(*), parameter :: CDATA_END   = ']]>'       !< CDATA section end.
 type, public:: xml_file
    !< XML file class.
    private
-   type(xml_tag), allocatable :: tag(:)   !< XML tags array.
-   integer(I4P)               :: nt=0_I4P !< Number of XML tags.
+   type(xml_tag), allocatable    :: tag(:)   !< XML tags array.
+   integer(I4P)                  :: nt=0_I4P !< Number of XML tags.
+   character(len=:), allocatable :: prolog   !< Markup before the root tag (XML declaration, DOCTYPE, comments, PIs),
+                                             !< verbatim; written back by *stringify*.
    contains
       ! public methods
       procedure, pass(self) :: add_tag    !< Add tag to XML file.
@@ -282,6 +284,7 @@ contains
       deallocate(self%tag)
    endif
    self%nt = 0_I4P
+   if (allocated(self%prolog)) deallocate(self%prolog)
    endsubroutine free
 
    subroutine parse(self, string, filename, iostat, iomsg)
@@ -341,6 +344,7 @@ contains
          call append(buffer=buffer, n=n, piece=self%tag(t)%stringify(linearize=.true.))
       enddo
    else
+      if (allocated(self%prolog)) call append(buffer=buffer, n=n, piece=self%prolog)
       allocate(is_done(self%nt)) ; is_done = .false.
       do t=1, self%nt
          if (is_done(t)) cycle
@@ -614,6 +618,9 @@ contains
             if (owner>0) text = text//'<'
             pos = pos + 1
             cycle
+         endif
+         if (self%nt==0.and.pos>1) then ! the prolog is what precedes the first tag, if not only blanks
+            if (verify(source_string(1:pos-1), BLANKS)>0) self%prolog = source_string(1:pos-1)
          endif
          call flush_text(self=self, owner=owner, is_tail=is_tail, text=text, is_parent=.true.)
          call tag%free

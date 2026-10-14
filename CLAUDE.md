@@ -101,8 +101,12 @@ Mixed content: each tag stores its text (before its first child) and its tail (`
 to the next sibling or the parent end); `content()` returns the direct text (text + children tails), CDATA literal;
 `stringify` writes a tag with non-blank text/tails inline (no added layout), every other tag formatted as before.
 
-Known parser limits: comments, PIs and DOCTYPE are dropped (not written back by `stringify`); malformed input is
-tolerated without error reporting; attribute values are not whitespace-normalized.
+The prolog (XML declaration, DOCTYPE, comments and PIs before the root tag) is kept verbatim in `xml_file%prolog` and
+written back first by `stringify`. `parse` reports the first problem of malformed input (`iostat=XML_MALFORMED`, `iomsg`
+with its line) and file errors, while still building the document (tolerant parsing).
+
+Known parser limits: comments and PIs inside the document are dropped (not written back by `stringify`); attribute
+values are not whitespace-normalized.
 
 Performance: parse and `stringify` are O(n) in the number of tags, lookups O(n) per path segment (tags array and stringify buffer grow
 geometrically, children lists are built once after parsing). Check any change on large inputs with the benchmark:
