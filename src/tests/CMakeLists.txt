@@ -9,7 +9,7 @@ function(add_foxy_test test_src libraries)
     foreach(lib IN LISTS libraries)
         target_link_libraries(${test_name} ${lib})
     endforeach()
-    add_test(NAME ${test_name} COMMAND ${test_name})
+    add_test(NAME ${test_name} COMMAND ${test_name} WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}) # tests read src/tests/data/
 
 endfunction()
 
