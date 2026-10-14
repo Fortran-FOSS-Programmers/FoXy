@@ -168,6 +168,28 @@ call xfile%parse(filename='data.xml')
 output = xfile%stringify()
 ```
 
+The prolog (XML declaration, DOCTYPE, comments and processing instructions before the root tag) is kept verbatim and
+written back first by `stringify()`; comments and processing instructions inside the document are dropped.
+
+### Errors
+
+Parsing is tolerant: malformed input is parsed as far as possible. Pass `iostat`/`iomsg` to know whether it was valid:
+
+```fortran
+use foxy, only: I4P, XML_MALFORMED, xml_file
+integer(I4P)       :: iostat
+character(len=256) :: iomsg
+
+call xfile%parse(filename='data.xml', iostat=iostat, iomsg=iomsg)
+if (iostat==XML_MALFORMED) then
+  print *, trim(iomsg)   ! first problem, e.g. 'line 2: end tag </a> closes open tag <b>'
+elseif (iostat/=0) then
+  print *, trim(iomsg)   ! the file cannot be read
+endif
+```
+
+Without `iostat`/`iomsg`, errors are not reported.
+
 ### Query tag content
 
 ```fortran
@@ -255,6 +277,16 @@ call xfile%add_tag(xml_tag(name='nstep', content='1000'))
 
 print *, xfile%stringify()
 ```
+
+### Saving to a file
+
+```fortran
+call xfile%save(filename='config.xml', is_declared=.true., iostat=iostat, iomsg=iomsg)
+```
+
+`save` writes the prolog, the tags as `stringify()` and a final new line. With `is_declared=.true.` it writes
+`<?xml version="1.0"?>` first, unless the prolog already starts with a declaration. Without `iostat`, an I/O error
+stops the program.
 
 ### Deleting a tag by name
 

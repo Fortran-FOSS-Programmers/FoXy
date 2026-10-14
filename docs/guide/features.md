@@ -13,16 +13,20 @@ title: Features
 - [x] Single-pass, quotes-aware tokenizer, linear in the document size
   - [x] Any blank (space, tab, new line) inside tags, single or double quoted attribute values
   - [x] `<`, `>` and the other quote kind allowed inside attribute values
-  - [x] Comments, processing instructions and DOCTYPE skipped, the text around them kept
+  - [x] Prolog (XML declaration, DOCTYPE, comments and PIs before the root tag) kept and written back
+  - [x] Comments and processing instructions inside the document skipped, the text around them kept
   - [x] CDATA sections read literally
   - [x] Mixed content: text before, between and after child tags
 - [x] Character references decoded on read (`&lt;` `&gt;` `&amp;` `&quot;` `&apos;`, `&#N;`, `&#xH;`)
 - [x] DOM queries by name, `/`-separated path or parent, tags and attributes read by ID
+- [x] Malformed input and file errors reported through optional `iostat`/`iomsg` (first problem, with its line),
+  parsing stays tolerant
 
 ## Output (Emitting)
 
 - [x] Write a tag **atomically** to a file unit or string
 - [x] Formatted (`fmt='(A)'`) and unformatted (stream) output
+- [x] Save the whole document to a file (`xfile%save`), with an optional XML declaration
 
 ## Input / Output (Tag construction)
 
@@ -44,10 +48,10 @@ title: Features
 
 ## Roadmap
 
-- [ ] Lazy (on-demand) DOM queries
 - [x] Parser performance profiling (`benchmarks/`, `fobis build --mode benchmark-gnu`)
-- [ ] Keep comments, processing instructions and DOCTYPE when writing
-- [ ] Report malformed input to the caller
+- [x] Keep the prolog (XML declaration, DOCTYPE, comments and PIs before the root tag) when writing
+- [ ] Keep comments and processing instructions inside the document when writing
+- [x] Report malformed input to the caller
 
 ## XML Syntax Supported
 
@@ -70,8 +74,10 @@ FoXy handles standard XML element syntax. Tags are case-sensitive and attributes
 ```
 
 ::: warning Limitations
-- Comments, processing instructions and DOCTYPE are skipped: `stringify()` does not write them back
+- Comments and processing instructions inside the document are skipped: `stringify()` does not write them back (the
+  prolog before the root tag is kept)
 - Entities defined by a DTD (e.g. `&nbsp;`) are not expanded, only the predefined and numeric references
-- Malformed input is tolerated, not reported: an end tag closes up to its matching start tag, a stray one is ignored
+- Malformed input is tolerated: an end tag closes up to its matching start tag, a stray one is ignored; only the first
+  problem is reported (`iostat`/`iomsg`)
 - Attribute values are not whitespace-normalized
 :::

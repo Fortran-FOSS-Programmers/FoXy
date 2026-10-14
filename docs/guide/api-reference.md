@@ -87,8 +87,9 @@ Defined in `src/lib/foxy_xml_file.f90`. Holds a flat `tag(:)` array with hierarc
 
 | Method | Description |
 |--------|-------------|
-| `xfile%parse([string=], [filename=])` | Parse XML from string or file; clears previous data |
-| `xfile%stringify([linearize])` | Serialise full DOM to string |
+| `xfile%parse([string=], [filename=], [iostat=], [iomsg=])` | Parse XML from string or file; clears previous data. `iostat`: `0`, the runtime I/O error code, or `XML_MALFORMED` (first problem in `iomsg`, as `line N: ...`); the document is built anyway |
+| `xfile%stringify([linearize])` | Serialise full DOM to string, prolog first |
+| `xfile%save(filename, [is_declared=], [iostat=], [iomsg=])` | Write prolog plus `stringify()` and a final new line to a file; `is_declared=.true.` adds `<?xml version="1.0"?>` if the prolog has none; without `iostat` an I/O error stops the program |
 | `xfile%content(name)` | Return the direct text of the first tag named `name` (text plus children tails), without leading/trailing blanks, references decoded, CDATA literal |
 | `xfile%content(id=)` | Return the direct text of the tag with ID `id`, as `content(name)` |
 | `xfile%find([name=], [path=], [parent=])` | Return the ID of the first matching tag, `0` if none |
@@ -98,6 +99,8 @@ Defined in `src/lib/foxy_xml_file.f90`. Holds a flat `tag(:)` array with hierarc
 | `xfile%add_tag(tag)` | Append a root tag to the DOM (its ID is its index) |
 | `xfile%delete_tag(name)` | Remove first tag named `name` with its whole subtree; remaining IDs are renumbered |
 | `xfile%free()` | Deallocate all data |
+
+`XML_MALFORMED` (`9001`) is a public constant of `foxy_xml_file`, re-exported by `foxy`.
 
 ---
 
