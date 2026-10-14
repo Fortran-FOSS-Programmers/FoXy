@@ -8,6 +8,9 @@ use penf
 implicit none
 private
 
+integer(I4P), parameter :: INITIAL_CAPACITY   = 64_I4P   !< Initial capacity of the tags array, doubled when full.
+integer(I4P), parameter :: INITIAL_BUFFER_LEN = 4096_I4P !< Initial length of the stringify buffer, doubled when full.
+
 type, public:: xml_file
    !< XML file class.
    private
@@ -28,7 +31,7 @@ type, public:: xml_file
       procedure, pass(self) :: parse      !< Parse xml file.
       procedure, pass(self) :: stringify  !< Convert the whole file data into a string.
       ! private methods
-      procedure, pass(self), private :: add_child           !< Add child ID to tag children list.
+      procedure, pass(self), private :: build_children      !< Build the children IDs lists from the parents IDs.
       procedure, pass(self), private :: children_named      !< Return the IDs of the children named *name* of given tags.
       procedure, pass(self), private :: content_by_id       !< Return tag content of the tag with a given ID.
       procedure, pass(self), private :: content_by_name     !< Return tag content of tag named *name*.
@@ -43,24 +46,24 @@ contains
    !< Add tag to XML file, as a root tag (without parent and children).
    !<
    !< @note Tags IDs are the tags indexes into the tags array: the added tag ID is the new number of tags.
+   !< @note The tags array capacity is doubled when full, thus adding n tags costs O(n) tags copies, not O(n^2): only the
+   !< first *nt* elements are tags, the others are spare capacity.
    class(xml_file), intent(inout) :: self       !< XML file.
    type(xml_tag),   intent(in)    :: tag        !< XML tag.
    type(xml_tag), allocatable     :: tag_new(:) !< New (extended) tags array.
 
-   if (self%nt>0_I4P) then
-      allocate(tag_new(1:self%nt + 1))
+   if (.not.allocated(self%tag)) then
+      allocate(self%tag(1:INITIAL_CAPACITY))
+   elseif (self%nt==size(self%tag, dim=1)) then
+      allocate(tag_new(1:2 * size(self%tag, dim=1)))
       tag_new(1:self%nt) = self%tag(1:self%nt)
-      tag_new(self%nt + 1) = tag
-   else
-      allocate(tag_new(1:1))
-      tag_new(1) = tag
+      call move_alloc(from=tag_new, to=self%tag)
    endif
-   call tag_new(self%nt + 1)%set(id=self%nt + 1, parent_id=0_I4P)
-   if (allocated(tag_new(self%nt + 1)%child_id)) deallocate(tag_new(self%nt + 1)%child_id)
-   tag_new(self%nt + 1)%children_number = 0_I4P
-
-   call move_alloc(from=tag_new, to=self%tag)
    self%nt = self%nt + 1
+   self%tag(self%nt) = tag
+   call self%tag(self%nt)%set(id=self%nt, parent_id=0_I4P)
+   if (allocated(self%tag(self%nt)%child_id)) deallocate(self%tag(self%nt)%child_id)
+   self%tag(self%nt)%children_number = 0_I4P
    endsubroutine add_tag
 
    pure function attribute(self, id, name) result(value)
@@ -88,11 +91,11 @@ contains
    integer(I4P), allocatable   :: ids(:) !< Children IDs, empty if there are none.
    integer(I4P)                :: t      !< Counter.
 
-   allocate(ids(0))
-   if (id<0.or.id>self%nt) return
-   do t=1, self%nt
-      if (self%tag(t)%get_parent_id()==id) ids = [ids, t]
-   enddo
+   if (id<0.or.id>self%nt) then
+      allocate(ids(0))
+      return
+   endif
+   ids = pack(tags_indexes(self%nt), [(self%tag(t)%get_parent_id()==id, t=1, self%nt)])
    endfunction children
 
    pure function content_by_id(self, id) result(content)
@@ -165,9 +168,7 @@ contains
    if (present(parent)) then
       ids = self%children_named(parents=[parent], name=segment)
    else
-      do t=1, self%nt
-         if (self%tag(t)%name()==segment) ids = [ids, t]
-      enddo
+      ids = pack(tags_indexes(self%nt), [(self%tag(t)%name()==segment, t=1, self%nt)])
    endif
    ! following segments, direct children of the previous ones
    do while (len(rest)>0.and.size(ids)>0)
@@ -297,47 +298,75 @@ contains
    logical,         intent(in), optional :: linearize  !< Return a "linearized" string of tags without the XML hieararchy.
    logical                               :: linearize_ !< Linearize sentinel, local var.
    character(len=:), allocatable         :: string     !< Output string containing the whole xml file.
-   character(len=:), allocatable         :: tag_string !< Output string containing the current tag.
+   character(len=:), allocatable         :: buffer     !< Output buffer, grown geometrically (O(n) total copies).
+   integer(I4P)                          :: n          !< Used length of the buffer.
    integer(I4P)                          :: t          !< Counter.
+   integer(I4P)                          :: c          !< Counter.
    logical, allocatable                  :: is_done(:) !< List of stringified tags.
 
    linearize_ = .false. ; if (present(linearize)) linearize_ = linearize
-   string = ''
+   n = 0
+   ! root tags (and, in linearized form, all tags) are separated by new lines
    if (linearize_) then
-      if (self%nt>0) then
-         do t=1, self%nt
-            string = string//self%tag(t)%stringify(linearize=.true.)//new_line('a')
-         enddo
-      endif
+      do t=1, self%nt
+         if (t>1) call append(buffer=buffer, n=n, piece=new_line('a'))
+         call append(buffer=buffer, n=n, piece=self%tag(t)%stringify(linearize=.true.))
+      enddo
    else
-      if (self%nt>0) then
-         allocate(is_done(self%nt)) ; is_done = .false.
-         do t=1, self%nt
-            if (is_done(t)) cycle
-            if (self%tag(t)%children_number>0) then
-               tag_string = ''
-               call self%stringify_recursive(tag=self%tag(t), is_done=is_done, tag_string=tag_string)
-               if (tag_string(1:1)==new_line('a')) tag_string = tag_string(2:)
-            else
-               tag_string = self%tag(t)%stringify(is_indented=.true.)
-            endif
-            string = string//tag_string//new_line('a')
-            is_done(t) = .true.
-         enddo
-      endif
+      allocate(is_done(self%nt)) ; is_done = .false.
+      do t=1, self%nt
+         if (is_done(t)) cycle
+         if (t>1) call append(buffer=buffer, n=n, piece=new_line('a'))
+         if (self%tag(t)%children_number>0) then
+            call append(buffer=buffer, n=n, piece=self%tag(t)%stringify(is_indented=.true., only_start=.true.))
+            do c=1, self%tag(t)%children_number
+               call self%stringify_recursive(tag=self%tag(self%tag(t)%child_id(c)), is_done=is_done, buffer=buffer, n=n)
+               is_done(self%tag(t)%child_id(c)) = .true.
+            enddo
+            call append(buffer=buffer, n=n, piece=new_line('a')//self%tag(t)%stringify(is_indented=.true., only_end=.true.))
+         else
+            call append(buffer=buffer, n=n, piece=self%tag(t)%stringify(is_indented=.true.))
+         endif
+         is_done(t) = .true.
+      enddo
    endif
-   if (string(len(string):len(string))==new_line('a')) string = string(:len(string)-1)
+   if (n>0) then
+      string = buffer(1:n)
+   else
+      string = ''
+   endif
    endfunction stringify
 
    ! private methods
-   pure subroutine add_child(self, parent_id, child_id)
-   !< Add child ID to tag children list.
+   pure subroutine build_children(self)
+   !< Build the children IDs lists (in document order) of all tags from their parents IDs, in O(n).
+   !<
+   !< @note Appending each child to its parent list while parsing costs O(children^2) for a parent with many children.
    class(xml_file), intent(inout) :: self      !< XML file handler.
-   integer(I4P),    intent(in)    :: child_id  !< Child ID.
-   integer(I4P),    intent(in)    :: parent_id !< Parent ID.
+   integer(I4P), allocatable      :: filled(:) !< Number of children IDs already stored, per tag.
+   integer(I4P)                   :: parent_id !< Parent ID.
+   integer(I4P)                   :: t         !< Counter.
 
-   if (parent_id > 0 .and. parent_id <= self%nt) call self%tag(parent_id)%add_child_id(child_id=child_id)
-   endsubroutine add_child
+   do t=1, self%nt
+      self%tag(t)%children_number = 0_I4P
+      if (allocated(self%tag(t)%child_id)) deallocate(self%tag(t)%child_id)
+   enddo
+   do t=1, self%nt
+      parent_id = self%tag(t)%get_parent_id()
+      if (parent_id>0) self%tag(parent_id)%children_number = self%tag(parent_id)%children_number + 1
+   enddo
+   do t=1, self%nt
+      if (self%tag(t)%children_number>0) allocate(self%tag(t)%child_id(self%tag(t)%children_number))
+   enddo
+   allocate(filled(self%nt), source=0_I4P)
+   do t=1, self%nt
+      parent_id = self%tag(t)%get_parent_id()
+      if (parent_id>0) then
+         filled(parent_id) = filled(parent_id) + 1
+         self%tag(parent_id)%child_id(filled(parent_id)) = t
+      endif
+   enddo
+   endsubroutine build_children
 
    pure function children_named(self, parents, name) result(ids)
    !< Return the IDs (in document order) of the tags named *name* that are direct children of any of *parents*.
@@ -345,14 +374,19 @@ contains
    integer(I4P),    intent(in) :: parents(:) !< Parents IDs, 0 for the document root.
    character(*),    intent(in) :: name       !< Tag name.
    integer(I4P), allocatable   :: ids(:)     !< Children IDs.
+   logical,      allocatable   :: is_parent(:) !< Flag of parents, [0:nt].
+   logical,      allocatable   :: is_match(:)  !< Flag of matching tags.
    integer(I4P)                :: t          !< Counter.
 
-   allocate(ids(0))
-   do t=1, self%nt
-      if (any(parents==self%tag(t)%get_parent_id())) then
-         if (self%tag(t)%name()==name) ids = [ids, t]
-      endif
+   allocate(is_parent(0:self%nt), source=.false.)
+   do t=1, size(parents, dim=1)
+      is_parent(parents(t)) = .true.
    enddo
+   allocate(is_match(self%nt), source=.false.)
+   do t=1, self%nt
+      if (is_parent(self%tag(t)%get_parent_id())) is_match(t) = self%tag(t)%name()==name
+   enddo
+   ids = pack(tags_indexes(self%nt), is_match)
    endfunction children_named
 
    pure subroutine parse_from_string(self, source_string)
@@ -414,7 +448,6 @@ contains
             if (current_level>1) then
                if (parent_stack(current_level-1)>0)  then
                   parent_id = parent_stack(current_level-1)
-                  call self%add_child(parent_id=parent_stack(current_level - 1), child_id=self%nt)
                endif
             endif
             ! parent_stack(current_level) = self%nt
@@ -445,25 +478,27 @@ contains
       endif
       pos = end_pos + 1
    enddo
+   call self%build_children
    endsubroutine parse_from_string
 
-   recursive pure subroutine stringify_recursive(self, tag, is_done, tag_string)
-   !< Convert recursively tags with children into a string.
+   recursive pure subroutine stringify_recursive(self, tag, is_done, buffer, n)
+   !< Append to buffer, recursively, a (nested) tag with its children, each line preceded by a new line.
    class(xml_file),               intent(in)    :: self       !< XML file.
-   type(xml_tag),                 intent(in)    :: tag        !< XML tag with children.
+   type(xml_tag),                 intent(in)    :: tag        !< XML tag.
    logical,                       intent(inout) :: is_done(:) !< List of stringified tags.
-   character(len=:), allocatable, intent(inout) :: tag_string !< Output string containing the current tag.
+   character(len=:), allocatable, intent(inout) :: buffer     !< Output buffer.
+   integer(I4P),                  intent(inout) :: n          !< Used length of the buffer.
    integer(I4P)                                 :: t          !< Counter.
 
    if (tag%children_number>0) then
-      tag_string = tag_string//new_line('a')//tag%stringify(is_indented=.true., only_start=.true.)
+      call append(buffer=buffer, n=n, piece=new_line('a')//tag%stringify(is_indented=.true., only_start=.true.))
       do t=1, tag%children_number
-         call self%stringify_recursive(tag=self%tag(tag%child_id(t)), is_done=is_done, tag_string=tag_string)
+         call self%stringify_recursive(tag=self%tag(tag%child_id(t)), is_done=is_done, buffer=buffer, n=n)
          is_done(tag%child_id(t)) = .true.
       enddo
-      tag_string = tag_string//new_line('a')//tag%stringify(is_indented=.true., only_end=.true.)
+      call append(buffer=buffer, n=n, piece=new_line('a')//tag%stringify(is_indented=.true., only_end=.true.))
    else
-      tag_string = tag_string//new_line('a')//tag%stringify(is_indented=.true.)
+      call append(buffer=buffer, n=n, piece=new_line('a')//tag%stringify(is_indented=.true.))
    endif
    endsubroutine stringify_recursive
 
@@ -476,6 +511,32 @@ contains
    endsubroutine finalize
 
    ! non TBP
+   pure function tags_indexes(nt) result(indexes)
+   !< Return the tags indexes [1:nt].
+   integer(I4P), intent(in)  :: nt         !< Number of tags.
+   integer(I4P), allocatable :: indexes(:) !< Tags indexes.
+   integer(I4P)              :: t          !< Counter.
+
+   indexes = [(t, t=1, nt)]
+   endfunction tags_indexes
+
+   pure subroutine append(buffer, n, piece)
+   !< Append a piece to a buffer of used length *n*, doubling its capacity when full.
+   character(len=:), allocatable, intent(inout) :: buffer !< Buffer.
+   integer(I4P),                  intent(inout) :: n      !< Used length of the buffer.
+   character(*),                  intent(in)    :: piece  !< Piece to append.
+   character(len=:), allocatable                :: grown  !< Grown buffer.
+
+   if (.not.allocated(buffer)) allocate(character(len=max(INITIAL_BUFFER_LEN, len(piece))) :: buffer)
+   if (n + len(piece)>len(buffer)) then
+      allocate(character(len=max(2 * len(buffer), n + len(piece))) :: grown)
+      grown(1:n) = buffer(1:n)
+      call move_alloc(from=grown, to=buffer)
+   endif
+   buffer(n+1:n+len(piece)) = piece
+   n = n + len(piece)
+   endsubroutine append
+
    pure subroutine find_matching_end_tag(source, start_pos, tag_name, end_pos)
    !< Find the end tag matching an open tag, accounting for nested tags with the same name.
    !<

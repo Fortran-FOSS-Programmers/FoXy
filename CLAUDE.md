@@ -96,8 +96,12 @@ Stored text is the source text (so `stringify` round-trips); the read accessors 
 strip layout blanks and decode character references. Content may hold markup (nested tag as string), so it is never
 escaped on output: user data must go through `xml_escape`.
 
-Known parser limits: a tag's content is only the text before its first child (mixed content is lost); no CDATA; only blanks separate a tag name from its attributes in `parse_tag_name`; `add_tag`
-reallocates the whole array, so parsing is O(n²) in the number of tags.
+Known parser limits: a tag's content is only the text before its first child (mixed content is lost); no CDATA; only blanks separate a tag name from its attributes in `parse_tag_name`.
+
+Performance: parse and `stringify` are O(n) in the number of tags, lookups O(n) per path segment (tags array and stringify buffer grow
+geometrically, children lists are built once after parsing). Check any change on large inputs with the benchmark:
+`fobis build --mode benchmark-gnu && exe/benchmarks/foxy_benchmark_parse quakeml 100000` (also `flat`, `deep`;
+`benchmark-gnu-profile` builds it with `-pg` for gprof).
 
 ## CI/CD
 
