@@ -87,8 +87,9 @@ source positions `pos(3)` (start, content, end), indentation, self-closing flag,
 `parse()`, `stringify()`, `add_tag()`, `delete_tag()`, `content()`.
 
 There are **two parsers**:
-- `xml_file%parse_from_string` — the document parser: a single pass with a stack of parent IDs; tag contents are
-  extracted by `get_tag_content`/`find_matching_end_tag` (module procedures, not type-bound).
+- `xml_file%parse_from_string` — the document parser: a single-pass, quotes-aware tokenizer (start/end/self-closing
+  tags, CDATA kept as raw text, comments/PIs/DOCTYPE skipped) with a stack of open tags; children lists are built once
+  at the end (`build_children`).
 - `xml_tag%parse`/`search` — the older single-tag parser, still used by `xml_tag%get_content` (and so by
   `xml_file%content`) to look up nested tags by name.
 
@@ -96,7 +97,7 @@ Stored text is the source text (so `stringify` round-trips); the read accessors 
 strip layout blanks and decode character references. Content may hold markup (nested tag as string), so it is never
 escaped on output: user data must go through `xml_escape`.
 
-Known parser limits: a tag's content is only the text before its first child (mixed content is lost); no CDATA; only blanks separate a tag name from its attributes in `parse_tag_name`.
+Known parser limits: a tag's content is only the text before its first child (mixed content is lost); CDATA is kept as raw text (not decoded by the accessors yet); comments, PIs and DOCTYPE are dropped.
 
 Performance: parse and `stringify` are O(n) in the number of tags, lookups O(n) per path segment (tags array and stringify buffer grow
 geometrically, children lists are built once after parsing). Check any change on large inputs with the benchmark:

@@ -10,6 +10,8 @@ private
 
 integer(I4P), parameter :: INITIAL_CAPACITY   = 64_I4P   !< Initial capacity of the tags array, doubled when full.
 integer(I4P), parameter :: INITIAL_BUFFER_LEN = 4096_I4P !< Initial length of the stringify buffer, doubled when full.
+character(*), parameter :: BLANKS   = ' '//achar(9)//achar(10)//achar(13) !< XML blanks: space, tab, new line, CR.
+character(*), parameter :: NAME_END = BLANKS//'/>=' !< Characters ending a tag or attribute name.
 
 type, public:: xml_file
    !< XML file class.
@@ -390,94 +392,161 @@ contains
    endfunction children_named
 
    pure subroutine parse_from_string(self, source_string)
-   !< Parse xml data from a chunk of source string (file stringified for IO on device).
-   class(xml_file), intent(inout) :: self                                     !< XML file handler.
-   character(*),    intent(in)    :: source_string                            !< String containing xml data.
-   integer(I4P)                   :: pos, start_pos, end_pos, end_content_pos !< Position indexes.
-   character(:), allocatable      :: tag_name                                 !< Tag name buffer.
-   character(:), allocatable      :: attributes_str                           !< Tag attributes string buffer.
-   character(:), allocatable      :: tag_content                              !< Tag content string buffer.
-   integer(I4P)                   :: current_level                            !< Nesting level counter.
-   logical                        :: is_closing_tag                           !< Sentinel for closing tag.
-   logical                        :: is_self_closing                          !< Sentinel for self closing tag.
-   type(xml_tag)                  :: tag                                      !< XML tag handler.
-   integer(I4P)                   :: parent_id                                !< Uniq parent tag ID.
-   integer(I4P), allocatable      :: parent_stack(:)                          !< Stack of parents ID.
+   !< Parse xml data from a string, with a single pass tokenizer.
+   !<
+   !< Markup is recognized in source order and quotes-aware: start, self closing and end tags (any blank separates names and
+   !< attributes, attribute values single or double quoted), CDATA sections (kept as raw text), comments, processing
+   !< instructions and DOCTYPE (skipped). The text of a tag is its character data (CDATA included) before its first child
+   !< tag. An end tag closes up to its matching start tag (inner open tags are closed implicitly), a stray end tag is ignored;
+   !< parsing stops at an unterminated markup.
+   class(xml_file), intent(inout) :: self                !< XML file handler.
+   character(*),    intent(in)    :: source_string       !< String containing xml data.
+   character(len=:), allocatable  :: name                !< Tag or attribute name.
+   character(len=:), allocatable  :: value               !< Attribute value.
+   character(len=:), allocatable  :: pair(:)             !< Attribute name/value pair.
+   character(len=:), allocatable  :: text                !< Text of the tag owning the current character data.
+   character(len=1)               :: quote               !< Attribute value quote.
+   type(xml_tag)                  :: tag                 !< Empty tag, added and then set.
+   integer(I4P), allocatable      :: stack(:)            !< IDs of open tags.
+   integer(I4P), allocatable      :: stack_start(:)      !< Start (`<`) positions of open tags.
+   integer(I4P), allocatable      :: stack_open_end(:)   !< End (`>`) positions of open tags start tags.
+   integer(I4P)                   :: depth               !< Number of open tags.
+   integer(I4P)                   :: owner               !< ID of the tag owning the current character data, 0 if none.
+   integer(I4P)                   :: n                   !< Source length.
+   integer(I4P)                   :: pos                 !< Current position.
+   integer(I4P)                   :: k                   !< Scan position.
+   integer(I4P)                   :: e                   !< Relative position of a delimiter.
+   integer(I4P)                   :: l                   !< Stack level.
+   logical                        :: is_self_closing     !< Self closing tag flag.
+   logical                        :: is_terminated       !< Terminated start tag flag.
 
    call self%free
-   pos = 1_I4P
-   current_level = 0_I4P
-   allocate(parent_stack(1))
-   parent_stack = 0_I4P
-   do while (pos <= len_trim(source_string))
-      ! next tag start
-      start_pos = index(source_string(pos:), '<')
-      if (start_pos == 0) exit
-      start_pos = pos + start_pos - 1
-
-      ! skip comment, XML header
-      if (start_pos + 3 <= len_trim(source_string)) then
-         if (source_string(start_pos:start_pos+3) == '<!--'.or.source_string(start_pos:start_pos+1) == '<?') then
-            end_pos = index(source_string(start_pos+1:), '>')
-            if (end_pos == 0) exit
-            pos = start_pos + end_pos + 1
+   n = len(source_string)
+   allocate(stack(INITIAL_CAPACITY), stack_start(INITIAL_CAPACITY), stack_open_end(INITIAL_CAPACITY))
+   depth = 0
+   owner = 0
+   text = ''
+   pos = 1
+   do while (pos<=n)
+      if (source_string(pos:pos)/='<') then
+         ! character data
+         e = index(source_string(pos:), '<')
+         if (e==0) then
+            k = n
+         else
+            k = pos + e - 2
+         endif
+         if (owner>0) text = text//source_string(pos:k)
+         pos = k + 1
+      elseif (source_string(pos:min(n, pos+3))=='<!--') then
+         e = index(source_string(pos+4:), '-->')
+         if (e==0) exit
+         pos = pos + e + 6
+      elseif (source_string(pos:min(n, pos+8))=='<![CDATA[') then
+         e = index(source_string(pos+9:), ']]>')
+         if (e==0) exit
+         k = pos + e + 10
+         if (owner>0) text = text//source_string(pos:k)
+         pos = k + 1
+      elseif (source_string(pos:min(n, pos+1))=='<?') then
+         e = index(source_string(pos+2:), '?>')
+         if (e==0) exit
+         pos = pos + e + 3
+      elseif (source_string(pos:min(n, pos+1))=='<!') then
+         pos = after_declaration(source=source_string, start=pos)
+         if (pos==0) exit
+      elseif (source_string(pos:min(n, pos+1))=='</') then
+         k = pos + 2
+         call read_name(source=source_string, pos=k, name=name)
+         e = index(source_string(k:), '>')
+         if (e==0) exit
+         ! close up to the matching open tag, if any
+         do l=depth, 1, -1
+            if (self%tag(stack(l))%name()==name) exit
+         enddo
+         if (l>0) then
+            call flush_text(self=self, owner=owner, text=text)
+            call self%tag(stack(l))%set(pos=[stack_start(l), stack_open_end(l), pos])
+            depth = l - 1
+         endif
+         pos = k + e
+      else
+         ! start or self closing tag
+         k = pos + 1
+         call read_name(source=source_string, pos=k, name=name)
+         if (len(name)==0) then ! not a tag, e.g. "a < b"
+            if (owner>0) text = text//'<'
+            pos = pos + 1
             cycle
          endif
-      endif
-      ! close current tag
-      end_pos = index(source_string(start_pos:), '>')
-      if (end_pos == 0) exit
-      end_pos = start_pos + end_pos - 1
-
-      ! parse tag
-      call parse_tag_name(tag_str         = source_string(start_pos:end_pos), &
-                          tag_name        = tag_name,                         &
-                          attributes_str  = attributes_str,                   &
-                          is_closing      = is_closing_tag,                   &
-                          is_self_closing = is_self_closing)
-      if (allocated(tag_name)) then
-         if (is_closing_tag) then
-            current_level = current_level - 1
+         call flush_text(self=self, owner=owner, text=text)
+         call tag%free
+         call self%add_tag(tag=tag)
+         l = 0 ; if (depth>0) l = stack(depth)
+         call self%tag(self%nt)%set(name=name, id=self%nt, level=depth+1, indent=depth*2, parent_id=l)
+         is_terminated = .false.
+         is_self_closing = .false.
+         do
+            call skip_blanks(source=source_string, pos=k)
+            if (k>n) exit
+            if (source_string(k:k)=='>') then
+               is_terminated = .true.
+               k = k + 1
+               exit
+            elseif (source_string(k:min(n, k+1))=='/>') then
+               is_terminated = .true.
+               is_self_closing = .true.
+               k = k + 2
+               exit
+            endif
+            call read_name(source=source_string, pos=k, name=name)
+            if (len(name)==0) then ! stray character
+               k = k + 1
+               cycle
+            endif
+            call skip_blanks(source=source_string, pos=k)
+            if (k>n) exit
+            if (source_string(k:k)/='=') cycle ! attribute without value, ignored
+            k = k + 1
+            call skip_blanks(source=source_string, pos=k)
+            if (k>n) exit
+            quote = source_string(k:k)
+            if (quote/='"'.and.quote/="'") cycle ! unquoted value, ignored
+            e = index(source_string(k+1:), quote)
+            if (e==0) then
+               k = n + 1
+               exit
+            endif
+            value = source_string(k+1:k+e-1)
+            k = k + e + 1
+            if (quote=="'") value = escaped_double_quotes(value) ! values are written double quoted
+            ! explicit pair: array constructors with a non-constant length type-spec are miscompiled by gfortran 14/16
+            if (allocated(pair)) deallocate(pair)
+            allocate(character(len=max(len(name), len(value))) :: pair(1:2))
+            pair(1) = name
+            pair(2) = value
+            call self%tag(self%nt)%set(attribute=pair, sanitize_attributes_value=.true.)
+         enddo
+         if (.not.is_terminated) exit
+         if (is_self_closing) then
+            call self%tag(self%nt)%set(pos=[pos, k-1, -1_I4P], is_self_closing=.true.)
          else
-            ! add new tag to XML tags list
-            call tag%free
-            call self%add_tag(tag=tag)
-            current_level = current_level + 1
-            ! get parent/child id
-            parent_id = 0_I4P ! root tag, unless a parent is found: never the previous tag parent
-            if (current_level>1) then
-               if (parent_stack(current_level-1)>0)  then
-                  parent_id = parent_stack(current_level-1)
-               endif
+            call self%tag(self%nt)%set(pos=[pos, k-1, 0_I4P], is_self_closing=.false.)
+            if (depth==size(stack, dim=1)) then
+               stack = [stack, stack]
+               stack_start = [stack_start, stack_start]
+               stack_open_end = [stack_open_end, stack_open_end]
             endif
-            ! parent_stack(current_level) = self%nt
-            if (current_level==1) then
-               parent_stack(1) = self%nt
-            else
-               if (current_level>1) parent_stack = [parent_stack(1:current_level-1),self%nt]
-            endif
-            end_content_pos = -1 ! initialize position for self closing tag
-            if (allocated(tag_content)) deallocate(tag_content) ! a self closing tag has no content, not the previous one
-            if (.not.is_self_closing) then
-               ! get tag content
-               call get_tag_content(source=source_string, tag_name=tag_name, start_pos=end_pos + 1, content=tag_content, &
-                                    end_pos=end_content_pos)
-            endif
-            call self%tag(self%nt)%set(name                      = tag_name,                              &
-                                       sanitize_attributes_value = .true.,                                &
-                                       pos                       = [start_pos, end_pos, end_content_pos], &
-                                       indent                    = (current_level-1)*2,                   &
-                                       is_self_closing           = is_self_closing,                       &
-                                       id                        = self%nt,                               &
-                                       level                     = current_level,                         &
-                                       parent_id                 = parent_id,                             &
-                                       attributes_stream_alloc   = attributes_str,                        &
-                                       content_alloc             = tag_content)
-            if (is_self_closing) current_level = current_level - 1
+            depth = depth + 1
+            stack(depth) = self%nt
+            stack_start(depth) = pos
+            stack_open_end(depth) = k - 1
+            owner = self%nt
          endif
+         pos = k
       endif
-      pos = end_pos + 1
    enddo
+   call flush_text(self=self, owner=owner, text=text)
    call self%build_children
    endsubroutine parse_from_string
 
@@ -537,98 +606,101 @@ contains
    n = n + len(piece)
    endsubroutine append
 
-   pure subroutine find_matching_end_tag(source, start_pos, tag_name, end_pos)
-   !< Find the end tag matching an open tag, accounting for nested tags with the same name.
+   pure function after_declaration(source, start) result(after)
+   !< Return the position after a `<!...>` declaration (e.g. DOCTYPE) starting at *start*, 0 if it is unterminated.
    !<
-   !< @note Open and end tags are processed in source order; self closing tags are skipped. If no matching end tag exists,
-   !< *end_pos* is returned as 0.
-   character(*), intent(in)  :: source    !< Source containing tag content.
-   character(*), intent(in)  :: tag_name  !< Tag name.
-   integer(I4P), intent(in)  :: start_pos !< Start tag content position.
-   integer(I4P), intent(out) :: end_pos   !< End tag position.
-   character(*), parameter   :: NAME_END = ' >/'//achar(9)//achar(10)//achar(13) !< Characters terminating a tag name.
-   character(:), allocatable :: open_tag  !< Open tag.
-   character(:), allocatable :: end_tag   !< End tag.
-   integer(I4P)              :: pos       !< Position counter.
-   integer(I4P)              :: pos_open  !< Next open tag position.
-   integer(I4P)              :: pos_end   !< Next end tag position.
-   integer(I4P)              :: tag_close !< Closing `>` position of an open tag.
-   integer(I4P)              :: tag_count !< Tags counter.
+   !< @note Quoted strings and the `[...]` internal subset may contain `>`.
+   character(*), intent(in) :: source  !< Source.
+   integer(I4P), intent(in) :: start   !< Declaration start (`<`) position.
+   integer(I4P)             :: after   !< Position after the declaration.
+   integer(I4P)             :: brackets !< Internal subset nesting.
+   integer(I4P)             :: e       !< Relative position of closing quote.
+   character(len=1)         :: c       !< Current character.
 
-   open_tag = '<'//trim(tag_name)
-   end_tag = '</'//trim(tag_name)//'>'
-   tag_count = 1
-   pos = start_pos
-   end_pos = 0
-   do while (pos <= len(source))
-      pos_end = index(source(pos:), end_tag) ! relative position
-      if (pos_end == 0) return ! no matching end tag
-      pos_end = pos + pos_end - 1 ! absolute position
-      pos_open = index(source(pos:pos_end), open_tag) ! relative position, only before the next end tag
-      if (pos_open > 0) then
-         pos_open = pos + pos_open - 1 ! absolute position
-         ! pos_open < pos_end, thus the character after the tag name exists
-         if (index(NAME_END, source(pos_open+len(open_tag):pos_open+len(open_tag))) > 0) then
-            ! open tag, unless self closing: it has no matching end tag
-            tag_close = index(source(pos_open:), '>') ! relative position
-            if (tag_close == 0) return ! malformed open tag
-            tag_close = pos_open + tag_close - 1 ! absolute position
-            if (source(tag_close-1:tag_close-1) /= '/') tag_count = tag_count + 1
-            pos = tag_close + 1
-         else
-            pos = pos_open + len(open_tag) ! other tag whose name starts with tag_name, e.g. <ab> for <a>
-         endif
+   after = start + 2
+   brackets = 0
+   do while (after<=len(source))
+      c = source(after:after)
+      if (c=='"'.or.c=="'") then
+         e = index(source(after+1:), c)
+         if (e==0) exit
+         after = after + e
+      elseif (c=='[') then
+         brackets = brackets + 1
+      elseif (c==']') then
+         brackets = brackets - 1
+      elseif (c=='>'.and.brackets<=0) then
+         after = after + 1
+         return
+      endif
+      after = after + 1
+   enddo
+   after = 0
+   endfunction after_declaration
+
+   pure subroutine flush_text(self, owner, text)
+   !< Store the collected text into its owner tag, if any, and reset them: the text of a tag ends at its first child or at
+   !< its end tag.
+   class(xml_file),               intent(inout) :: self  !< XML file handler.
+   integer(I4P),                  intent(inout) :: owner !< ID of the tag owning the text, 0 if none.
+   character(len=:), allocatable, intent(inout) :: text  !< Collected text.
+
+   if (owner>0) call self%tag(owner)%set(content=trim(adjustl(text)))
+   owner = 0
+   text = ''
+   endsubroutine flush_text
+
+   pure function escaped_double_quotes(string) result(escaped)
+   !< Return string with `"` replaced by `&quot;`.
+   character(*), intent(in)      :: string  !< String.
+   character(len=:), allocatable :: escaped !< Escaped string.
+   integer(I4P)                  :: c       !< Counter.
+
+   if (index(string, '"')==0) then
+      escaped = string
+      return
+   endif
+   escaped = ''
+   do c=1, len(string)
+      if (string(c:c)=='"') then
+         escaped = escaped//'&quot;'
       else
-         tag_count = tag_count - 1
-         if (tag_count == 0) then
-            end_pos = pos_end ! found matching end tag
-            return
-         endif
-         pos = pos_end + len(end_tag)
+         escaped = escaped//string(c:c)
       endif
    enddo
-   endsubroutine find_matching_end_tag
+   endfunction escaped_double_quotes
 
-   pure subroutine get_tag_content(source, tag_name, start_pos, content, end_pos)
-   !< Get tag content.
-   character(*),              intent(in)            :: source       !< Source containing tag content.
-   character(*),              intent(in)            :: tag_name     !< Tag name.
-   integer,                   intent(in)            :: start_pos    !< Start tag content position.
-   character(:), allocatable, intent(out)           :: content      !< Extracted tag content.
-   integer(I4P),              intent(out), optional :: end_pos      !< End tag content position.
-   character(:), allocatable                        :: end_tag      !< End tag.
-   integer(I4P)                                     :: end_pos_     !< End tag content position, local var.
-   integer(I4P)                                     :: next_pos     !< Next tag start position.
-   character(:), allocatable                        :: temp_content !< Buffer.
+   pure subroutine read_name(source, pos, name)
+   !< Read a (tag or attribute) name starting at *pos*, ended by a blank, `/`, `>`, `=` or the source end; *pos* is moved
+   !< after the name.
+   character(*),                  intent(in)    :: source !< Source.
+   integer(I4P),                  intent(inout) :: pos    !< Current position.
+   character(len=:), allocatable, intent(out)   :: name   !< Name, empty if none.
+   integer(I4P)                                 :: start  !< Name start.
 
-   end_tag = '</'//trim(tag_name)//'>'
-   content = ''
+   start = pos
+   do while (pos<=len(source))
+      if (scan(source(pos:pos), NAME_END)>0) exit
+      pos = pos + 1
+   enddo
+   name = source(start:pos-1)
+   endsubroutine read_name
 
-   call find_matching_end_tag(source=source, start_pos=start_pos, tag_name=tag_name, end_pos=end_pos_)
+   pure subroutine skip_blanks(source, pos)
+   !< Move *pos* after the blanks (space, tab, new line, carriage return) starting at it.
+   character(*), intent(in)    :: source !< Source.
+   integer(I4P), intent(inout) :: pos    !< Current position.
 
-   if (present(end_pos)) end_pos = end_pos_
-   if (end_pos_ > start_pos) then
-      ! search first nested tag, if any
-      next_pos = index(source(start_pos:end_pos_-1), '<')
-
-      if (next_pos > 0) then
-         ! find nested tag
-         next_pos = start_pos + next_pos - 2
-         temp_content = trim(adjustl(source(start_pos:next_pos)))
-         if (len(temp_content) > 0) content = temp_content
-      else
-         ! no nested tag
-         temp_content = trim(adjustl(source(start_pos:end_pos_-1)))
-         if (len(temp_content) > 0) content = temp_content
-      endif
-   endif
-   endsubroutine get_tag_content
+   do while (pos<=len(source))
+      if (scan(source(pos:pos), BLANKS)==0) exit
+      pos = pos + 1
+   enddo
+   endsubroutine skip_blanks
 
    pure function strip_blanks(string) result(stripped)
    !< Return string without leading and trailing blanks: spaces, tabs, new lines and carriage returns.
    character(*), intent(in)      :: string   !< String to strip.
    character(len=:), allocatable :: stripped !< Stripped string.
-   character(*), parameter       :: BLANKS = ' '//achar(9)//achar(10)//achar(13) !< Blank characters.
    integer(I4P)                  :: first    !< First not blank character position.
    integer(I4P)                  :: last     !< Last not blank character position.
 
@@ -762,40 +834,4 @@ contains
    if (present(iomsg))  iomsg  = iomsgd
    endfunction load_file_as_stream
 
-   pure subroutine parse_tag_name(tag_str, tag_name, attributes_str, is_closing, is_self_closing)
-   !< Parse current tag, only name and attributes.
-   character(*),              intent(in)  :: tag_str         !< Tag string.
-   character(:), allocatable, intent(out) :: tag_name        !< Parsed tag name.
-   character(:), allocatable, intent(out) :: attributes_str  !< Parsed attributes list.
-   logical,                   intent(out) :: is_closing      !< Sentinel for closing tag.
-   logical,                   intent(out) :: is_self_closing !< Sentinel for self closing tag.
-   character(:), allocatable              :: clean_tag       !< Clean tag string.
-   integer(I4P)                           :: space_pos       !< Blank space position.
-
-   clean_tag = trim(adjustl(tag_str))
-   if (len(clean_tag) < 3) return
-
-   ! trim < and >
-   clean_tag = clean_tag(2:len(clean_tag)-1)
-
-   is_self_closing = (clean_tag(len(clean_tag):len(clean_tag)) == '/')
-   if (is_self_closing) then
-      is_closing = .false.
-   else
-      is_closing = (clean_tag(1:1) == '/')
-   endif
-
-   if (is_closing) clean_tag = clean_tag(2:)
-
-   if (is_self_closing) clean_tag = clean_tag(1:len(clean_tag)-1)
-
-   ! parse name and attributes
-   space_pos = index(clean_tag, ' ')
-   if (space_pos > 0) then
-      tag_name = clean_tag(1:space_pos-1)
-      attributes_str = clean_tag(space_pos+1:)
-   else
-      tag_name = clean_tag
-   endif
-   endsubroutine parse_tag_name
 endmodule foxy_xml_file
