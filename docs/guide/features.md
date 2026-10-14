@@ -30,6 +30,7 @@ title: Features
 - [x] Write a tag **atomically** to a file unit or string
 - [x] Formatted (`fmt='(A)'`) and unformatted (stream) output
 - [x] Save the whole document to a file (`xfile%save`), with an optional XML declaration
+- [x] Stream a document to a file, a unit or memory (`xml_writer`): bounded memory, escaping, layout, typed attributes
 
 ## Input / Output (Tag construction)
 

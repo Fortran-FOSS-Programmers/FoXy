@@ -4,10 +4,10 @@ title: API Reference Overview
 
 # API Reference Overview
 
-FoXy exposes three public types and the PENF kind parameters through the `foxy` wrapper module.
+FoXy exposes four public types and the PENF kind parameters through the `foxy` wrapper module.
 
 ```fortran
-use foxy, only: xml_tag, xml_file, xml_index
+use foxy, only: xml_tag, xml_file, xml_index, xml_writer
 use foxy, only: I1P, I2P, I4P, I8P, R4P, R8P  ! PENF kinds
 ```
 
@@ -17,6 +17,8 @@ use foxy, only: I1P, I2P, I4P, I8P, R4P, R8P  ! PENF kinds
 graph LR
   foxy["foxy"] --> foxy_xml_file["foxy_xml_file"]
   foxy["foxy"] --> foxy_xml_index["foxy_xml_index"]
+  foxy["foxy"] --> foxy_xml_writer["foxy_xml_writer"]
+  foxy_xml_writer["foxy_xml_writer"] --> foxy_xml_entities["foxy_xml_entities"]
   foxy["foxy"] --> foxy_xml_tag["foxy_xml_tag"]
   foxy["foxy"] --> foxy_xml_entities["foxy_xml_entities"]
   foxy_xml_index["foxy_xml_index"] --> foxy_xml_file["foxy_xml_file"]
@@ -128,6 +130,27 @@ file. Positions are 1-based byte offsets (`integer(I8P)`).
 | `idx%content_range(id, first, last)` | Byte range of the whole content of tag `id` (children included) |
 | `idx%stop_position()` | Byte position after the `stop_at` start tag, `0` if the scan did not stop |
 | `idx%free()` | Deallocate all data |
+
+---
+
+## `xml_writer` — streaming writer
+
+Defined in `src/lib/foxy_xml_writer.f90`. Writes a document sequentially, with bounded memory, to a file, a unit or
+memory. Every method takes optional `iostat`/`iomsg`: errors are sticky (the first one is kept, the following calls do
+nothing) and `close` always reports them; a misuse is `XML_MALFORMED`.
+
+| Method | Description |
+|--------|-------------|
+| `w%open([filename=], [unit=], [indent=], [iostat=], [iomsg=])` | Open on a file (created/replaced, closed by `close`), on a unit open for stream unformatted access (left open), or on memory if neither is passed; `indent` spaces per level (default 2, `0` for compact output) |
+| `w%declaration([version=], [encoding=])` | Write `<?xml version="1.0"?>`; only as the first thing |
+| `w%start(name)` | Open an element; its start tag stays pending for attributes until its first content |
+| `w%attribute(name, value, [fmt=])` | Add an attribute: `value` character (escaped), integer (`I1P`…`I8P`), real (`R4P`, `R8P`) or logical (`true`/`false`); `fmt` formats numbers |
+| `w%text(string)` | Escaped character data; the element is written inline |
+| `w%raw(string, [is_block=])` | Characters as they are (data, base64); in pieces with many calls; `is_block=.true.` on its own indented line |
+| `w%cdata(string)`, `w%comment(string)`, `w%pi(target, [string])` | CDATA section (`]]>` split), comment (no `--`), processing instruction |
+| `w%end([name])` | Close the innermost element (self-closing if empty); `name` is checked against it |
+| `w%close([iostat=], [iomsg=])` | Close all the open elements and the writer |
+| `w%string()` | Content of the memory target |
 
 ---
 

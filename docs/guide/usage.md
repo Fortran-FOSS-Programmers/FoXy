@@ -107,6 +107,47 @@ endif
 
 ---
 
+## Writing Documents (streaming)
+
+`xml_writer` writes a document element by element, keeping the stack of the open elements, escaping text and attribute
+values and laying the document out; nothing is kept in memory but the open elements (a file can be any size).
+
+```fortran
+use foxy, only: I4P, xml_writer
+type(xml_writer) :: w
+integer(I4P)     :: iostat
+
+call w%open(filename='mesh.vtu', iostat=iostat)   ! or open(unit=u), or open() for memory (w%string())
+call w%declaration()
+call w%start('VTKFile')
+call w%attribute('type', 'UnstructuredGrid')
+call w%start('Piece')
+call w%attribute('NumberOfPoints', 27_I4P)
+call w%start('DataArray')
+call w%attribute('format', 'ascii')
+call w%raw('0.0 1.0 2.0', is_block=.true.)       ! data on its own line, may be written in many pieces
+call w%end('DataArray')
+call w%start('Empty')
+call w%end()                                       ! no content: <Empty/>
+call w%close(iostat=iostat)                        ! closes Piece and VTKFile, reports the first error
+```
+
+```xml
+<?xml version="1.0"?>
+<VTKFile type="UnstructuredGrid">
+  <Piece NumberOfPoints="27">
+    <DataArray format="ascii">
+      0.0 1.0 2.0
+    </DataArray>
+    <Empty/>
+  </Piece>
+</VTKFile>
+```
+
+An element holding text (`w%text`) is written inline (`<a>text</a>`); `open(..., indent=0)` writes compact output.
+
+---
+
 ## Writing Tags to File
 
 Use `tag%write()` to emit XML directly to a file unit without building an intermediate string.
