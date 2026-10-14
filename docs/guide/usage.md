@@ -191,6 +191,15 @@ endif
 
 Without `iostat`/`iomsg`, errors are not reported.
 
+### Attribute values spaces
+
+By default the leading and trailing spaces of attribute values are trimmed when parsing (`k=" 1.5 "` reads and is written
+back as `k="1.5"`). XML considers them data: keep them with
+
+```fortran
+call xfile%parse(filename='data.xml', sanitize_attributes_value=.false.)
+```
+
 ### Query tag content
 
 ```fortran

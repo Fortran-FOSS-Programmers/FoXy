@@ -113,7 +113,7 @@ Comments and PIs inside the document are raw text of their owner tag (after the 
 `stringify`); the `content(name)` fallback on nested tags set as content string ignores tags inside CDATA/comments/PIs.
 
 Known parser limits: entities defined by a DTD are not expanded; attribute values are trimmed of leading/trailing spaces
-when parsed.
+when parsed, by default (`parse(..., sanitize_attributes_value=.false.)` keeps them, as XML requires).
 
 Performance: parse and `stringify` are O(n) in the number of tags, lookups O(n) per path segment (tags array and stringify buffer grow
 geometrically, children lists are built once after parsing). Check any change on large inputs with the benchmark:

@@ -19,6 +19,7 @@ title: Features
   - [x] Mixed content: text before, between and after child tags
 - [x] Character references decoded on read (`&lt;` `&gt;` `&amp;` `&quot;` `&apos;`, `&#N;`, `&#xH;`)
 - [x] Attribute values normalized on read: literal tabs and new lines become spaces
+  - [x] Leading/trailing spaces trimmed when parsed (default), or kept with `parse(..., sanitize_attributes_value=.false.)`
 - [x] DOM queries by name, `/`-separated path or parent, tags and attributes read by ID
 - [x] Malformed input and file errors reported through optional `iostat`/`iomsg` (first problem, with its line),
   parsing stays tolerant

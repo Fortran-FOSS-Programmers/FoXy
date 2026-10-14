@@ -289,7 +289,7 @@ contains
    if (allocated(self%prolog)) deallocate(self%prolog)
    endsubroutine free
 
-   subroutine parse(self, string, filename, iostat, iomsg)
+   subroutine parse(self, string, filename, iostat, iomsg, sanitize_attributes_value)
    !< Parse xml data from string or file.
    !< XML data is linearized, a DOM structured is used.
    !<
@@ -297,25 +297,31 @@ contains
    !< @note Parsing is tolerant: malformed input is parsed as far as possible. If *iostat* is passed, it returns 0 on
    !< success, the runtime I/O error code if the file cannot be read, *XML_MALFORMED* if the input is malformed; *iomsg*
    !< (unchanged on success) describes the error, for malformed input the first problem found with its line.
+   !< @note Leading and trailing spaces of attribute values are trimmed (default), unless *sanitize_attributes_value* is
+   !< false: then values are kept as in the source (XML data).
    class(xml_file),        intent(inout) :: self     !< XML file.
    character(*), optional, intent(in)    :: string   !< String containing xml data.
    character(*), optional, intent(in)    :: filename !< File name containing xml data.
    integer(I4P), optional, intent(out)   :: iostat   !< IO status.
    character(*), optional, intent(inout) :: iomsg    !< IO message.
+   logical,      optional, intent(in)    :: sanitize_attributes_value !< Trim attribute values spaces (default .true.).
    character(len=:), allocatable         :: source   !< String containing xml data.
    character(len=:), allocatable         :: problem  !< First problem of malformed input.
    integer(I4P)                          :: iostat_  !< IO status, local variable.
    character(len=500)                    :: iomsg_   !< IO message, local variable.
+   logical                               :: sanitize !< Trim attribute values spaces, local variable.
 
+   sanitize = .true. ; if (present(sanitize_attributes_value)) sanitize = sanitize_attributes_value
    iostat_ = 0
    iomsg_ = ''
    call self%free
    if (present(string)) then
-      call self%parse_from_string(source_string=string, problem=problem)
+      call self%parse_from_string(source_string=string, sanitize=sanitize, problem=problem)
    elseif (present(filename)) then
       source = load_file_as_stream(filename=filename, fast_read=.true., iostat=iostat_, iomsg=iomsg_)
       if (iostat_<0) iostat_ = 0 ! end of file is not an error
-      if (iostat_==0.and.allocated(source)) call self%parse_from_string(source_string=source, problem=problem)
+      if (iostat_==0.and.allocated(source)) call self%parse_from_string(source_string=source, sanitize=sanitize, &
+                                                                        problem=problem)
    endif
    if (iostat_==0.and.allocated(problem)) then
       iostat_ = XML_MALFORMED
@@ -542,7 +548,7 @@ contains
    ids = pack(tags_indexes(self%nt), is_match)
    endfunction children_named
 
-   pure subroutine parse_from_string(self, source_string, problem)
+   pure subroutine parse_from_string(self, source_string, sanitize, problem)
    !< Parse xml data from a string, with a single pass tokenizer.
    !<
    !< Markup is recognized in source order and quotes-aware: start, self closing and end tags (any blank separates names and
@@ -553,11 +559,11 @@ contains
    !< parsing stops at an unterminated markup. The first problem of malformed input is returned.
    class(xml_file),               intent(inout) :: self          !< XML file handler.
    character(*),                  intent(in)    :: source_string !< String containing xml data.
+   logical,                       intent(in)    :: sanitize      !< Trim leading and trailing spaces of attribute values.
    character(len=:), allocatable, intent(out)   :: problem       !< First problem of malformed input, unallocated if none.
    character(len=:), allocatable  :: tag_name            !< Name of the current start tag.
    character(len=:), allocatable  :: name                !< Tag or attribute name.
    character(len=:), allocatable  :: value               !< Attribute value.
-   character(len=:), allocatable  :: pair(:)             !< Attribute name/value pair.
    character(len=:), allocatable  :: text                !< Text of the tag owning the current character data.
    character(len=1)               :: quote               !< Attribute value quote.
    type(xml_tag)                  :: tag                 !< Empty tag, added and then set.
@@ -720,12 +726,7 @@ contains
             value = source_string(k+1:k+e-1)
             k = k + e + 1
             if (quote=="'") value = escaped_double_quotes(value) ! values are written double quoted
-            ! explicit pair: array constructors with a non-constant length type-spec are miscompiled by gfortran 14/16
-            if (allocated(pair)) deallocate(pair)
-            allocate(character(len=max(len(name), len(value))) :: pair(1:2))
-            pair(1) = name
-            pair(2) = value
-            call self%tag(self%nt)%set(attribute=pair, sanitize_attributes_value=.true.)
+            call self%tag(self%nt)%set(attribute_name=name, attribute_value=value, sanitize_attributes_value=sanitize)
          enddo
          if (.not.is_terminated) then
             call record_problem(problem, source_string, pos, 'unterminated start tag <'//tag_name//'>')

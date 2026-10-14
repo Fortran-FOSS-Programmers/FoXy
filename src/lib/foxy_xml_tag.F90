@@ -71,6 +71,7 @@ type :: xml_tag
       generic               :: assignment(=) => assign_tag !< Assignment operator overloading.
       ! private methods
       procedure, pass(self), private :: add_single_attribute       !< Add one attribute name/value pair.
+      procedure, pass(self), private :: add_attribute_value        !< Add one attribute, value stored exactly.
       procedure, pass(self), private :: add_multiple_attributes    !< Add list of attributes name/value pairs.
       procedure, pass(self), private :: add_stream_attributes      !< Add list of attributes name/value pairs passed as stream.
       procedure, pass(self), private :: alloc_attributes           !< Allocate (prepare for filling) dynamic memory of attributes.
@@ -422,7 +423,7 @@ contains
 
    pure subroutine set(self, name, attribute, attributes, attributes_stream, sanitize_attributes_value, content, &
                        pos, indent, is_content_indented, is_self_closing, id, level, parent_id,                  &
-                       attributes_stream_alloc, content_alloc, tail)
+                       attributes_stream_alloc, content_alloc, tail, attribute_name, attribute_value)
    !< Set tag data.
    class(xml_tag),            intent(inout)        :: self                      !< XML tag.
    character(*),              intent(in), optional :: name                      !< Tag name.
@@ -441,11 +442,16 @@ contains
    character(:), allocatable, intent(in), optional :: attributes_stream_alloc   !< Attributes list stream, allocatable input.
    character(:), allocatable, intent(in), optional :: content_alloc             !< Tag value, allocatable input.
    character(*),              intent(in), optional :: tail                      !< Text after the end tag.
+   character(*),              intent(in), optional :: attribute_name            !< Attribute name, with *attribute_value*.
+   character(*),              intent(in), optional :: attribute_value           !< Attribute value, stored exactly (unless
+                                                                                !< sanitized), no padding as in *attribute*.
    logical                                         :: is_content_indented_      !< Activate value indentation.
 
    is_content_indented_ = .false. ; if (present(is_content_indented)) is_content_indented_ = is_content_indented
    if (present(name)) self%tag_name = name
    if (present(attribute)) call self%add_single_attribute(attribute=attribute, sanitize_value=sanitize_attributes_value)
+   if (present(attribute_name).and.present(attribute_value)) &
+      call self%add_attribute_value(name=attribute_name, value=attribute_value, sanitize_value=sanitize_attributes_value)
    if (present(attributes)) call self%add_multiple_attributes(attributes=attributes, sanitize_values=sanitize_attributes_value)
    if (present(attributes_stream)) call self%add_stream_attributes(attributes_stream=attributes_stream, &
                                                                    sanitize_values=sanitize_attributes_value)
@@ -623,50 +629,44 @@ contains
    !< Add one attribute name/value pair.
    !<
    !< @note Leading and trailing white spaces are trimmed out by attribute's name.
+   !< @note The pair elements have the same length: a value shorter than the name is padded with trailing spaces (use
+   !< *add_attribute_value* to store a value exactly).
+   class(xml_tag), intent(inout)        :: self           !< XML tag.
+   character(*),   intent(in)           :: attribute(1:)  !< Attribute name/value pair [1:2].
+   logical,        intent(in), optional :: sanitize_value !< Sanitize attribute value.
+
+   call self%add_attribute_value(name=trim(adjustl(attribute(1))), value=attribute(2), sanitize_value=sanitize_value)
+   endsubroutine add_single_attribute
+
+   pure subroutine add_attribute_value(self, name, value, sanitize_value)
+   !< Add one attribute, or update its value if already present; the value is stored exactly, unless sanitized (leading and
+   !< trailing spaces trimmed).
    class(xml_tag), intent(inout)        :: self               !< XML tag.
-   character(*),   intent(in)           :: attribute(1:)      !< Attribute name/value pair [1:2].
+   character(*),   intent(in)           :: name               !< Attribute name.
+   character(*),   intent(in)           :: value              !< Attribute value.
    logical,        intent(in), optional :: sanitize_value     !< Sanitize attribute value.
    type(string), allocatable            :: new_attribute(:,:) !< Temporary storage for attributes.
    logical                              :: sanitize_value_    !< Sanitize attribute value.
-   logical                              :: is_updated         !< Flag to check if the attribute has been updeted.
    integer(I4P)                         :: a                  !< Counter.
 
    sanitize_value_ = .false. ; if (present(sanitize_value)) sanitize_value_ = sanitize_value
-   if (self%attributes_number>0) then
-      is_updated = .false.
-      update_if_already_present: do a=1, self%attributes_number
-         if (self%attribute(1, a)==attribute(1)) then
-            if (sanitize_value_) then
-               self%attribute(2, a) = trim(adjustl(attribute(2)))
-            else
-               self%attribute(2, a) = attribute(2)
-            endif
-            is_updated = .true.
-            exit update_if_already_present
-         endif
-      enddo update_if_already_present
-      if (.not.is_updated) then
-         allocate(new_attribute(1:2, 1:self%attributes_number+1))
-         new_attribute(1:2, 1:self%attributes_number) = self%attribute
-         new_attribute(1, self%attributes_number+1) = trim(adjustl(attribute(1)))
-         if (sanitize_value_) then
-            new_attribute(2, self%attributes_number+1) = trim(adjustl(attribute(2)))
-         else
-            new_attribute(2, self%attributes_number+1) = attribute(2)
-         endif
-         call move_alloc(from=new_attribute, to=self%attribute)
-         self%attributes_number = self%attributes_number + 1
-      endif
-   else
-      call self%alloc_attributes(Na=1)
-      self%attribute(1, 1) = trim(adjustl(attribute(1)))
-      if (sanitize_value_) then
-         self%attribute(2, 1) = trim(adjustl(attribute(2)))
-      else
-         self%attribute(2, 1) = attribute(2)
-      endif
+   do a=1, self%attributes_number
+      if (self%attribute(1, a)==name) exit
+   enddo
+   if (a>self%attributes_number) then ! not present: append it
+      allocate(new_attribute(1:2, 1:self%attributes_number+1))
+      if (self%attributes_number>0) new_attribute(1:2, 1:self%attributes_number) = self%attribute
+      call move_alloc(from=new_attribute, to=self%attribute)
+      self%attributes_number = self%attributes_number + 1
+      a = self%attributes_number
+      self%attribute(1, a) = name
    endif
-   endsubroutine add_single_attribute
+   if (sanitize_value_) then
+      self%attribute(2, a) = trim(adjustl(value))
+   else
+      self%attribute(2, a) = value
+   endif
+   endsubroutine add_attribute_value
 
    pure subroutine add_multiple_attributes(self, attributes, sanitize_values)
    !< Add list of attributes name/value pairs.
