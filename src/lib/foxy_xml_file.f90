@@ -8,6 +8,7 @@ use penf
 implicit none
 private
 
+integer(I4P), parameter, public :: XML_MALFORMED = 9001_I4P !< *iostat* of parse for malformed XML input.
 integer(I4P), parameter :: INITIAL_CAPACITY   = 64_I4P   !< Initial capacity of the tags array, doubled when full.
 integer(I4P), parameter :: INITIAL_BUFFER_LEN = 4096_I4P !< Initial length of the stringify buffer, doubled when full.
 character(*), parameter :: BLANKS   = ' '//achar(9)//achar(10)//achar(13) !< XML blanks: space, tab, new line, CR.
@@ -283,23 +284,40 @@ contains
    self%nt = 0_I4P
    endsubroutine free
 
-   subroutine parse(self, string, filename)
+   subroutine parse(self, string, filename, iostat, iomsg)
    !< Parse xml data from string or file.
    !< XML data is linearized, a DOM structured is used.
    !<
    !< @note Self data are free before trying to parse new xml data: all previously parsed data are lost.
+   !< @note Parsing is tolerant: malformed input is parsed as far as possible. If *iostat* is passed, it returns 0 on
+   !< success, the runtime I/O error code if the file cannot be read, *XML_MALFORMED* if the input is malformed; *iomsg*
+   !< (unchanged on success) describes the error, for malformed input the first problem found with its line.
    class(xml_file),        intent(inout) :: self     !< XML file.
    character(*), optional, intent(in)    :: string   !< String containing xml data.
    character(*), optional, intent(in)    :: filename !< File name containing xml data.
+   integer(I4P), optional, intent(out)   :: iostat   !< IO status.
+   character(*), optional, intent(inout) :: iomsg    !< IO message.
    character(len=:), allocatable         :: source   !< String containing xml data.
+   character(len=:), allocatable         :: problem  !< First problem of malformed input.
+   integer(I4P)                          :: iostat_  !< IO status, local variable.
+   character(len=500)                    :: iomsg_   !< IO message, local variable.
 
+   iostat_ = 0
+   iomsg_ = ''
    call self%free
    if (present(string)) then
-      call self%parse_from_string(source_string=string)
+      call self%parse_from_string(source_string=string, problem=problem)
    elseif (present(filename)) then
-      source = load_file_as_stream(filename=filename, fast_read=.true.)
-      if (allocated(source)) call self%parse_from_string(source_string=source) ! unallocated if file is missing/unreadable
+      source = load_file_as_stream(filename=filename, fast_read=.true., iostat=iostat_, iomsg=iomsg_)
+      if (iostat_<0) iostat_ = 0 ! end of file is not an error
+      if (iostat_==0.and.allocated(source)) call self%parse_from_string(source_string=source, problem=problem)
    endif
+   if (iostat_==0.and.allocated(problem)) then
+      iostat_ = XML_MALFORMED
+      iomsg_ = problem
+   endif
+   if (present(iostat)) iostat = iostat_
+   if (present(iomsg).and.iostat_/=0) iomsg = iomsg_
    endsubroutine parse
 
    pure function stringify(self, linearize) result(string)
@@ -480,16 +498,18 @@ contains
    ids = pack(tags_indexes(self%nt), is_match)
    endfunction children_named
 
-   pure subroutine parse_from_string(self, source_string)
+   pure subroutine parse_from_string(self, source_string, problem)
    !< Parse xml data from a string, with a single pass tokenizer.
    !<
    !< Markup is recognized in source order and quotes-aware: start, self closing and end tags (any blank separates names and
    !< attributes, attribute values single or double quoted), CDATA sections (kept as raw text), comments, processing
    !< instructions and DOCTYPE (skipped). The text of a tag is its character data (CDATA included) before its first child
    !< tag. An end tag closes up to its matching start tag (inner open tags are closed implicitly), a stray end tag is ignored;
-   !< parsing stops at an unterminated markup.
-   class(xml_file), intent(inout) :: self                !< XML file handler.
-   character(*),    intent(in)    :: source_string       !< String containing xml data.
+   !< parsing stops at an unterminated markup. The first problem of malformed input is returned.
+   class(xml_file),               intent(inout) :: self          !< XML file handler.
+   character(*),                  intent(in)    :: source_string !< String containing xml data.
+   character(len=:), allocatable, intent(out)   :: problem       !< First problem of malformed input, unallocated if none.
+   character(len=:), allocatable  :: tag_name            !< Name of the current start tag.
    character(len=:), allocatable  :: name                !< Tag or attribute name.
    character(len=:), allocatable  :: value               !< Attribute value.
    character(len=:), allocatable  :: pair(:)             !< Attribute name/value pair.
@@ -531,30 +551,52 @@ contains
          pos = k + 1
       elseif (source_string(pos:min(n, pos+3))=='<!--') then
          e = index(source_string(pos+4:), '-->')
-         if (e==0) exit
+         if (e==0) then
+            call record_problem(problem, source_string, pos, 'unterminated comment')
+            exit
+         endif
          pos = pos + e + 6
       elseif (source_string(pos:min(n, pos+8))=='<![CDATA[') then
          e = index(source_string(pos+9:), ']]>')
-         if (e==0) exit
+         if (e==0) then
+            call record_problem(problem, source_string, pos, 'unterminated CDATA section')
+            exit
+         endif
          k = pos + e + 10
          if (owner>0) text = text//source_string(pos:k)
          pos = k + 1
       elseif (source_string(pos:min(n, pos+1))=='<?') then
          e = index(source_string(pos+2:), '?>')
-         if (e==0) exit
+         if (e==0) then
+            call record_problem(problem, source_string, pos, 'unterminated processing instruction')
+            exit
+         endif
          pos = pos + e + 3
       elseif (source_string(pos:min(n, pos+1))=='<!') then
-         pos = after_declaration(source=source_string, start=pos)
-         if (pos==0) exit
+         k = after_declaration(source=source_string, start=pos)
+         if (k==0) then
+            call record_problem(problem, source_string, pos, 'unterminated declaration')
+            exit
+         endif
+         pos = k
       elseif (source_string(pos:min(n, pos+1))=='</') then
          k = pos + 2
          call read_name(source=source_string, pos=k, name=name)
          e = index(source_string(k:), '>')
-         if (e==0) exit
+         if (e==0) then
+            call record_problem(problem, source_string, pos, 'unterminated end tag </'//name//'>')
+            exit
+         endif
          ! close up to the matching open tag, if any
          do l=depth, 1, -1
             if (self%tag(stack(l))%name()==name) exit
          enddo
+         if (l==0) then
+            call record_problem(problem, source_string, pos, 'end tag </'//name//'> without matching start tag')
+         elseif (l<depth) then
+            call record_problem(problem, source_string, pos, 'end tag </'//name//'> closes open tag <'// &
+                                self%tag(stack(depth))%name()//'>')
+         endif
          if (l>0) then
             call flush_text(self=self, owner=owner, is_tail=is_tail, text=text, is_parent=.false.)
             call self%tag(stack(l))%set(pos=[stack_start(l), stack_open_end(l), pos])
@@ -568,6 +610,7 @@ contains
          k = pos + 1
          call read_name(source=source_string, pos=k, name=name)
          if (len(name)==0) then ! not a tag, e.g. "a < b"
+            call record_problem(problem, source_string, pos, "character '<' not starting a tag")
             if (owner>0) text = text//'<'
             pos = pos + 1
             cycle
@@ -577,6 +620,7 @@ contains
          call self%add_tag(tag=tag)
          l = 0 ; if (depth>0) l = stack(depth)
          call self%tag(self%nt)%set(name=name, id=self%nt, level=depth+1, indent=depth*2, parent_id=l)
+         tag_name = name
          is_terminated = .false.
          is_self_closing = .false.
          do
@@ -594,19 +638,30 @@ contains
             endif
             call read_name(source=source_string, pos=k, name=name)
             if (len(name)==0) then ! stray character
+               call record_problem(problem, source_string, k, "invalid character '"//source_string(k:k)//"' in tag <"// &
+                                   tag_name//'>')
                k = k + 1
                cycle
             endif
             call skip_blanks(source=source_string, pos=k)
             if (k>n) exit
-            if (source_string(k:k)/='=') cycle ! attribute without value, ignored
+            if (source_string(k:k)/='=') then ! attribute without value, ignored
+               call record_problem(problem, source_string, k, 'attribute "'//name//'" without value in tag <'//tag_name//'>')
+               cycle
+            endif
             k = k + 1
             call skip_blanks(source=source_string, pos=k)
             if (k>n) exit
             quote = source_string(k:k)
-            if (quote/='"'.and.quote/="'") cycle ! unquoted value, ignored
+            if (quote/='"'.and.quote/="'") then ! unquoted value, ignored
+               call record_problem(problem, source_string, k, 'unquoted value of attribute "'//name//'" in tag <'// &
+                                   tag_name//'>')
+               cycle
+            endif
             e = index(source_string(k+1:), quote)
             if (e==0) then
+               call record_problem(problem, source_string, k, 'unterminated value of attribute "'//name//'" in tag <'// &
+                                   tag_name//'>')
                k = n + 1
                exit
             endif
@@ -620,7 +675,10 @@ contains
             pair(2) = value
             call self%tag(self%nt)%set(attribute=pair, sanitize_attributes_value=.true.)
          enddo
-         if (.not.is_terminated) exit
+         if (.not.is_terminated) then
+            call record_problem(problem, source_string, pos, 'unterminated start tag <'//tag_name//'>')
+            exit
+         endif
          if (is_self_closing) then
             call self%tag(self%nt)%set(pos=[pos, k-1, -1_I4P], is_self_closing=.true.)
             owner = self%nt ! the following character data is its tail
@@ -642,6 +700,7 @@ contains
          pos = k
       endif
    enddo
+   if (depth>0) call record_problem(problem, source_string, stack_start(1), 'unclosed tag <'//self%tag(stack(1))%name()//'>')
    call flush_text(self=self, owner=owner, is_tail=is_tail, text=text, is_parent=.false.)
    call self%build_children
    endsubroutine parse_from_string
@@ -737,6 +796,23 @@ contains
    enddo
    after = 0
    endfunction after_declaration
+
+   pure subroutine record_problem(problem, source, pos, message)
+   !< Record a problem of malformed input with its line, only if it is the first one.
+   character(len=:), allocatable, intent(inout) :: problem !< First problem, unallocated if none yet.
+   character(*),                  intent(in)    :: source  !< Source.
+   integer(I4P),                  intent(in)    :: pos     !< Position of the problem.
+   character(*),                  intent(in)    :: message !< Problem description.
+   integer(I4P)                                 :: line    !< Line of the problem.
+   integer(I4P)                                 :: c       !< Counter.
+
+   if (allocated(problem)) return
+   line = 1
+   do c=1, min(pos, len(source)) - 1
+      if (source(c:c)==new_line('a')) line = line + 1
+   enddo
+   problem = 'line '//trim(str(line, no_sign=.true.))//': '//message
+   endsubroutine record_problem
 
    pure subroutine flush_text(self, owner, is_tail, text, is_parent)
    !< Store the collected character data into its owner tag, if any, and reset them.
@@ -890,7 +966,6 @@ contains
    integer(I4P), optional, intent(out) :: iostat          !< IO error.
    character(*), optional, intent(out) :: iomsg           !< IO error message.
    character(len=:), allocatable       :: stream          !< Output string containing the file data as a single stream.
-   logical                             :: is_file         !< Flag for inquiring the presence of the file.
    integer(I4P)                        :: unit            !< Unit file.
    integer(I4P)                        :: iostatd         !< IO error.
    character(500)                      :: iomsgd          !< IO error message.
@@ -902,15 +977,9 @@ contains
    integer(I4P)                        :: filesize        !< Size of the file for fast reading.
 
    fast = .false. ; if (present(fast_read)) fast = fast_read
-   ! inquire file existance
-   inquire(file=adjustl(trim(filename)), exist=is_file, iostat=iostatd, iomsg=iomsgd)
-   if (.not.is_file) then
-      if (present(iostat)) iostat = iostatd
-      if (present(iomsg )) iomsg  = iomsgd
-      return
-   endif
-   ! open file
-   open(newunit=unit, file=adjustl(trim(filename)), access='STREAM', form='UNFORMATTED', iostat=iostatd, iomsg=iomsgd)
+   ! open file: a missing file is an open error, reported by iostat/iomsg
+   open(newunit=unit, file=adjustl(trim(filename)), access='STREAM', form='UNFORMATTED', status='OLD', iostat=iostatd, &
+        iomsg=iomsgd)
    if (iostatd/=0) then
       if (present(iostat)) iostat = iostatd
       if (present(iomsg )) iomsg  = iomsgd
