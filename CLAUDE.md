@@ -106,8 +106,10 @@ written back first by `stringify`; `save` writes prolog plus `stringify` to a fi
 request when the prolog has no declaration. `parse` reports the first problem of malformed input (`iostat=XML_MALFORMED`, `iomsg`
 with its line) and file errors, while still building the document (tolerant parsing).
 
-Known parser limits: comments and PIs inside the document are dropped (not written back by `stringify`); attribute
-values are not whitespace-normalized.
+Attribute values are stored as in the source; `get_attribute`/`attribute` normalize them on read (each literal tab, new
+line, CR or CR LF becomes a space, XML 1.0 3.3.3) before decoding references.
+
+Known parser limits: comments and PIs inside the document are dropped (not written back by `stringify`).
 
 Performance: parse and `stringify` are O(n) in the number of tags, lookups O(n) per path segment (tags array and stringify buffer grow
 geometrically, children lists are built once after parsing). Check any change on large inputs with the benchmark:

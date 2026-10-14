@@ -18,6 +18,7 @@ title: Features
   - [x] CDATA sections read literally
   - [x] Mixed content: text before, between and after child tags
 - [x] Character references decoded on read (`&lt;` `&gt;` `&amp;` `&quot;` `&apos;`, `&#N;`, `&#xH;`)
+- [x] Attribute values normalized on read: literal tabs and new lines become spaces
 - [x] DOM queries by name, `/`-separated path or parent, tags and attributes read by ID
 - [x] Malformed input and file errors reported through optional `iostat`/`iomsg` (first problem, with its line),
   parsing stays tolerant
@@ -79,5 +80,4 @@ FoXy handles standard XML element syntax. Tags are case-sensitive and attributes
 - Entities defined by a DTD (e.g. `&nbsp;`) are not expanded, only the predefined and numeric references
 - Malformed input is tolerated: an end tag closes up to its matching start tag, a stray one is ignored; only the first
   problem is reported (`iostat`/`iomsg`)
-- Attribute values are not whitespace-normalized
 :::

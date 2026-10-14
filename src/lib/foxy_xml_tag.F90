@@ -258,7 +258,9 @@ contains
    pure function get_attribute(self, name) result(value)
    !< Return the value of the attribute named *name*.
    !<
-   !< @note If the attribute is not defined (or has no value), an empty string is returned. Character references are decoded.
+   !< @note If the attribute is not defined (or has no value), an empty string is returned. The value is normalized as by
+   !< XML 1.0 (3.3.3), for attributes of CDATA type: each literal blank (tab, new line, carriage return, a CR LF pair as one)
+   !< becomes a space, then character references are decoded (blanks written as references are kept).
    class(xml_tag), intent(in)    :: self  !< XML tag.
    character(*),   intent(in)    :: name  !< Attribute name.
    character(len=:), allocatable :: value !< Attribute value.
@@ -267,7 +269,7 @@ contains
    value = ''
    do a=1, self%attributes_number
       if (self%attribute(1, a)==name) then
-         if (self%attribute(2, a)%is_allocated()) value = xml_unescape(self%attribute(2, a)%chars())
+         if (self%attribute(2, a)%is_allocated()) value = xml_unescape(blanks_as_spaces(self%attribute(2, a)%chars()))
          exit
       endif
    enddo
@@ -920,6 +922,34 @@ contains
    if (present(tstart)) tstart = tstart_
    if (present(tend  )) tend   = tend_
    endsubroutine search
+
+   ! non type-bound procedures
+   pure function blanks_as_spaces(string) result(normalized)
+   !< Return string with each blank (tab, new line, carriage return) replaced by a space, a CR LF pair by one space.
+   character(*), intent(in)      :: string     !< String.
+   character(len=:), allocatable :: normalized !< Normalized string.
+   character(len=len(string))    :: buffer     !< Normalized characters.
+   integer(I4P)                  :: n          !< Length of normalized string.
+   integer(I4P)                  :: c          !< Counter.
+
+   if (scan(string, achar(9)//achar(10)//achar(13))==0) then
+      normalized = string
+      return
+   endif
+   n = 0
+   do c=1, len(string)
+      if (string(c:c)==achar(10).and.c>1) then
+         if (string(c-1:c-1)==achar(13)) cycle ! CR LF: the CR is already a space
+      endif
+      n = n + 1
+      if (scan(string(c:c), achar(9)//achar(10)//achar(13))>0) then
+         buffer(n:n) = ' '
+      else
+         buffer(n:n) = string(c:c)
+      endif
+   enddo
+   normalized = buffer(1:n)
+   endfunction blanks_as_spaces
 
    ! assignment (=)
    elemental subroutine assign_tag(lhs, rhs)
