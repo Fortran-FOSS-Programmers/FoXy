@@ -203,6 +203,36 @@ ids = xfile%children(id)                          ! direct children IDs; childre
 When a path segment matches several tags (e.g. many `origin` tags), all of them are explored, so
 `find_all(path='origin/latitude/value')` returns the latitudes of every origin.
 
+### Text values: references, CDATA and mixed content
+
+`content()` and `attribute()` return **values**: layout blanks stripped, character references decoded, CDATA sections
+literal. The stored data keeps the source text, so `stringify()` writes it back unchanged.
+
+```fortran
+call xfile%parse(string='<a k="x&amp;y">1 &lt; 2</a><b><![CDATA[1 < 2 && 3 > 2]]></b>')
+val = xfile%content('a')                                  ! '1 < 2'
+val = xfile%attribute(id=xfile%find(name='a'), name='k')  ! 'x&y'
+val = xfile%content('b')                                  ! '1 < 2 && 3 > 2'
+
+! mixed content: the text of a tag is the text around its children, children text excluded
+call xfile%parse(string='<p>see <b>this</b> now</p>')
+val = xfile%content('p')                                  ! 'see  now'
+val = xfile%content('b')                                  ! 'this'
+output = xfile%stringify()                                ! '<p>see <b>this</b> now</p>': written inline
+```
+
+A tag with mixed content is written inline, exactly as parsed; every other tag is formatted with one tag per line.
+
+Content set programmatically may contain markup (e.g. a nested tag), so it is **not** escaped on output: escape user
+data with `xml_escape` before setting it.
+
+```fortran
+use foxy, only: xml_escape, xml_tag
+type(xml_tag) :: a_tag
+
+a_tag = xml_tag(name='note', content=xml_escape('a < b & c'))  ! <note>a &lt; b &amp; c</note>
+```
+
 ### Linearised output (debug)
 
 ```fortran

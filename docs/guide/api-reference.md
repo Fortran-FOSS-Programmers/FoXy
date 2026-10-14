@@ -66,6 +66,7 @@ tag = xml_tag(name, content=inner_tag, ...)
 | `tag%get_content(name, content)` | Retrieve text content of self or a named nested tag |
 | `tag%get_attribute(name)` | Return the value of attribute `name` (character references decoded), `''` if not defined |
 | `tag%get_id()` / `tag%get_parent_id()` | Return the tag ID / its parent ID (`0` for a root tag) |
+| `tag%get_tail()` | Return the text after the end tag (mixed content), `''` if none |
 | `tag%write(unit, [form], [is_indented], [is_content_indented], [only_start], [only_content], [only_end], [end_record])` | Write to file unit |
 | `tag%free()` | Reset all fields |
 
@@ -88,8 +89,8 @@ Defined in `src/lib/foxy_xml_file.f90`. Holds a flat `tag(:)` array with hierarc
 |--------|-------------|
 | `xfile%parse([string=], [filename=])` | Parse XML from string or file; clears previous data |
 | `xfile%stringify([linearize])` | Serialise full DOM to string |
-| `xfile%content(name)` | Return text content of first tag named `name`, without leading/trailing blanks, references decoded |
-| `xfile%content(id=)` | Return text content of the tag with ID `id`, without leading/trailing blanks, references decoded |
+| `xfile%content(name)` | Return the direct text of the first tag named `name` (text plus children tails), without leading/trailing blanks, references decoded, CDATA literal |
+| `xfile%content(id=)` | Return the direct text of the tag with ID `id`, as `content(name)` |
 | `xfile%find([name=], [path=], [parent=])` | Return the ID of the first matching tag, `0` if none |
 | `xfile%find_all([name=], [path=], [parent=])` | Return the IDs of all matching tags, in document order |
 | `xfile%children(id)` | Return the IDs of the direct children of tag `id` (`0`: root tags) |
