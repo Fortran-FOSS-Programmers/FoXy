@@ -33,4 +33,5 @@ test_passed(1) = trim(source)==trim(parsed)
 print "(A,L1)", 'Is parsed data correct? ', test_passed(1)
 
 print "(A,L1)", new_line('a')//'Are all tests passed? ', all(test_passed)
+if (.not.all(test_passed)) error stop 1
 endprogram foxy_test_parse_string_simple

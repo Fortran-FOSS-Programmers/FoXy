@@ -40,4 +40,5 @@ test_passed(3) = trim(adjustl(source))==trim(adjustl(parsed))
 print "(A,L1)", parsed//' Is correct? ', test_passed(3)
 
 print "(A,L1)", new_line('a')//'Are all tests passed? ', all(test_passed)
+if (.not.all(test_passed)) error stop 1
 endprogram foxy_test_add_attributes

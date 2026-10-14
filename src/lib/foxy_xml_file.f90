@@ -120,7 +120,7 @@ contains
       call self%parse_from_string(source_string=string)
    elseif (present(filename)) then
       source = load_file_as_stream(filename=filename, fast_read=.true.)
-      call self%parse_from_string(source_string=source)
+      if (allocated(source)) call self%parse_from_string(source_string=source) ! unallocated if file is missing/unreadable
    endif
    endsubroutine parse
 
@@ -294,63 +294,55 @@ contains
 
    ! non TBP
    pure subroutine find_matching_end_tag(source, start_pos, tag_name, end_pos)
-   character(*),              intent(in)  :: source          !< Source containing tag content.
-   character(*),              intent(in)  :: tag_name        !< Tag name.
-   integer(I4P),              intent(in)  :: start_pos       !< Start tag content position.
-   integer(I4P),              intent(out) :: end_pos         !< End tag position.
-   character(:), allocatable              :: open_tag        !< Open tag.
-   character(:), allocatable              :: end_tag         !< End tag.
-   integer(I4P)                           :: pos, pos_tmp(2) !< Position counter.
-   integer(I4P)                           :: tag_count       !< Tags counter.
+   !< Find the end tag matching an open tag, accounting for nested tags with the same name.
+   !<
+   !< @note Open and end tags are processed in source order; self closing tags are skipped. If no matching end tag exists,
+   !< *end_pos* is returned as 0.
+   character(*), intent(in)  :: source    !< Source containing tag content.
+   character(*), intent(in)  :: tag_name  !< Tag name.
+   integer(I4P), intent(in)  :: start_pos !< Start tag content position.
+   integer(I4P), intent(out) :: end_pos   !< End tag position.
+   character(*), parameter   :: NAME_END = ' >/'//achar(9)//achar(10)//achar(13) !< Characters terminating a tag name.
+   character(:), allocatable :: open_tag  !< Open tag.
+   character(:), allocatable :: end_tag   !< End tag.
+   integer(I4P)              :: pos       !< Position counter.
+   integer(I4P)              :: pos_open  !< Next open tag position.
+   integer(I4P)              :: pos_end   !< Next end tag position.
+   integer(I4P)              :: tag_close !< Closing `>` position of an open tag.
+   integer(I4P)              :: tag_count !< Tags counter.
 
    open_tag = '<'//trim(tag_name)
    end_tag = '</'//trim(tag_name)//'>'
    tag_count = 1
    pos = start_pos
    end_pos = 0
-
-   ! search for next open tag with the same name
-   pos_tmp(1) = index(source(pos:), trim(open_tag)) ! relative position
-   pos_tmp(2) = index(source(pos:), trim(end_tag))  ! relative position
-   if (pos_tmp(1)<pos_tmp(2)) then
-      ! there are nested tags with the same name
-      do while (pos <= len_trim(source) .and. tag_count > 0)
-         ! search next tag with the same name
-         pos_tmp(1) = index(source(pos:), trim(open_tag)) ! relative position
-         if (pos_tmp(1) > 0) then
-            pos_tmp(1) = pos + pos_tmp(1) - 1 ! absolute position
-            ! check if it is open tag
-            if (pos_tmp(1) + len_trim(open_tag) <= len_trim(source)) then
-               if (source(pos_tmp(1)+len_trim(open_tag):pos_tmp(1)+len_trim(open_tag)) == '>' .or. &
-                   source(pos_tmp(1)+len_trim(open_tag):pos_tmp(1)+len_trim(open_tag)) == ' ') then
-                  ! open tag
-                  tag_count = tag_count + 1           ! update tags counter
-                  pos = pos_tmp(1) + len_trim(open_tag) ! update position after tag
-                  cycle
-               endif
-            endif
-         endif
-
-         ! search next end tag
-         pos_tmp(1) = index(source(pos:), trim(end_tag)) ! relative position
-         if (pos_tmp(1) > 0) then
-            pos_tmp(1) = pos + pos_tmp(1) - 1 ! absolute position
-            tag_count = tag_count - 1     ! update tags counter
-            if (tag_count == 0) then
-               ! found matching end tag
-               end_pos = pos_tmp(1)
-               return
-            endif
-            pos = pos_tmp(1) + len_trim(end_tag) ! update position after tag
+   do while (pos <= len(source))
+      pos_end = index(source(pos:), end_tag) ! relative position
+      if (pos_end == 0) return ! no matching end tag
+      pos_end = pos + pos_end - 1 ! absolute position
+      pos_open = index(source(pos:pos_end), open_tag) ! relative position, only before the next end tag
+      if (pos_open > 0) then
+         pos_open = pos + pos_open - 1 ! absolute position
+         ! pos_open < pos_end, thus the character after the tag name exists
+         if (index(NAME_END, source(pos_open+len(open_tag):pos_open+len(open_tag))) > 0) then
+            ! open tag, unless self closing: it has no matching end tag
+            tag_close = index(source(pos_open:), '>') ! relative position
+            if (tag_close == 0) return ! malformed open tag
+            tag_close = pos_open + tag_close - 1 ! absolute position
+            if (source(tag_close-1:tag_close-1) /= '/') tag_count = tag_count + 1
+            pos = tag_close + 1
          else
-            exit
+            pos = pos_open + len(open_tag) ! other tag whose name starts with tag_name, e.g. <ab> for <a>
          endif
-      enddo
-   elseif (pos_tmp(2)<0) then
-      ! there is a problem
-   else
-      end_pos = pos + pos_tmp(2) - 1 ! absolute position
-   endif
+      else
+         tag_count = tag_count - 1
+         if (tag_count == 0) then
+            end_pos = pos_end ! found matching end tag
+            return
+         endif
+         pos = pos_end + len(end_tag)
+      endif
+   enddo
    endsubroutine find_matching_end_tag
 
    pure subroutine get_tag_content(source, tag_name, start_pos, content, end_pos)

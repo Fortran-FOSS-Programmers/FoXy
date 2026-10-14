@@ -48,4 +48,5 @@ test_passed(4) = trim(adjustl(source))==trim(adjustl(parsed))
 print "(A,L1)", parsed//' Is correct? ', test_passed(4)
 
 print "(A,L1)", new_line('a')//'Are all tests passed? ', all(test_passed)
+if (.not.all(test_passed)) error stop 1
 endprogram foxy_test_delete_attributes

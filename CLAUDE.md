@@ -6,44 +6,60 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 FoXy is a pure Fortran (F2008+) library for parsing and emitting XML. It is object-oriented and uses conventional commits + git-cliff for changelog management.
 
+## Dependencies
+
+Dependencies are fetched by FoBiS (not git submodules) into `src/third_party/`, as declared in the `[dependencies]`
+section of `fobos` and pinned in `src/third_party/fobos.lock`:
+
+- **PENF** – Fortran precision/kind parameters (I1P, I4P, R4P, R8P, …)
+- **StringiFor** – string type used throughout parsing
+- **BeFoR64** – Base64 (used by StringiFor)
+- **FACE** – file-handle utilities
+
+```bash
+fobis fetch   # on a fresh clone, before the first build
+```
+
+`fpm.toml` pins its own (different) revisions of StringiFor and PENF: the fpm build is not guaranteed to match the
+FoBiS one.
+
 ## Build Commands
 
 FoBiS is the primary build tool (configured in `fobos`). CMake and fpm are also supported.
 
 ```bash
-# Build tests (GNU, optimized)
-FoBiS.py build -mode tests-gnu
-
-# Build tests (GNU, with debug checks and backtraces)
-FoBiS.py build -mode tests-gnu-debug
-
-# Clean build artifacts
-FoBiS.py clean -mode tests-gnu
-
-# Build with fpm (alternative)
-fpm build
+fobis build --mode tests-gnu         # GNU, optimized
+fobis build --mode tests-gnu-debug   # GNU, -std=f2018, runtime checks, backtraces
+fobis clean --mode tests-gnu
+fobis build --lmodes                 # list modes (also tests-intel, tests-intel-debug)
+fobis rule --ls                      # list rules (makecoverage, makecoverage-analysis, makedoc, ...)
 ```
 
-Build output goes to `./exe/` (binaries), `./obj/`, and `./mod/`.
+Build output goes to `./exe/` (binaries, plus `exe/obj/` and `exe/mod/`).
 
 ## Running Tests
 
 ```bash
-# Build then run all tests
-FoBiS.py build -mode tests-gnu && bash scripts/run_tests.sh
-
-# Run all tests with fpm
-fpm test
+fobis build --mode tests-gnu && bash scripts/run_tests.sh
+fobis rule --ex makecoverage                     # debug + coverage build, tests, gcov
 ```
 
-`scripts/run_tests.sh` finds executables in `./exe/`, runs each, and checks output for the pattern `"Are all tests passed? T/F"`. Exit code 0 = all passed.
+`scripts/run_tests.sh` is repo-agnostic (shared across the FoBiS repos): it runs every executable in `./exe/` and
+judges **PASS/FAIL by exit status only** (plus an optional `<name>.result` expected-output file). Every test in
+`src/tests/foxy_test_*.f90` must therefore end with:
 
-Each test file in `src/tests/foxy_test_*.f90` covers a single concern (tag creation, parsing, attribute manipulation, file I/O, etc.).
+```fortran
+print "(A,L1)", new_line('a')//'Are all tests passed? ', all(test_passed)
+if (.not.all(test_passed)) error stop 1
+```
+
+A test that only prints `F` is reported as PASS. Each test file covers a single concern (tag creation, parsing,
+attribute manipulation, file I/O, etc.). CMake globs `src/tests/*.f90`, so new tests need no registration.
 
 ## Code Style
 
 From `CONTRIBUTING.md`:
-- 2-space indentation, no tabs
+- 2-space indentation, no tabs (existing sources use 3 spaces: match the surrounding code)
 - No trailing whitespace, Unix line endings
 - `implicit none` everywhere
 - Named intent declarations on all procedure arguments
@@ -61,31 +77,42 @@ foxy_xml_file.f90 ← xml_file type: array-based DOM container
 foxy_xml_tag.F90  ← xml_tag type: single element (note .F90 = preprocessed)
 ```
 
-**`xml_tag`** stores a single XML element: name, text content, `attribute(:,:)` (2-column array of name/value pairs), indentation level, self-closing flag, and hierarchy IDs (`id`, `parent_id`, `child_id(:)`). Key methods: `parse()`, `stringify()`, `add_attributes()`, `delete_attributes()`, `delete_content()`, `start_tag()`, `end_tag()`, `self_closing_tag()`.
+**`xml_tag`** stores a single XML element: name, text content, `attribute(:,:)` (2-row array of name/value pairs),
+source positions `pos(3)` (start, content, end), indentation, self-closing flag, and hierarchy IDs (`id`, `parent_id`,
+`child_id(:)`). Key methods: `parse()`, `stringify()`, `add_attributes()`, `delete_attributes()`, `delete_content()`,
+`start_tag()`, `end_tag()`, `self_closing_tag()`.
 
-**`xml_file`** holds a flat `tag(:)` array (linearised DOM, not a tree pointer structure) and a count `nt`. Key methods: `parse()`, `stringify()`, `add_tag()`, `delete_tag()`, `content()`.
+**`xml_file`** holds a flat `tag(:)` array (linearised DOM, not a tree of pointers) and a count `nt`. Key methods:
+`parse()`, `stringify()`, `add_tag()`, `delete_tag()`, `content()`.
 
-Third-party dependencies are git submodules in `src/third_party/`:
-- **PENF** – Fortran precision/kind parameters (I1P, I4P, R4P, R8P, …)
-- **StringiFor** – string type used throughout parsing
-- **BeFoR64** – Base64 (used by StringiFor)
-- **FACE** – file-handle utilities
+There are **two parsers**:
+- `xml_file%parse_from_string` — the document parser: a single pass with a stack of parent IDs; tag contents are
+  extracted by `get_tag_content`/`find_matching_end_tag` (module procedures, not type-bound).
+- `xml_tag%parse`/`search` — the older single-tag parser, still used by `xml_tag%get_content` (and so by
+  `xml_file%content`) to look up nested tags by name.
 
-When initialising a fresh clone: `git submodule update --init --recursive`.
+Known parser limits: a tag's content is only the text before its first child (mixed content is lost); no entity
+decoding (`&lt;` …); no CDATA; only blanks separate a tag name from its attributes in `parse_tag_name`; `add_tag`
+reallocates the whole array, so parsing is O(n²) in the number of tags.
 
 ## CI/CD
 
-`.github/workflows/ci.yml` runs on every push:
-1. Installs gfortran 14, Graphviz, FORD, FoBiS.py
-2. Builds with `FoBiS.py rule -ex makecoverage` and runs `scripts/run_tests.sh`
-3. Uploads coverage to Codecov, builds and deploys VitePress + FORD docs to GitHub Pages
-4. On a version tag, creates a tarball release via `FoBiS.py rule -ex maketar`
+GitHub Actions, built on two local composite actions (`.github/actions/setup-build-env`,
+`.github/actions/run-coverage-analysis`) shared in form across the FoBiS repos:
+
+- `ci.yml` — every branch push/PR: setup, `fetch`, tests with coverage (`rule --ex makecoverage-analysis`)
+- `docs.yml` — coverage + API docs (`formal`, via `rule-makedoc`) + VitePress site, deployed to GitHub Pages; it
+  overwrites `docs/public/coverage.json` with the coverage badge
+- `release.yml` — on a `vX.Y.Z` tag: tarball + GitHub release with notes extracted from `CHANGELOG.md`
+- `install.yml` — install smoke test (`scripts/install.sh`)
+
+Running `fobis rule --ex makecoverage` locally also rewrites `docs/public/coverage.json`: do not commit that change.
 
 ## Releases
 
 ```bash
-# Bump version, generate CHANGELOG.md, commit + tag + push
-scripts/bump.sh patch   # 0.0.8 → 0.0.9
-scripts/bump.sh minor   # 0.0.8 → 0.1.0
-scripts/bump.sh v2.1.0  # explicit version
+scripts/release.sh --patch    # or --minor, --major, vX.Y.Z
 ```
+
+Pre-flight checks, git-cliff `CHANGELOG.md`, bumps `VERSION` and the `fpm.toml` version, commits, creates an annotated
+tag and pushes (which triggers `release.yml`). `scripts/bump.sh` is the older equivalent.

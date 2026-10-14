@@ -40,4 +40,5 @@ open(newunit=xunit, file='parse_file_simple.xml')
 close(unit=xunit, status='DELETE')
 
 print "(A,L1)", new_line('a')//'Are all tests passed? ', all(test_passed)
+if (.not.all(test_passed)) error stop 1
 endprogram foxy_test_parse_file_simple
