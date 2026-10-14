@@ -126,16 +126,26 @@ type, extends(xml_builder) :: dom_builder
 endtype dom_builder
 contains
    ! public methods
-   elemental subroutine add_tag(self, tag)
-   !< Add tag to XML file, as a root tag (without parent and children).
+   elemental subroutine add_tag(self, tag, parent, id)
+   !< Add tag to XML file: as the last child of the tag with ID *parent* or, if *parent* is not passed (or 0), as a root tag;
+   !< its own children (if any) are not kept.
    !<
-   !< @note Tags IDs are the tags indexes into the tags array: the added tag ID is the new number of tags.
+   !< @note Tags IDs are the tags indexes into the tags array: the added tag ID is the new number of tags. Tags are
+   !< appended, thus in a built document IDs follow the insertion order (a child ID is always greater than its parent one,
+   !< as *delete_tag* requires); a parsed document keeps the document order.
    !< @note The tags array capacity is doubled when full, thus adding n tags costs O(n) tags copies, not O(n^2): only the
    !< first *nt* elements are tags, the others are spare capacity.
-   class(xml_file), intent(inout) :: self       !< XML file.
-   type(xml_tag),   intent(in)    :: tag        !< XML tag.
-   type(xml_tag), allocatable     :: tag_new(:) !< New (extended) tags array.
+   !< @note If *parent* is not a tag ID, the tag is not added (*id* is 0).
+   class(xml_file), intent(inout)         :: self       !< XML file.
+   type(xml_tag),   intent(in)            :: tag        !< XML tag.
+   integer(I4P),    intent(in),  optional :: parent     !< Parent tag ID, 0 for a root tag.
+   integer(I4P),    intent(out), optional :: id         !< ID of the added tag, 0 if not added.
+   type(xml_tag), allocatable             :: tag_new(:) !< New (extended) tags array.
+   integer(I4P)                           :: parent_    !< Parent tag ID, local variable.
 
+   parent_ = 0_I4P ; if (present(parent)) parent_ = parent
+   if (present(id)) id = 0_I4P
+   if (parent_<0.or.parent_>self%nt) return
    if (.not.allocated(self%tag)) then
       allocate(self%tag(1:INITIAL_CAPACITY))
    elseif (self%nt==size(self%tag, dim=1)) then
@@ -145,9 +155,16 @@ contains
    endif
    self%nt = self%nt + 1
    self%tag(self%nt) = tag
-   call self%tag(self%nt)%set(id=self%nt, parent_id=0_I4P)
+   call self%tag(self%nt)%set(id=self%nt, parent_id=parent_)
    if (allocated(self%tag(self%nt)%child_id)) deallocate(self%tag(self%nt)%child_id)
    self%tag(self%nt)%children_number = 0_I4P
+   if (parent_>0) then
+      call self%tag(self%nt)%set(level=self%tag(parent_)%get_level()+1, indent=self%tag(parent_)%get_indent()+2)
+      call self%tag(parent_)%add_child_id(child_id=self%nt)
+   else
+      call self%tag(self%nt)%set(level=1_I4P)
+   endif
+   if (present(id)) id = self%nt
    endsubroutine add_tag
 
    pure function attribute(self, id, name) result(value)

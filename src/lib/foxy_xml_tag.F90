@@ -57,6 +57,7 @@ type :: xml_tag
       procedure, pass(self) :: get_content                 !< Return tag content.
       procedure, pass(self) :: get_attribute               !< Return the value of the attribute named *name*.
       procedure, pass(self) :: get_id                      !< Return tag uniq ID.
+      procedure, pass(self) :: get_indent                  !< Return tag indentation.
       procedure, pass(self) :: get_level                   !< Return tag hierarchy level.
       procedure, pass(self) :: get_parent_id               !< Return parent tag uniq ID.
       procedure, pass(self) :: get_pos                     !< Return tag positions in the source.
@@ -318,6 +319,14 @@ contains
 
    parent_id = self%parent_id
    endfunction get_parent_id
+
+   elemental function get_indent(self) result(indent)
+   !< Return tag indentation (number of spaces).
+   class(xml_tag), intent(in) :: self   !< XML tag.
+   integer(I4P)               :: indent !< Tag indentation.
+
+   indent = self%indent
+   endfunction get_indent
 
    elemental function get_level(self) result(level)
    !< Return tag hierarchy level.
