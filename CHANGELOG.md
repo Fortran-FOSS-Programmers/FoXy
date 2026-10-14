@@ -4,6 +4,17 @@ All notable changes to this project are documented here.
 Versions follow [Semantic Versioning](https://semver.org/).
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.4.0] — 2026-10-14
+### Fixed
+- **dom**: Decode character references in content and attribute values ⚠ BREAKING CHANGE
+
+
+### Performance
+- **bench**: Add parse/stringify/lookup benchmark with fobos modes
+
+- **dom**: Make parse, stringify and lookups linear in the tag count
+
+
 ## [0.3.0] — 2026-10-14
 ### Added
 - **dom**: Find tags by name, path or parent and read them by ID
