@@ -131,4 +131,4 @@ rule_5 = ./scripts/compute-coverage.sh
 help   = Rule for performing coverage analysis and saving reports in markdown
 rule_1 = fobis rule --ex makecoverage
 rule_2 = fobis rule --gcov-analyzer docs/guide/ --gcov-analyzer coverage-analysis
-rule_3 = rm -f *.gcov parsed.xml source.xml
+rule_3 = rm -f *.gcov

@@ -8,6 +8,9 @@ character(len=:), allocatable :: source         !< String containing the source 
 character(len=:), allocatable :: parsed         !< String containing the parsed XML data.
 type(xml_file)                :: xfile          !< XML file handler.
 logical                       :: test_passed(1) !< List of passed tests.
+character(len=:), allocatable :: tmp_dir        !< Temporary directory for the inspection files.
+integer                       :: tmp_dir_len    !< Length of the TMPDIR environment variable.
+integer                       :: tmp_dir_status !< Status of the TMPDIR environment variable query.
 integer f
 
 test_passed = .false.
@@ -48,10 +51,19 @@ print "(A,L1)", 'Is parsed data correct? ', test_passed(1)
 print "(A)", 'Parsed data linearized'
 print "(A)", xfile%stringify(linearize=.true.)
 
-open(newunit=f, file='source.xml')
+! source and parsed data saved for inspection (e.g. diff) into the temporary directory, not into the working one
+call get_environment_variable('TMPDIR', length=tmp_dir_len, status=tmp_dir_status)
+if (tmp_dir_status==0.and.tmp_dir_len>0) then
+   allocate(character(len=tmp_dir_len) :: tmp_dir)
+   call get_environment_variable('TMPDIR', value=tmp_dir)
+else
+   tmp_dir = '/tmp'
+endif
+print "(A)", 'Source and parsed data saved into '//tmp_dir//'/foxy_test_{source,parsed}.xml'
+open(newunit=f, file=tmp_dir//'/foxy_test_source.xml')
 write(f,'(A)') source
 close(f)
-open(newunit=f, file='parsed.xml')
+open(newunit=f, file=tmp_dir//'/foxy_test_parsed.xml')
 write(f,'(A)') parsed
 close(f)
 
