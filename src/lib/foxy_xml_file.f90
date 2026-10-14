@@ -4,8 +4,9 @@ module foxy_xml_file
 use foxy_xml_entities, only : text_value, without_markup
 use foxy_xml_tag, only : xml_tag
 use foxy_xml_tokenizer, only : xml_builder, xml_tokenizer, located, located_in_file, DATA_TEXT, DATA_PI
-use foxy_xml_tree, only : tree_attribute, tree_build_children, tree_children, tree_find_all, tree_level, tree_name, &
-                          tree_parent
+use foxy_xml_tree, only : tree_attribute, tree_attribute_text, tree_build_children, tree_children, tree_find_all, &
+                          tree_level, tree_name, tree_parent
+use foxy_xml_values, only : report, to_value, to_values, XML_NOT_FOUND
 use penf
 
 implicit none
@@ -37,6 +38,16 @@ type, public:: xml_file
       procedure, pass(self) :: find       !< Return the ID of the first tag matching a name or a path.
       procedure, pass(self) :: find_all   !< Return the IDs of all tags matching a name or a path.
       procedure, pass(self) :: free       !< Free dynamic memory.
+      generic               :: get_attribute => &
+                               get_attribute_I1P, get_attribute_I2P, get_attribute_I4P, get_attribute_I8P, &
+                               get_attribute_R4P, get_attribute_R8P, get_attribute_logical, get_attribute_I1P_1, &
+                               get_attribute_I2P_1, get_attribute_I4P_1, get_attribute_I8P_1, get_attribute_R4P_1, &
+                               get_attribute_R8P_1 !< Get the value of an attribute as number(s) or logical.
+      generic               :: get_content => &
+                               get_content_I1P, get_content_I2P, get_content_I4P, get_content_I8P, &
+                               get_content_R4P, get_content_R8P, get_content_logical, get_content_I1P_1, &
+                               get_content_I2P_1, get_content_I4P_1, get_content_I8P_1, get_content_R4P_1, &
+                               get_content_R8P_1 !< Get the content of a tag as number(s) or logical.
       procedure, pass(self) :: level      !< Return the level of the tag with a given ID.
       procedure, pass(self) :: name       !< Return the name of the tag with a given ID.
       procedure, pass(self) :: parent     !< Return the parent ID of the tag with a given ID.
@@ -54,6 +65,34 @@ type, public:: xml_file
       procedure, pass(self), private :: parse_from_file     !< Parse xml data from a file, read in chunks.
       procedure, pass(self), private :: parse_from_string   !< Parse xml data from string.
       procedure, pass(self), private :: stringify_recursive !< Convert recursively tags with children into a string.
+      procedure, pass(self), private :: attribute_text      !< Return an attribute value, reporting a missing one.
+      procedure, pass(self), private :: content_text        !< Return a tag content, reporting a missing tag.
+      procedure, pass(self), private :: get_attribute_I1P
+      procedure, pass(self), private :: get_attribute_I2P
+      procedure, pass(self), private :: get_attribute_I4P
+      procedure, pass(self), private :: get_attribute_I8P
+      procedure, pass(self), private :: get_attribute_R4P
+      procedure, pass(self), private :: get_attribute_R8P
+      procedure, pass(self), private :: get_attribute_logical
+      procedure, pass(self), private :: get_attribute_I1P_1
+      procedure, pass(self), private :: get_attribute_I2P_1
+      procedure, pass(self), private :: get_attribute_I4P_1
+      procedure, pass(self), private :: get_attribute_I8P_1
+      procedure, pass(self), private :: get_attribute_R4P_1
+      procedure, pass(self), private :: get_attribute_R8P_1
+      procedure, pass(self), private :: get_content_I1P
+      procedure, pass(self), private :: get_content_I2P
+      procedure, pass(self), private :: get_content_I4P
+      procedure, pass(self), private :: get_content_I8P
+      procedure, pass(self), private :: get_content_R4P
+      procedure, pass(self), private :: get_content_R8P
+      procedure, pass(self), private :: get_content_logical
+      procedure, pass(self), private :: get_content_I1P_1
+      procedure, pass(self), private :: get_content_I2P_1
+      procedure, pass(self), private :: get_content_I4P_1
+      procedure, pass(self), private :: get_content_I8P_1
+      procedure, pass(self), private :: get_content_R4P_1
+      procedure, pass(self), private :: get_content_R8P_1
       ! operators
       final :: finalize !< Free dynamic memory when finalizing.
 endtype xml_file
@@ -626,6 +665,494 @@ contains
       call append(buffer=buffer, n=n, piece=new_line('a')//tag%stringify(is_indented=.true.))
    endif
    endsubroutine stringify_recursive
+
+   ! typed accessors
+   subroutine attribute_text(self, id, name, text, iostat, iomsg)
+   !< Return the value of the attribute named *name* of the tag with ID *id*; *iostat* is *XML_NOT_FOUND* if the tag or the
+   !< attribute does not exist.
+   class(xml_file),               intent(in)  :: self   !< XML file.
+   integer(I4P),                  intent(in)  :: id     !< Tag ID.
+   character(*),                  intent(in)  :: name   !< Attribute name.
+   character(len=:), allocatable, intent(out) :: text   !< Attribute value.
+   integer(I4P),                  intent(out) :: iostat !< IO status.
+   character(len=:), allocatable, intent(out) :: iomsg  !< IO message.
+
+   call tree_attribute_text(tag=self%tag, nt=self%nt, id=id, name=name, value=text, iostat=iostat, iomsg=iomsg)
+   endsubroutine attribute_text
+
+   subroutine content_text(self, id, text, iostat, iomsg)
+   !< Return the content of the tag with ID *id* (see *content*); *iostat* is *XML_NOT_FOUND* if the tag does not exist.
+   class(xml_file),               intent(in)  :: self   !< XML file.
+   integer(I4P),                  intent(in)  :: id     !< Tag ID.
+   character(len=:), allocatable, intent(out) :: text   !< Tag content.
+   integer(I4P),                  intent(out) :: iostat !< IO status.
+   character(len=:), allocatable, intent(out) :: iomsg  !< IO message.
+
+   iostat = 0
+   iomsg = ''
+   if (id>=1.and.id<=self%nt) then
+      text = self%content(id)
+   else
+      text = ''
+      iostat = XML_NOT_FOUND
+      iomsg = 'no tag with ID '//trim(str(id, no_sign=id>=0))
+   endif
+   endsubroutine content_text
+
+   subroutine get_attribute_I1P(self, id, name, value, iostat, iomsg)
+   !< Get the attribute named *name* of the tag with ID *id* as a integer(I1P) value.
+   class(xml_file),       intent(in)    :: self      !< XML file.
+   integer(I4P),           intent(in)    :: id        !< Tag ID.
+   character(*),           intent(in)    :: name      !< Attribute name.
+   integer(I1P),          intent(inout) :: value     !< Value, unchanged on error.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Text to convert.
+   integer(I4P)                          :: iostat_   !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_    !< IO message, local variable.
+
+   call self%attribute_text(id=id, name=name, text=text, iostat=iostat_, iomsg=iomsg_)
+   if (iostat_==0) call to_value(text=text, value=value, iostat=iostat_, iomsg=iomsg_)
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg, &
+               context=' in attribute "'//name//'" of tag "'//self%name(id)//'"')
+   endsubroutine get_attribute_I1P
+
+   subroutine get_attribute_I2P(self, id, name, value, iostat, iomsg)
+   !< Get the attribute named *name* of the tag with ID *id* as a integer(I2P) value.
+   class(xml_file),       intent(in)    :: self      !< XML file.
+   integer(I4P),           intent(in)    :: id        !< Tag ID.
+   character(*),           intent(in)    :: name      !< Attribute name.
+   integer(I2P),          intent(inout) :: value     !< Value, unchanged on error.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Text to convert.
+   integer(I4P)                          :: iostat_   !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_    !< IO message, local variable.
+
+   call self%attribute_text(id=id, name=name, text=text, iostat=iostat_, iomsg=iomsg_)
+   if (iostat_==0) call to_value(text=text, value=value, iostat=iostat_, iomsg=iomsg_)
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg, &
+               context=' in attribute "'//name//'" of tag "'//self%name(id)//'"')
+   endsubroutine get_attribute_I2P
+
+   subroutine get_attribute_I4P(self, id, name, value, iostat, iomsg)
+   !< Get the attribute named *name* of the tag with ID *id* as a integer(I4P) value.
+   class(xml_file),       intent(in)    :: self      !< XML file.
+   integer(I4P),           intent(in)    :: id        !< Tag ID.
+   character(*),           intent(in)    :: name      !< Attribute name.
+   integer(I4P),          intent(inout) :: value     !< Value, unchanged on error.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Text to convert.
+   integer(I4P)                          :: iostat_   !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_    !< IO message, local variable.
+
+   call self%attribute_text(id=id, name=name, text=text, iostat=iostat_, iomsg=iomsg_)
+   if (iostat_==0) call to_value(text=text, value=value, iostat=iostat_, iomsg=iomsg_)
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg, &
+               context=' in attribute "'//name//'" of tag "'//self%name(id)//'"')
+   endsubroutine get_attribute_I4P
+
+   subroutine get_attribute_I8P(self, id, name, value, iostat, iomsg)
+   !< Get the attribute named *name* of the tag with ID *id* as a integer(I8P) value.
+   class(xml_file),       intent(in)    :: self      !< XML file.
+   integer(I4P),           intent(in)    :: id        !< Tag ID.
+   character(*),           intent(in)    :: name      !< Attribute name.
+   integer(I8P),          intent(inout) :: value     !< Value, unchanged on error.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Text to convert.
+   integer(I4P)                          :: iostat_   !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_    !< IO message, local variable.
+
+   call self%attribute_text(id=id, name=name, text=text, iostat=iostat_, iomsg=iomsg_)
+   if (iostat_==0) call to_value(text=text, value=value, iostat=iostat_, iomsg=iomsg_)
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg, &
+               context=' in attribute "'//name//'" of tag "'//self%name(id)//'"')
+   endsubroutine get_attribute_I8P
+
+   subroutine get_attribute_R4P(self, id, name, value, iostat, iomsg)
+   !< Get the attribute named *name* of the tag with ID *id* as a real(R4P) value.
+   class(xml_file),       intent(in)    :: self      !< XML file.
+   integer(I4P),           intent(in)    :: id        !< Tag ID.
+   character(*),           intent(in)    :: name      !< Attribute name.
+   real(R4P),             intent(inout) :: value     !< Value, unchanged on error.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Text to convert.
+   integer(I4P)                          :: iostat_   !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_    !< IO message, local variable.
+
+   call self%attribute_text(id=id, name=name, text=text, iostat=iostat_, iomsg=iomsg_)
+   if (iostat_==0) call to_value(text=text, value=value, iostat=iostat_, iomsg=iomsg_)
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg, &
+               context=' in attribute "'//name//'" of tag "'//self%name(id)//'"')
+   endsubroutine get_attribute_R4P
+
+   subroutine get_attribute_R8P(self, id, name, value, iostat, iomsg)
+   !< Get the attribute named *name* of the tag with ID *id* as a real(R8P) value.
+   class(xml_file),       intent(in)    :: self      !< XML file.
+   integer(I4P),           intent(in)    :: id        !< Tag ID.
+   character(*),           intent(in)    :: name      !< Attribute name.
+   real(R8P),             intent(inout) :: value     !< Value, unchanged on error.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Text to convert.
+   integer(I4P)                          :: iostat_   !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_    !< IO message, local variable.
+
+   call self%attribute_text(id=id, name=name, text=text, iostat=iostat_, iomsg=iomsg_)
+   if (iostat_==0) call to_value(text=text, value=value, iostat=iostat_, iomsg=iomsg_)
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg, &
+               context=' in attribute "'//name//'" of tag "'//self%name(id)//'"')
+   endsubroutine get_attribute_R8P
+
+   subroutine get_attribute_logical(self, id, name, value, iostat, iomsg)
+   !< Get the attribute named *name* of the tag with ID *id* as a logical value.
+   class(xml_file),       intent(in)    :: self      !< XML file.
+   integer(I4P),           intent(in)    :: id        !< Tag ID.
+   character(*),           intent(in)    :: name      !< Attribute name.
+   logical,               intent(inout) :: value     !< Value, unchanged on error.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Text to convert.
+   integer(I4P)                          :: iostat_   !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_    !< IO message, local variable.
+
+   call self%attribute_text(id=id, name=name, text=text, iostat=iostat_, iomsg=iomsg_)
+   if (iostat_==0) call to_value(text=text, value=value, iostat=iostat_, iomsg=iomsg_)
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg, &
+               context=' in attribute "'//name//'" of tag "'//self%name(id)//'"')
+   endsubroutine get_attribute_logical
+
+   subroutine get_attribute_I1P_1(self, id, name, values, iostat, iomsg)
+   !< Get the attribute named *name* of the tag with ID *id* as a list of integer(I1P) values (blank separated).
+   class(xml_file),       intent(in)    :: self      !< XML file.
+   integer(I4P),           intent(in)    :: id        !< Tag ID.
+   character(*),           intent(in)    :: name      !< Attribute name.
+   integer(I1P), allocatable, intent(out)   :: values(:) !< Values, empty on error.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Text to convert.
+   integer(I4P)                          :: iostat_   !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_    !< IO message, local variable.
+
+   call self%attribute_text(id=id, name=name, text=text, iostat=iostat_, iomsg=iomsg_)
+   if (iostat_==0) call to_values(text=text, values=values, iostat=iostat_, iomsg=iomsg_)
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg, &
+               context=' in attribute "'//name//'" of tag "'//self%name(id)//'"')
+   endsubroutine get_attribute_I1P_1
+
+   subroutine get_attribute_I2P_1(self, id, name, values, iostat, iomsg)
+   !< Get the attribute named *name* of the tag with ID *id* as a list of integer(I2P) values (blank separated).
+   class(xml_file),       intent(in)    :: self      !< XML file.
+   integer(I4P),           intent(in)    :: id        !< Tag ID.
+   character(*),           intent(in)    :: name      !< Attribute name.
+   integer(I2P), allocatable, intent(out)   :: values(:) !< Values, empty on error.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Text to convert.
+   integer(I4P)                          :: iostat_   !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_    !< IO message, local variable.
+
+   call self%attribute_text(id=id, name=name, text=text, iostat=iostat_, iomsg=iomsg_)
+   if (iostat_==0) call to_values(text=text, values=values, iostat=iostat_, iomsg=iomsg_)
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg, &
+               context=' in attribute "'//name//'" of tag "'//self%name(id)//'"')
+   endsubroutine get_attribute_I2P_1
+
+   subroutine get_attribute_I4P_1(self, id, name, values, iostat, iomsg)
+   !< Get the attribute named *name* of the tag with ID *id* as a list of integer(I4P) values (blank separated).
+   class(xml_file),       intent(in)    :: self      !< XML file.
+   integer(I4P),           intent(in)    :: id        !< Tag ID.
+   character(*),           intent(in)    :: name      !< Attribute name.
+   integer(I4P), allocatable, intent(out)   :: values(:) !< Values, empty on error.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Text to convert.
+   integer(I4P)                          :: iostat_   !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_    !< IO message, local variable.
+
+   call self%attribute_text(id=id, name=name, text=text, iostat=iostat_, iomsg=iomsg_)
+   if (iostat_==0) call to_values(text=text, values=values, iostat=iostat_, iomsg=iomsg_)
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg, &
+               context=' in attribute "'//name//'" of tag "'//self%name(id)//'"')
+   endsubroutine get_attribute_I4P_1
+
+   subroutine get_attribute_I8P_1(self, id, name, values, iostat, iomsg)
+   !< Get the attribute named *name* of the tag with ID *id* as a list of integer(I8P) values (blank separated).
+   class(xml_file),       intent(in)    :: self      !< XML file.
+   integer(I4P),           intent(in)    :: id        !< Tag ID.
+   character(*),           intent(in)    :: name      !< Attribute name.
+   integer(I8P), allocatable, intent(out)   :: values(:) !< Values, empty on error.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Text to convert.
+   integer(I4P)                          :: iostat_   !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_    !< IO message, local variable.
+
+   call self%attribute_text(id=id, name=name, text=text, iostat=iostat_, iomsg=iomsg_)
+   if (iostat_==0) call to_values(text=text, values=values, iostat=iostat_, iomsg=iomsg_)
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg, &
+               context=' in attribute "'//name//'" of tag "'//self%name(id)//'"')
+   endsubroutine get_attribute_I8P_1
+
+   subroutine get_attribute_R4P_1(self, id, name, values, iostat, iomsg)
+   !< Get the attribute named *name* of the tag with ID *id* as a list of real(R4P) values (blank separated).
+   class(xml_file),       intent(in)    :: self      !< XML file.
+   integer(I4P),           intent(in)    :: id        !< Tag ID.
+   character(*),           intent(in)    :: name      !< Attribute name.
+   real(R4P), allocatable, intent(out)   :: values(:) !< Values, empty on error.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Text to convert.
+   integer(I4P)                          :: iostat_   !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_    !< IO message, local variable.
+
+   call self%attribute_text(id=id, name=name, text=text, iostat=iostat_, iomsg=iomsg_)
+   if (iostat_==0) call to_values(text=text, values=values, iostat=iostat_, iomsg=iomsg_)
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg, &
+               context=' in attribute "'//name//'" of tag "'//self%name(id)//'"')
+   endsubroutine get_attribute_R4P_1
+
+   subroutine get_attribute_R8P_1(self, id, name, values, iostat, iomsg)
+   !< Get the attribute named *name* of the tag with ID *id* as a list of real(R8P) values (blank separated).
+   class(xml_file),       intent(in)    :: self      !< XML file.
+   integer(I4P),           intent(in)    :: id        !< Tag ID.
+   character(*),           intent(in)    :: name      !< Attribute name.
+   real(R8P), allocatable, intent(out)   :: values(:) !< Values, empty on error.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Text to convert.
+   integer(I4P)                          :: iostat_   !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_    !< IO message, local variable.
+
+   call self%attribute_text(id=id, name=name, text=text, iostat=iostat_, iomsg=iomsg_)
+   if (iostat_==0) call to_values(text=text, values=values, iostat=iostat_, iomsg=iomsg_)
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg, &
+               context=' in attribute "'//name//'" of tag "'//self%name(id)//'"')
+   endsubroutine get_attribute_R8P_1
+
+   subroutine get_content_I1P(self, id, value, iostat, iomsg)
+   !< Get the content of the tag with ID *id* as a integer(I1P) value.
+   class(xml_file),       intent(in)    :: self      !< XML file.
+   integer(I4P),           intent(in)    :: id        !< Tag ID.
+   integer(I1P),          intent(inout) :: value     !< Value, unchanged on error.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Text to convert.
+   integer(I4P)                          :: iostat_   !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_    !< IO message, local variable.
+
+   call self%content_text(id=id, text=text, iostat=iostat_, iomsg=iomsg_)
+   if (iostat_==0) call to_value(text=text, value=value, iostat=iostat_, iomsg=iomsg_)
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg, &
+               context=' in the content of tag "'//self%name(id)//'"')
+   endsubroutine get_content_I1P
+
+   subroutine get_content_I2P(self, id, value, iostat, iomsg)
+   !< Get the content of the tag with ID *id* as a integer(I2P) value.
+   class(xml_file),       intent(in)    :: self      !< XML file.
+   integer(I4P),           intent(in)    :: id        !< Tag ID.
+   integer(I2P),          intent(inout) :: value     !< Value, unchanged on error.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Text to convert.
+   integer(I4P)                          :: iostat_   !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_    !< IO message, local variable.
+
+   call self%content_text(id=id, text=text, iostat=iostat_, iomsg=iomsg_)
+   if (iostat_==0) call to_value(text=text, value=value, iostat=iostat_, iomsg=iomsg_)
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg, &
+               context=' in the content of tag "'//self%name(id)//'"')
+   endsubroutine get_content_I2P
+
+   subroutine get_content_I4P(self, id, value, iostat, iomsg)
+   !< Get the content of the tag with ID *id* as a integer(I4P) value.
+   class(xml_file),       intent(in)    :: self      !< XML file.
+   integer(I4P),           intent(in)    :: id        !< Tag ID.
+   integer(I4P),          intent(inout) :: value     !< Value, unchanged on error.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Text to convert.
+   integer(I4P)                          :: iostat_   !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_    !< IO message, local variable.
+
+   call self%content_text(id=id, text=text, iostat=iostat_, iomsg=iomsg_)
+   if (iostat_==0) call to_value(text=text, value=value, iostat=iostat_, iomsg=iomsg_)
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg, &
+               context=' in the content of tag "'//self%name(id)//'"')
+   endsubroutine get_content_I4P
+
+   subroutine get_content_I8P(self, id, value, iostat, iomsg)
+   !< Get the content of the tag with ID *id* as a integer(I8P) value.
+   class(xml_file),       intent(in)    :: self      !< XML file.
+   integer(I4P),           intent(in)    :: id        !< Tag ID.
+   integer(I8P),          intent(inout) :: value     !< Value, unchanged on error.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Text to convert.
+   integer(I4P)                          :: iostat_   !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_    !< IO message, local variable.
+
+   call self%content_text(id=id, text=text, iostat=iostat_, iomsg=iomsg_)
+   if (iostat_==0) call to_value(text=text, value=value, iostat=iostat_, iomsg=iomsg_)
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg, &
+               context=' in the content of tag "'//self%name(id)//'"')
+   endsubroutine get_content_I8P
+
+   subroutine get_content_R4P(self, id, value, iostat, iomsg)
+   !< Get the content of the tag with ID *id* as a real(R4P) value.
+   class(xml_file),       intent(in)    :: self      !< XML file.
+   integer(I4P),           intent(in)    :: id        !< Tag ID.
+   real(R4P),             intent(inout) :: value     !< Value, unchanged on error.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Text to convert.
+   integer(I4P)                          :: iostat_   !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_    !< IO message, local variable.
+
+   call self%content_text(id=id, text=text, iostat=iostat_, iomsg=iomsg_)
+   if (iostat_==0) call to_value(text=text, value=value, iostat=iostat_, iomsg=iomsg_)
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg, &
+               context=' in the content of tag "'//self%name(id)//'"')
+   endsubroutine get_content_R4P
+
+   subroutine get_content_R8P(self, id, value, iostat, iomsg)
+   !< Get the content of the tag with ID *id* as a real(R8P) value.
+   class(xml_file),       intent(in)    :: self      !< XML file.
+   integer(I4P),           intent(in)    :: id        !< Tag ID.
+   real(R8P),             intent(inout) :: value     !< Value, unchanged on error.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Text to convert.
+   integer(I4P)                          :: iostat_   !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_    !< IO message, local variable.
+
+   call self%content_text(id=id, text=text, iostat=iostat_, iomsg=iomsg_)
+   if (iostat_==0) call to_value(text=text, value=value, iostat=iostat_, iomsg=iomsg_)
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg, &
+               context=' in the content of tag "'//self%name(id)//'"')
+   endsubroutine get_content_R8P
+
+   subroutine get_content_logical(self, id, value, iostat, iomsg)
+   !< Get the content of the tag with ID *id* as a logical value.
+   class(xml_file),       intent(in)    :: self      !< XML file.
+   integer(I4P),           intent(in)    :: id        !< Tag ID.
+   logical,               intent(inout) :: value     !< Value, unchanged on error.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Text to convert.
+   integer(I4P)                          :: iostat_   !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_    !< IO message, local variable.
+
+   call self%content_text(id=id, text=text, iostat=iostat_, iomsg=iomsg_)
+   if (iostat_==0) call to_value(text=text, value=value, iostat=iostat_, iomsg=iomsg_)
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg, &
+               context=' in the content of tag "'//self%name(id)//'"')
+   endsubroutine get_content_logical
+
+   subroutine get_content_I1P_1(self, id, values, iostat, iomsg)
+   !< Get the content of the tag with ID *id* as a list of integer(I1P) values (blank separated).
+   class(xml_file),       intent(in)    :: self      !< XML file.
+   integer(I4P),           intent(in)    :: id        !< Tag ID.
+   integer(I1P), allocatable, intent(out)   :: values(:) !< Values, empty on error.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Text to convert.
+   integer(I4P)                          :: iostat_   !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_    !< IO message, local variable.
+
+   call self%content_text(id=id, text=text, iostat=iostat_, iomsg=iomsg_)
+   if (iostat_==0) call to_values(text=text, values=values, iostat=iostat_, iomsg=iomsg_)
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg, &
+               context=' in the content of tag "'//self%name(id)//'"')
+   endsubroutine get_content_I1P_1
+
+   subroutine get_content_I2P_1(self, id, values, iostat, iomsg)
+   !< Get the content of the tag with ID *id* as a list of integer(I2P) values (blank separated).
+   class(xml_file),       intent(in)    :: self      !< XML file.
+   integer(I4P),           intent(in)    :: id        !< Tag ID.
+   integer(I2P), allocatable, intent(out)   :: values(:) !< Values, empty on error.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Text to convert.
+   integer(I4P)                          :: iostat_   !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_    !< IO message, local variable.
+
+   call self%content_text(id=id, text=text, iostat=iostat_, iomsg=iomsg_)
+   if (iostat_==0) call to_values(text=text, values=values, iostat=iostat_, iomsg=iomsg_)
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg, &
+               context=' in the content of tag "'//self%name(id)//'"')
+   endsubroutine get_content_I2P_1
+
+   subroutine get_content_I4P_1(self, id, values, iostat, iomsg)
+   !< Get the content of the tag with ID *id* as a list of integer(I4P) values (blank separated).
+   class(xml_file),       intent(in)    :: self      !< XML file.
+   integer(I4P),           intent(in)    :: id        !< Tag ID.
+   integer(I4P), allocatable, intent(out)   :: values(:) !< Values, empty on error.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Text to convert.
+   integer(I4P)                          :: iostat_   !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_    !< IO message, local variable.
+
+   call self%content_text(id=id, text=text, iostat=iostat_, iomsg=iomsg_)
+   if (iostat_==0) call to_values(text=text, values=values, iostat=iostat_, iomsg=iomsg_)
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg, &
+               context=' in the content of tag "'//self%name(id)//'"')
+   endsubroutine get_content_I4P_1
+
+   subroutine get_content_I8P_1(self, id, values, iostat, iomsg)
+   !< Get the content of the tag with ID *id* as a list of integer(I8P) values (blank separated).
+   class(xml_file),       intent(in)    :: self      !< XML file.
+   integer(I4P),           intent(in)    :: id        !< Tag ID.
+   integer(I8P), allocatable, intent(out)   :: values(:) !< Values, empty on error.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Text to convert.
+   integer(I4P)                          :: iostat_   !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_    !< IO message, local variable.
+
+   call self%content_text(id=id, text=text, iostat=iostat_, iomsg=iomsg_)
+   if (iostat_==0) call to_values(text=text, values=values, iostat=iostat_, iomsg=iomsg_)
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg, &
+               context=' in the content of tag "'//self%name(id)//'"')
+   endsubroutine get_content_I8P_1
+
+   subroutine get_content_R4P_1(self, id, values, iostat, iomsg)
+   !< Get the content of the tag with ID *id* as a list of real(R4P) values (blank separated).
+   class(xml_file),       intent(in)    :: self      !< XML file.
+   integer(I4P),           intent(in)    :: id        !< Tag ID.
+   real(R4P), allocatable, intent(out)   :: values(:) !< Values, empty on error.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Text to convert.
+   integer(I4P)                          :: iostat_   !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_    !< IO message, local variable.
+
+   call self%content_text(id=id, text=text, iostat=iostat_, iomsg=iomsg_)
+   if (iostat_==0) call to_values(text=text, values=values, iostat=iostat_, iomsg=iomsg_)
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg, &
+               context=' in the content of tag "'//self%name(id)//'"')
+   endsubroutine get_content_R4P_1
+
+   subroutine get_content_R8P_1(self, id, values, iostat, iomsg)
+   !< Get the content of the tag with ID *id* as a list of real(R8P) values (blank separated).
+   class(xml_file),       intent(in)    :: self      !< XML file.
+   integer(I4P),           intent(in)    :: id        !< Tag ID.
+   real(R8P), allocatable, intent(out)   :: values(:) !< Values, empty on error.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Text to convert.
+   integer(I4P)                          :: iostat_   !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_    !< IO message, local variable.
+
+   call self%content_text(id=id, text=text, iostat=iostat_, iomsg=iomsg_)
+   if (iostat_==0) call to_values(text=text, values=values, iostat=iostat_, iomsg=iomsg_)
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg, &
+               context=' in the content of tag "'//self%name(id)//'"')
+   endsubroutine get_content_R8P_1
 
    ! operators
    subroutine finalize(self)

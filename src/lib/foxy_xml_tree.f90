@@ -5,11 +5,13 @@ module foxy_xml_tree
 !< The tags are stored in document order (start tags order); each tag knows its ID (its index), its parent ID (0 for a
 !< root tag) and, once *tree_build_children* is called, its children IDs.
 use foxy_xml_tag, only : xml_tag
+use foxy_xml_values, only : XML_NOT_FOUND
 use penf
 
 implicit none
 private
 public :: tree_attribute
+public :: tree_attribute_text
 public :: tree_build_children
 public :: tree_children
 public :: tree_find_all
@@ -35,6 +37,31 @@ contains
       value = tag(id)%get_attribute(name=name)
    endif
    endfunction tree_attribute
+
+   pure subroutine tree_attribute_text(tag, nt, id, name, value, iostat, iomsg)
+   !< Return the value of the attribute named *name* of the tag with ID *id* (as *tree_attribute*); *iostat* is
+   !< *XML_NOT_FOUND* if the tag or the attribute does not exist.
+   type(xml_tag), allocatable,    intent(in)  :: tag(:) !< Tags.
+   integer(I4P),                  intent(in)  :: nt     !< Number of tags.
+   integer(I4P),                  intent(in)  :: id     !< Tag ID.
+   character(*),                  intent(in)  :: name   !< Attribute name.
+   character(len=:), allocatable, intent(out) :: value  !< Attribute value, empty if it does not exist.
+   integer(I4P),                  intent(out) :: iostat !< IO status.
+   character(len=:), allocatable, intent(out) :: iomsg  !< IO message.
+
+   iostat = 0
+   iomsg = ''
+   value = ''
+   if (id<1.or.id>nt) then
+      iostat = XML_NOT_FOUND
+      iomsg = 'no tag with ID '//trim(str(id, no_sign=id>=0))
+   elseif (.not.tag(id)%is_attribute_present(name=name)) then
+      iostat = XML_NOT_FOUND
+      iomsg = 'no attribute "'//name//'" in tag "'//tag(id)%name()//'"'
+   else
+      value = tag(id)%get_attribute(name=name)
+   endif
+   endsubroutine tree_attribute_text
 
    pure subroutine tree_build_children(tag, nt)
    !< Build the children IDs lists (in document order) of all tags from their parents IDs, in O(n).

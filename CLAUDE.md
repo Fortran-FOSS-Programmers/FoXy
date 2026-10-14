@@ -73,7 +73,7 @@ From `CONTRIBUTING.md`:
 
 ## Architecture
 
-Eight source modules, all in `src/lib/`:
+Nine source modules, all in `src/lib/`:
 
 ```
 foxy.f90          ← thin re-export wrapper (use this in user code)
@@ -84,6 +84,7 @@ foxy_xml_entities.f90 ← xml_escape/xml_unescape: character references; text_va
 foxy_xml_tree.f90 ← tree queries (find, find_all, children, attribute, build_children) over a tags array
 foxy_xml_tokenizer.f90 ← resumable tokenizer (xml_tokenizer%feed) driving an abstract xml_builder
 foxy_xml_writer.f90 ← xml_writer type: streaming writer to a file, a unit or memory (sticky errors)
+foxy_xml_values.f90 ← typed values: text to numbers/logicals (get_attribute/get_content), XML_NOT_FOUND, XML_BAD_VALUE
 ```
 
 **`xml_tag`** stores a single XML element: name, text content, `attribute(:,:)` (2-row array of name/value pairs),
@@ -110,6 +111,12 @@ There are **two parsers**:
   `foxy_test_index` checks the index against the DOM (tags, attributes, content) down to 1-character chunks.
 - `xml_tag%parse`/`search` — the older single-tag parser, still used by `xml_tag%get_content` (and so by
   `xml_file%content`) to look up nested tags by name.
+
+Typed accessors (`get_attribute`/`get_content` of `xml_file` and `xml_index`, generic over `I1P`…`I8P`, `R4P`, `R8P`,
+logical scalars and rank-1 allocatable numeric lists) share `foxy_xml_values`: one pass checks the token characters
+(rejecting what list-directed input would interpret: `,`, `/`, `r*`, quotes) and cuts the text in ~64 KiB segments at
+blanks, then one list-directed read per segment converts them. The specific procedures are boilerplate per kind: keep
+them in sync across kinds and across the two types.
 
 Stored text is the source text (so `stringify` round-trips); the read accessors (`content`, `attribute`, `get_attribute`)
 strip layout blanks and decode character references. Content may hold markup (nested tag as string), so it is never
