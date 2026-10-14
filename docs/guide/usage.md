@@ -252,6 +252,32 @@ val = xfile%content('a')   ! returns 'hello'
 `content(name)` returns the content of the **first** tag named `name` anywhere in the document. When the same name
 appears under different parents, look tags up by path or parent and read them by ID.
 
+### Typed values: numbers and logicals
+
+Attributes and contents are read as numbers or logicals with `get_attribute` and `get_content`, scalars or blank
+separated lists; a missing tag or attribute and a malformed value are reported by `iostat`:
+
+```fortran
+use foxy, only: I4P, R8P, xml_file, XML_NOT_FOUND
+integer(I4P)              :: id, n, iostat
+integer(I4P), allocatable :: extent(:)
+real(R8P),    allocatable :: points(:)
+logical                   :: is_on
+character(len=256)        :: iomsg
+
+! <Piece NumberOfPoints="27" Extent="0 2 0 2 0 2"> <DataArray format="ascii">0 0 0 1 0 0 ...</DataArray>
+id = xfile%find(name='Piece')
+call xfile%get_attribute(id=id, name='NumberOfPoints', value=n, iostat=iostat, iomsg=iomsg)
+call xfile%get_attribute(id=id, name='Extent', values=extent)           ! [0, 2, 0, 2, 0, 2]
+call xfile%get_content(id=xfile%find(path='Piece/Points/DataArray'), values=points)
+is_on = .false.                                                         ! default, kept if missing or malformed
+call xfile%get_attribute(id=id, name='Active', value=is_on, iostat=iostat)
+if (iostat==XML_NOT_FOUND) print *, 'Active not set'
+```
+
+Integers accept digits and signs only, reals also `.`, exponents and `NaN`/`Inf`; separators such as `,` and repeat
+counts (`2*5`) are rejected. Logicals are `true`, `false`, `1`, `0`.
+
 ### Find tags by path, parent, or name
 
 Tags are identified by an integer ID (their index in the document, `0` meaning the document root):
@@ -330,6 +356,7 @@ call idx%scan(filename='mesh.vtu', stop_at='AppendedData', iostat=iostat, iomsg=
 id = idx%find(path='Piece/Points/DataArray')
 print *, idx%attribute(id=id, name='type')    ! e.g. 'Float64'
 val = idx%content(id=id)                      ! the data, read now from the file
+call idx%get_content(id=id, values=points)    ! or as numbers (see typed values)
 call idx%text_range(id=id, first=first, last=last) ! or their byte range, to read them yourself
 print *, idx%stop_position()                  ! first byte after <AppendedData ...>: the raw data follow
 ```

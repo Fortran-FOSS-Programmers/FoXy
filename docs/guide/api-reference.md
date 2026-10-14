@@ -9,6 +9,7 @@ FoXy exposes four public types and the PENF kind parameters through the `foxy` w
 ```fortran
 use foxy, only: xml_tag, xml_file, xml_index, xml_writer
 use foxy, only: I1P, I2P, I4P, I8P, R4P, R8P  ! PENF kinds
+use foxy, only: XML_MALFORMED, XML_NOT_FOUND, XML_BAD_VALUE  ! iostat values
 ```
 
 ## Module dependency graph
@@ -29,6 +30,10 @@ graph LR
   foxy_xml_file["foxy_xml_file"] --> foxy_xml_tag["foxy_xml_tag"]
   foxy_xml_file["foxy_xml_file"] --> foxy_xml_entities["foxy_xml_entities"]
   foxy_xml_tree["foxy_xml_tree"] --> foxy_xml_tag["foxy_xml_tag"]
+  foxy_xml_tree["foxy_xml_tree"] --> foxy_xml_values["foxy_xml_values"]
+  foxy_xml_file["foxy_xml_file"] --> foxy_xml_values["foxy_xml_values"]
+  foxy_xml_index["foxy_xml_index"] --> foxy_xml_values["foxy_xml_values"]
+  foxy_xml_values["foxy_xml_values"] --> foxy_xml_entities["foxy_xml_entities"]
   foxy_xml_tokenizer["foxy_xml_tokenizer"] --> penf["penf"]
   foxy_xml_tag["foxy_xml_tag"] --> foxy_xml_entities["foxy_xml_entities"]
   foxy_xml_entities["foxy_xml_entities"] --> penf["penf"]
@@ -106,12 +111,31 @@ Defined in `src/lib/foxy_xml_file.f90`. Holds a flat `tag(:)` array with hierarc
 | `xfile%find_all([name=], [path=], [parent=])` | Return the IDs of all matching tags, in document order |
 | `xfile%children(id)` | Return the IDs of the direct children of tag `id` (`0`: root tags) |
 | `xfile%attribute(id, name)` | Return the value of attribute `name` of tag `id`, as `get_attribute`, `''` if not defined |
+| `xfile%get_attribute(id, name, value, [iostat=], [iomsg=])` | Get attribute `name` of tag `id` as a number or a logical: `value` integer (`I1P`…`I8P`), real (`R4P`, `R8P`) or logical (`true`/`false`/`1`/`0`), unchanged on error; or `values=`, an allocatable rank-1 integer or real array, the blank-separated list (`"0 10 0 10 0 0"`), empty on error. See [typed values](#typed-values) |
+| `xfile%get_content(id, value, [iostat=], [iomsg=])` | Get the content of tag `id` (as `content(id=)`) as a number, a logical or (`values=`) a list, as `get_attribute` |
 | `xfile%name(id)` / `xfile%parent(id)` / `xfile%level(id)` | Return the name (`''`), parent ID and level (1 for a root tag) of tag `id` (`0` if it does not exist) |
 | `xfile%add_tag(tag)` | Append a root tag to the DOM (its ID is its index) |
 | `xfile%delete_tag(name)` | Remove first tag named `name` with its whole subtree; remaining IDs are renumbered |
 | `xfile%free()` | Deallocate all data |
 
 `XML_MALFORMED` (`9001`) is a public constant of `foxy_xml_file`, re-exported by `foxy`.
+
+### Typed values
+
+`get_attribute` and `get_content` (of `xml_file` and `xml_index`) convert a text holding blank-separated (space, tab,
+new line) tokens. The `iostat` values, public constants of `foxy_xml_values` re-exported by `foxy`, are:
+
+| `iostat` | Meaning |
+|----------|---------|
+| `0` | Converted |
+| `XML_NOT_FOUND` (`9002`) | The tag (`id` out of range) or the attribute does not exist |
+| `XML_BAD_VALUE` (`9003`) | Not a value of the requested type: a character not allowed in a token, a token not converted (e.g. out of range for the integer kind), or not exactly one token for a scalar; `iomsg` quotes the token and names the attribute or tag |
+| other | `xml_index%get_content` only: the runtime I/O error reading the file |
+
+The tokens are checked against the characters of the type (integers: digits and signs; reals: also `.`, exponent
+letters `eEdD`, and `NaN`/`Inf`/`Infinity`), then converted by Fortran list-directed input: separators such as `,` or
+`/` and repeat counts (`2*5`) are rejected, not interpreted. A real out of range reads as an infinity. Without
+`iostat`, errors are silent: the scalar keeps its value (a default), the list is empty.
 
 ---
 
@@ -125,6 +149,7 @@ file. Positions are 1-based byte offsets (`integer(I8P)`).
 |--------|-------------|
 | `idx%scan(filename, [stop_at=], [chunk_size=], [iostat=], [iomsg=], [sanitize_attributes_value=])` | Index a file, read in chunks (default 64 KiB); with `stop_at` the scan stops after the start tag of the first tag with that name (e.g. `AppendedData`, before raw binary data); errors as `xfile%parse` |
 | `idx%find(...)`, `idx%find_all(...)`, `idx%children(id)`, `idx%attribute(id, name)`, `idx%name(id)`, `idx%parent(id)`, `idx%level(id)` | The `xml_file` queries, same arguments and results |
+| `idx%get_attribute(...)`, `idx%get_content(...)` | The `xml_file` [typed values](#typed-values); `get_content` reads the content from the file |
 | `idx%content(id, [iostat=], [iomsg=])` | Read the content of tag `id` from the file, as `xfile%content(id=)`; `''` for a self-closing or unclosed tag |
 | `idx%text_range(id, first, last)` | Byte range of the text of tag `id` (up to its first child); `last < first` if empty |
 | `idx%content_range(id, first, last)` | Byte range of the whole content of tag `id` (children included) |
