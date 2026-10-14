@@ -230,6 +230,7 @@ val = xfile%attribute(id=id, name='publicID')     ! 'm1', '' if not defined
 ids = xfile%find_all(name='value')                ! all matches, in document order
 ids = xfile%find_all(name='mag', parent=id)       ! only direct children of tag `id`
 ids = xfile%children(id)                          ! direct children IDs; children(0) are the root tags
+val = xfile%name(id)                              ! 'magnitude'; xfile%parent(id), xfile%level(id) (1: root tag)
 ```
 
 When a path segment matches several tags (e.g. many `origin` tags), all of them are explored, so
@@ -271,6 +272,29 @@ a_tag = xml_tag(name='note', content=xml_escape('a < b & c'))  ! <note>a &lt; b 
 print *, xfile%stringify(linearize=.true.)
 ! prints each tag's internal fields (name, attributes, level, id, parent_id, …)
 ```
+
+### Large files: the index
+
+`xml_index` scans a file and keeps only its tags (names, attributes, hierarchy, positions), reading the content of a
+tag from the file only when asked: the memory used does not depend on the data in the file. The queries are the same as
+`xml_file`.
+
+```fortran
+use foxy, only: I4P, I8P, xml_index
+type(xml_index) :: idx
+integer(I4P)    :: id
+integer(I8P)    :: first, last
+
+call idx%scan(filename='mesh.vtu', stop_at='AppendedData', iostat=iostat, iomsg=iomsg)
+id = idx%find(path='Piece/Points/DataArray')
+print *, idx%attribute(id=id, name='type')    ! e.g. 'Float64'
+val = idx%content(id=id)                      ! the data, read now from the file
+call idx%text_range(id=id, first=first, last=last) ! or their byte range, to read them yourself
+print *, idx%stop_position()                  ! first byte after <AppendedData ...>: the raw data follow
+```
+
+`stop_at` ends the scan after the start tag of the first tag with that name: the raw binary data that VTK files append
+after `<AppendedData encoding="raw">` are never read as XML.
 
 ---
 

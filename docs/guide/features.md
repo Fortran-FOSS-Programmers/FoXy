@@ -21,6 +21,7 @@ title: Features
 - [x] Attribute values normalized on read: literal tabs and new lines become spaces
   - [x] Leading/trailing spaces trimmed when parsed (default), or kept with `parse(..., sanitize_attributes_value=.false.)`
 - [x] DOM queries by name, `/`-separated path or parent, tags and attributes read by ID
+- [x] Index of large files (`xml_index`): tags without content, content read on demand, scan stopped before raw data
 - [x] Malformed input and file errors reported through optional `iostat`/`iomsg` (first problem, with its line),
   parsing stays tolerant
 

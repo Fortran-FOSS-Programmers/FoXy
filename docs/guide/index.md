@@ -12,7 +12,7 @@ Modern Fortran standards (2003+) introduced better support for string manipulati
 
 - **Pure Fortran** — no C bindings, no `ISO_C_BINDING`, no wrappers
 - **Fortran 2008+ standard compliant**
-- **OOP designed** — two clean classes: `xml_tag` and `xml_file`
+- **OOP designed** — three classes: `xml_tag`, `xml_file` (DOM) and `xml_index` (large files, content on demand)
 - **FOSS** — multi-licensed (GPL v3 for open-source, BSD 2/3-Clause and MIT for commercial use)
 
 ## Why FoXy?

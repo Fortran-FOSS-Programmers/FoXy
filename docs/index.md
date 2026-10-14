@@ -31,7 +31,7 @@ features:
     details: Build with fpm (recommended), FoBiS.py, or CMake. Integrate into your fpm project with a single dependency entry.
   - icon: 🧪
     title: OOP / TDD Designed
-    details: Two clean types — xml_tag and xml_file — expose all functionality as type-bound procedures, backed by 11 focused automated tests.
+    details: Three types — xml_tag, xml_file and xml_index — expose all functionality as type-bound procedures, backed by focused automated tests.
   - icon: 🆓
     title: Free & Open Source
     details: Multi-licensed — GPLv3 for FOSS projects, BSD 2/3-Clause or MIT for commercial use. Fortran 2008+ standard compliant.

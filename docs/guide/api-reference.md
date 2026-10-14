@@ -4,10 +4,10 @@ title: API Reference Overview
 
 # API Reference Overview
 
-FoXy exposes two public types and the PENF kind parameters through the `foxy` wrapper module.
+FoXy exposes three public types and the PENF kind parameters through the `foxy` wrapper module.
 
 ```fortran
-use foxy, only: xml_tag, xml_file
+use foxy, only: xml_tag, xml_file, xml_index
 use foxy, only: I1P, I2P, I4P, I8P, R4P, R8P  ! PENF kinds
 ```
 
@@ -16,10 +16,18 @@ use foxy, only: I1P, I2P, I4P, I8P, R4P, R8P  ! PENF kinds
 ```mermaid
 graph LR
   foxy["foxy"] --> foxy_xml_file["foxy_xml_file"]
+  foxy["foxy"] --> foxy_xml_index["foxy_xml_index"]
   foxy["foxy"] --> foxy_xml_tag["foxy_xml_tag"]
   foxy["foxy"] --> foxy_xml_entities["foxy_xml_entities"]
+  foxy_xml_index["foxy_xml_index"] --> foxy_xml_file["foxy_xml_file"]
+  foxy_xml_index["foxy_xml_index"] --> foxy_xml_tokenizer["foxy_xml_tokenizer"]
+  foxy_xml_index["foxy_xml_index"] --> foxy_xml_tree["foxy_xml_tree"]
+  foxy_xml_file["foxy_xml_file"] --> foxy_xml_tokenizer["foxy_xml_tokenizer"]
+  foxy_xml_file["foxy_xml_file"] --> foxy_xml_tree["foxy_xml_tree"]
   foxy_xml_file["foxy_xml_file"] --> foxy_xml_tag["foxy_xml_tag"]
   foxy_xml_file["foxy_xml_file"] --> foxy_xml_entities["foxy_xml_entities"]
+  foxy_xml_tree["foxy_xml_tree"] --> foxy_xml_tag["foxy_xml_tag"]
+  foxy_xml_tokenizer["foxy_xml_tokenizer"] --> penf["penf"]
   foxy_xml_tag["foxy_xml_tag"] --> foxy_xml_entities["foxy_xml_entities"]
   foxy_xml_entities["foxy_xml_entities"] --> penf["penf"]
   foxy_xml_tag["foxy_xml_tag"] --> penf["penf"]
@@ -96,11 +104,30 @@ Defined in `src/lib/foxy_xml_file.f90`. Holds a flat `tag(:)` array with hierarc
 | `xfile%find_all([name=], [path=], [parent=])` | Return the IDs of all matching tags, in document order |
 | `xfile%children(id)` | Return the IDs of the direct children of tag `id` (`0`: root tags) |
 | `xfile%attribute(id, name)` | Return the value of attribute `name` of tag `id`, as `get_attribute`, `''` if not defined |
+| `xfile%name(id)` / `xfile%parent(id)` / `xfile%level(id)` | Return the name (`''`), parent ID and level (1 for a root tag) of tag `id` (`0` if it does not exist) |
 | `xfile%add_tag(tag)` | Append a root tag to the DOM (its ID is its index) |
 | `xfile%delete_tag(name)` | Remove first tag named `name` with its whole subtree; remaining IDs are renumbered |
 | `xfile%free()` | Deallocate all data |
 
 `XML_MALFORMED` (`9001`) is a public constant of `foxy_xml_file`, re-exported by `foxy`.
+
+---
+
+## `xml_index` — index of a file, content on demand
+
+Defined in `src/lib/foxy_xml_index.f90`. Holds the tags of a file (name, attributes, hierarchy, positions in the file)
+without their content, which is read from the file on demand: the memory used does not depend on the data held in the
+file. Positions are 1-based byte offsets (`integer(I8P)`).
+
+| Method | Description |
+|--------|-------------|
+| `idx%scan(filename, [stop_at=], [chunk_size=], [iostat=], [iomsg=], [sanitize_attributes_value=])` | Index a file, read in chunks (default 64 KiB); with `stop_at` the scan stops after the start tag of the first tag with that name (e.g. `AppendedData`, before raw binary data); errors as `xfile%parse` |
+| `idx%find(...)`, `idx%find_all(...)`, `idx%children(id)`, `idx%attribute(id, name)`, `idx%name(id)`, `idx%parent(id)`, `idx%level(id)` | The `xml_file` queries, same arguments and results |
+| `idx%content(id, [iostat=], [iomsg=])` | Read the content of tag `id` from the file, as `xfile%content(id=)`; `''` for a self-closing or unclosed tag |
+| `idx%text_range(id, first, last)` | Byte range of the text of tag `id` (up to its first child); `last < first` if empty |
+| `idx%content_range(id, first, last)` | Byte range of the whole content of tag `id` (children included) |
+| `idx%stop_position()` | Byte position after the `stop_at` start tag, `0` if the scan did not stop |
+| `idx%free()` | Deallocate all data |
 
 ---
 

@@ -11,7 +11,7 @@
 
 | 📄 **Parse XML**<br>From string or file into a linearised DOM with full hierarchy tracking; nested and repeated same-name tags supported | 🏗️ **Programmatic creation**<br>Build tags with attributes, text content, and nesting; emit to string or write atomically to a file unit | ✏️ **Flexible emission**<br>Self-closing tags, indentation control, partial emission — start tag, content, and end tag separately | 🔧 **Manipulation**<br>Add and delete tags and attributes by name |
 |:---:|:---:|:---:|:---:|
-| 🎯 **OOP design**<br>Two clean types — `xml_tag` and `xml_file` — all functionality as type-bound procedures | 🔒 **Pure Fortran**<br>No C bindings, no wrappers — pure Fortran 2008+ with `implicit none` throughout | 🔓 **Multi-licensed**<br>GPL v3 · BSD 2/3-Clause · MIT | 📦 **Multiple build systems**<br>fpm, FoBiS.py, CMake |
+| 🎯 **OOP design**<br>Three types — `xml_tag`, `xml_file` and `xml_index` — all functionality as type-bound procedures | 🔒 **Pure Fortran**<br>No C bindings, no wrappers — pure Fortran 2008+ with `implicit none` throughout | 🔓 **Multi-licensed**<br>GPL v3 · BSD 2/3-Clause · MIT | 📦 **Multiple build systems**<br>fpm, FoBiS.py, CMake |
 
 >#### [Documentation](https://Fortran-FOSS-Programmers.github.io/FoXy/)
 > For full (guide, API reference, examples, etc...) see the [FoXy website](https://Fortran-FOSS-Programmers.github.io/FoXy/).
