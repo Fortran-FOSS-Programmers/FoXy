@@ -19,6 +19,8 @@ modes = tests-gnu
         tests-gnu-debug
         tests-intel
         tests-intel-debug
+        benchmark-gnu
+        benchmark-gnu-profile
 
 [common-variables]
 $CSHARED_GNU = -DGNU -cpp -c -fPIC -frealloc-lhs
@@ -29,6 +31,8 @@ $CSTATIC_INT = -cpp -c -assume realloc_lhs
 $DEBUG_GNU   = -DGNU -O0 -g3 -Warray-bounds -Wcharacter-truncation -Wline-truncation -Wimplicit-interface -Wimplicit-procedure -Wunderflow -fmodule-private -ffree-line-length-132 -fimplicit-none -fbacktrace -fdump-core -finit-real=nan -std=f2018 -fall-intrinsics
 $DEBUG_INT   = -O0 -debug all -check all -warn all -extend-source 132 -traceback -gen-interfaces#-fpe-all=0 -fp-stack-check -fstack-protector-all -ftrapuv -no-ftz -std08
 $OPTIMIZE    = -O2
+$PROFILE     = -pg
+$BENCHSRC    = ./src/lib/ ./src/third_party/ ./benchmarks/
 $EXDIRS      = BeFoR64/src/tests/ FACE/src/tests/ PENF/src/tests/ StringiFor/src/tests/ BeFoR64/docs/ FACE/docs/ PENF/docs/ PENF/scripts/ StringiFor/docs/
 
 # main modes
@@ -49,6 +53,19 @@ build_dir = exe
 [tests-intel-debug]
 template  = template-static-intel-debug
 build_dir = exe
+
+# benchmarks (out of src/: never built as tests); usage in benchmarks/foxy_benchmark_parse.f90
+[benchmark-gnu]
+template  = template-static-gnu
+build_dir = exe/benchmarks
+src       = $BENCHSRC
+
+[benchmark-gnu-profile]
+template  = template-static-gnu
+build_dir = exe/benchmarks-profile
+src       = $BENCHSRC
+cflags    = $CSTATIC_GNU $OPTIMIZE $PROFILE
+lflags    = $OPTIMIZE $PROFILE
 
 #templates
 [template-static-gnu]
