@@ -149,6 +149,7 @@ nothing) and `close` always reports them; a misuse is `XML_MALFORMED`.
 | `w%raw(string, [is_block=])` | Characters as they are (data, base64); in pieces with many calls; `is_block=.true.` on its own indented line |
 | `w%cdata(string)`, `w%comment(string)`, `w%pi(target, [string])` | CDATA section (`]]>` split), comment (no `--`), processing instruction |
 | `w%end([name])` | Close the innermost element (self-closing if empty); `name` is checked against it |
+| `w%flush()` | Complete the pending start tag (a new line follows) to write directly to the unit, e.g. binary data; the end tag then goes on its own line |
 | `w%close([iostat=], [iomsg=])` | Close all the open elements and the writer |
 | `w%string()` | Content of the memory target |
 

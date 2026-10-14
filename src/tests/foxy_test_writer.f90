@@ -36,7 +36,7 @@ integer                       :: unit               !< File unit.
 integer                       :: tmp_dir_len        !< Length of the TMPDIR environment variable.
 integer                       :: status             !< Status of the environment variable query.
 integer                       :: p                  !< Counter.
-logical                       :: test_passed(14)    !< List of passed tests.
+logical                       :: test_passed(15)    !< List of passed tests.
 
 test_passed = .false.
 
@@ -146,6 +146,21 @@ enddo
 call writer%close(iostat=iostat)
 test_passed(14) = iostat==0.and.len(file_content(filename))==64*1048576+len('<data></data>'//NL)
 print "(A,L1)", 'Is a large payload written in pieces? ', test_passed(14)
+
+! flush: the pending start tag is completed, the caller writes directly to the unit (e.g. binary data)
+open(newunit=unit, file=filename, access='STREAM', form='UNFORMATTED', status='REPLACE')
+call writer%open(unit=unit)
+call writer%start('V')
+call writer%start('AppendedData')
+call writer%attribute('encoding', 'raw')
+call writer%flush()
+write(unit) '_'//achar(0)//achar(255)//NL
+call writer%end('AppendedData')
+call writer%close(iostat=iostat)
+close(unit)
+test_passed(15) = iostat==0.and.file_content(filename)=='<V>'//NL//'  <AppendedData encoding="raw">'//NL// &
+                  '_'//achar(0)//achar(255)//NL//'  </AppendedData>'//NL//'</V>'//NL
+print "(A,L1)", 'Is the pending start tag flushed for direct writes? ', test_passed(15)
 
 open(newunit=unit, file=filename, status='OLD')
 close(unit, status='DELETE')

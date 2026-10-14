@@ -63,6 +63,7 @@ type :: xml_writer
       procedure, pass(self) :: comment                !< Write a comment.
       procedure, pass(self) :: declaration            !< Write the XML declaration.
       procedure, pass(self) :: end                    !< Close the innermost open element.
+      procedure, pass(self) :: flush                  !< Complete the pending start tag, for direct writes to the unit.
       procedure, pass(self) :: open                   !< Open the writer on a file, a unit or memory.
       procedure, pass(self) :: pi                     !< Write a processing instruction.
       procedure, pass(self) :: raw                    !< Write characters as they are.
@@ -206,6 +207,19 @@ contains
    endif
    call self%report(iostat=iostat, iomsg=iomsg)
    endsubroutine end
+
+   subroutine flush(self, iostat, iomsg)
+   !< Complete the pending start tag of the innermost element as for block content (a new line follows), so that the
+   !< caller can write directly to the unit (e.g. binary data); the element end tag is then written on its own line.
+   class(xml_writer),      intent(inout) :: self   !< XML writer.
+   integer(I4P), optional, intent(out)   :: iostat !< IO status.
+   character(*), optional, intent(inout) :: iomsg  !< IO message.
+
+   if (self%is_writable()) then
+      if (allocated(self%pending)) call self%flush_pending
+   endif
+   call self%report(iostat=iostat, iomsg=iomsg)
+   endsubroutine flush
 
    subroutine open(self, filename, unit, indent, iostat, iomsg)
    !< Open the writer: on a file (created, replaced if it exists), on a unit (already open for stream unformatted access,
