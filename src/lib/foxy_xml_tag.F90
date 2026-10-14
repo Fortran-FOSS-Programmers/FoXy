@@ -365,6 +365,7 @@ contains
    character(len=:), allocatable         :: c2      !< Dummy string for parsing file.
    integer(I4P)                          :: c       !< Counter.
    integer(I4P)                          :: s       !< Counter.
+   logical                               :: is_tag_start !< Flag for a start tag at the current character.
 
    call self%tag_name%free
    tstartd = 0
@@ -372,7 +373,10 @@ contains
    c = 1
    Tag_Search: do while(c<=len(source))
       c1 = source(c:c)
-      if (c1=='<'.and.source(c+1:c+1)/='/') then
+      ! .and. does not short-circuit: guard the look-ahead, source(c+1:c+1) is out of bounds at the last character
+      is_tag_start = .false.
+      if (c1=='<'.and.c<len(source)) is_tag_start = source(c+1:c+1)/='/'
+      if (is_tag_start) then
          tstartd = c
          c2 = c1
          Tag_Name: do while(c<len(source))
