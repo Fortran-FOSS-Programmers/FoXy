@@ -1163,7 +1163,7 @@ contains
    endsubroutine finalize
 
    ! dom_builder methods
-   subroutine dom_start_tag(self, id, parent_id, level, name, start)
+   pure subroutine dom_start_tag(self, id, parent_id, level, name, start)
    !< A start tag begins: the text so far ends, a new tag is added.
    class(dom_builder), intent(inout) :: self      !< DOM builder.
    integer(I4P),       intent(in)    :: id        !< Tag ID (start tags count).
@@ -1181,7 +1181,7 @@ contains
    call self%doc%tag(self%doc%nt)%set(name=name, id=self%doc%nt, level=level, indent=(level-1)*2, parent_id=parent_id)
    endsubroutine dom_start_tag
 
-   subroutine dom_attribute(self, id, name, value)
+   pure subroutine dom_attribute(self, id, name, value)
    !< An attribute of the current start tag.
    class(dom_builder), intent(inout) :: self  !< DOM builder.
    integer(I4P),       intent(in)    :: id    !< Tag ID.
@@ -1191,7 +1191,7 @@ contains
    call self%doc%tag(id)%set(attribute_name=name, attribute_value=value, sanitize_attributes_value=self%sanitize)
    endsubroutine dom_attribute
 
-   subroutine dom_start_tag_end(self, id, start, open_end, is_self_closing)
+   pure subroutine dom_start_tag_end(self, id, start, open_end, is_self_closing)
    !< The current start tag is complete: the following character data are its text (its tail if self closing).
    class(dom_builder), intent(inout) :: self            !< DOM builder.
    integer(I4P),       intent(in)    :: id              !< Tag ID.
@@ -1208,7 +1208,7 @@ contains
    self%is_tail = is_self_closing
    endsubroutine dom_start_tag_end
 
-   subroutine dom_end_tag(self, id, start, open_end, end_start, end_end)
+   pure subroutine dom_end_tag(self, id, start, open_end, end_start, end_end)
    !< An open tag is closed: the text so far ends, the following character data are its tail.
    class(dom_builder), intent(inout) :: self      !< DOM builder.
    integer(I4P),       intent(in)    :: id        !< Tag ID.
@@ -1223,7 +1223,7 @@ contains
    self%is_tail = .true.
    endsubroutine dom_end_tag
 
-   subroutine dom_data(self, kind, chars, first)
+   pure subroutine dom_data(self, kind, chars, first)
    !< Character data or other markup: part of the prolog before the first tag, of the owner text afterwards (CDATA,
    !< comments and PIs included, declarations and ignored markup excluded).
    class(dom_builder), intent(inout) :: self  !< DOM builder.
@@ -1235,7 +1235,7 @@ contains
    if (self%owner>0.and.kind>=DATA_TEXT.and.kind<=DATA_PI) call append(buffer=self%text, n=self%text_n, piece=chars)
    endsubroutine dom_data
 
-   subroutine dom_problem(self, pos, message)
+   pure subroutine dom_problem(self, pos, message)
    !< A problem of malformed input: only the first one is kept.
    class(dom_builder), intent(inout) :: self    !< DOM builder.
    integer(I8P),       intent(in)    :: pos     !< Position of the problem.
@@ -1246,7 +1246,7 @@ contains
    self%problem_pos = pos
    endsubroutine dom_problem
 
-   subroutine dom_finish(self)
+   pure subroutine dom_finish(self)
    !< Complete the DOM at the source end: store the last character data, build the children lists.
    class(dom_builder), intent(inout) :: self !< DOM builder.
 
@@ -1254,7 +1254,7 @@ contains
    call tree_build_children(tag=self%doc%tag, nt=self%doc%nt)
    endsubroutine dom_finish
 
-   subroutine dom_flush(self, is_parent)
+   pure subroutine dom_flush(self, is_parent)
    !< Store the current character data into its owner tag, if any, and reset them.
    class(dom_builder), intent(inout) :: self      !< DOM builder.
    logical,            intent(in)    :: is_parent !< The text ends because the owner first child starts.

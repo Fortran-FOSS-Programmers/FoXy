@@ -868,7 +868,7 @@ contains
    endsubroutine get_content_R8P_1
 
    ! index_builder methods
-   subroutine index_start_tag(self, id, parent_id, level, name, start)
+   pure subroutine index_start_tag(self, id, parent_id, level, name, start)
    !< A start tag begins: a new tag is added.
    class(index_builder), intent(inout) :: self          !< Index builder.
    integer(I4P),         intent(in)    :: id            !< Tag ID (start tags count).
@@ -894,7 +894,7 @@ contains
                               pos=[start, 0_I8P, 0_I8P])
    endsubroutine index_start_tag
 
-   subroutine index_attribute(self, id, name, value)
+   pure subroutine index_attribute(self, id, name, value)
    !< An attribute of the current start tag.
    class(index_builder), intent(inout) :: self  !< Index builder.
    integer(I4P),         intent(in)    :: id    !< Tag ID.
@@ -904,7 +904,7 @@ contains
    call self%tag(id)%set(attribute_name=name, attribute_value=value, sanitize_attributes_value=self%sanitize)
    endsubroutine index_attribute
 
-   subroutine index_start_tag_end(self, id, start, open_end, is_self_closing)
+   pure subroutine index_start_tag_end(self, id, start, open_end, is_self_closing)
    !< The current start tag is complete; the scan stops here if the tag is the *stop_at* one.
    class(index_builder), intent(inout) :: self            !< Index builder.
    integer(I4P),         intent(in)    :: id              !< Tag ID.
@@ -926,7 +926,7 @@ contains
    endif
    endsubroutine index_start_tag_end
 
-   subroutine index_end_tag(self, id, start, open_end, end_start, end_end)
+   pure subroutine index_end_tag(self, id, start, open_end, end_start, end_end)
    !< An open tag is closed by its end tag.
    class(index_builder), intent(inout) :: self      !< Index builder.
    integer(I4P),         intent(in)    :: id        !< Tag ID.
@@ -939,7 +939,7 @@ contains
    self%last(id) = end_end
    endsubroutine index_end_tag
 
-   subroutine index_data(self, kind, chars, first)
+   pure subroutine index_data(self, kind, chars, first)
    !< Character data or other markup: not stored (the content is read on demand).
    class(index_builder), intent(inout) :: self  !< Index builder.
    integer(I4P),         intent(in)    :: kind  !< Data kind, DATA_*.
@@ -947,7 +947,7 @@ contains
    integer(I8P),         intent(in)    :: first !< Position of the first character.
    endsubroutine index_data
 
-   subroutine index_problem(self, pos, message)
+   pure subroutine index_problem(self, pos, message)
    !< A problem of malformed input: only the first one is kept.
    class(index_builder), intent(inout) :: self    !< Index builder.
    integer(I8P),         intent(in)    :: pos     !< Position of the problem.

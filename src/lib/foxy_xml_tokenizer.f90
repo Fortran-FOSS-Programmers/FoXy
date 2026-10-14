@@ -47,7 +47,7 @@ type, abstract :: xml_builder
 endtype xml_builder
 
 abstract interface
-   subroutine start_tag_interface(self, id, parent_id, level, name, start)
+   pure subroutine start_tag_interface(self, id, parent_id, level, name, start)
    !< A start tag begins: its attributes follow, then *start_tag_end* if it is complete.
    import :: xml_builder, I4P, I8P
    class(xml_builder), intent(inout) :: self      !< Builder.
@@ -58,7 +58,7 @@ abstract interface
    integer(I8P),       intent(in)    :: start     !< Position of `<`.
    endsubroutine start_tag_interface
 
-   subroutine attribute_interface(self, id, name, value)
+   pure subroutine attribute_interface(self, id, name, value)
    !< An attribute of the current start tag; the value is as in the source, with `"` escaped (values are double quoted).
    import :: xml_builder, I4P
    class(xml_builder), intent(inout) :: self  !< Builder.
@@ -67,7 +67,7 @@ abstract interface
    character(*),       intent(in)    :: value !< Attribute value.
    endsubroutine attribute_interface
 
-   subroutine start_tag_end_interface(self, id, start, open_end, is_self_closing)
+   pure subroutine start_tag_end_interface(self, id, start, open_end, is_self_closing)
    !< The current start tag is complete.
    import :: xml_builder, I4P, I8P
    class(xml_builder), intent(inout) :: self            !< Builder.
@@ -77,7 +77,7 @@ abstract interface
    logical,            intent(in)    :: is_self_closing !< The tag is self closing.
    endsubroutine start_tag_end_interface
 
-   subroutine end_tag_interface(self, id, start, open_end, end_start, end_end)
+   pure subroutine end_tag_interface(self, id, start, open_end, end_start, end_end)
    !< An open tag is closed by its end tag (its inner open tags, if any, are closed implicitly).
    import :: xml_builder, I4P, I8P
    class(xml_builder), intent(inout) :: self      !< Builder.
@@ -88,7 +88,7 @@ abstract interface
    integer(I8P),       intent(in)    :: end_end   !< Position of the end tag `>`.
    endsubroutine end_tag_interface
 
-   subroutine data_interface(self, kind, chars, first)
+   pure subroutine data_interface(self, kind, chars, first)
    !< Character data or other markup (see the DATA_* kinds), possibly a piece of it.
    import :: xml_builder, I4P, I8P
    class(xml_builder), intent(inout) :: self  !< Builder.
@@ -97,7 +97,7 @@ abstract interface
    integer(I8P),       intent(in)    :: first !< Position of the first character.
    endsubroutine data_interface
 
-   subroutine problem_interface(self, pos, message)
+   pure subroutine problem_interface(self, pos, message)
    !< A problem of malformed input.
    import :: xml_builder, I8P
    class(xml_builder), intent(inout) :: self    !< Builder.
@@ -135,7 +135,7 @@ type :: xml_tokenizer
 endtype xml_tokenizer
 
 contains
-   subroutine feed(self, chars, offset, is_last, builder, consumed)
+   pure subroutine feed(self, chars, offset, is_last, builder, consumed)
    !< Feed a piece of the source: tokenize its complete tokens, reporting them to the builder.
    !<
    !< @note The characters not consumed (an incomplete token at the end of the piece) must be passed again, followed by
@@ -161,6 +161,7 @@ contains
    integer(I4P)                        :: a               !< Counter.
    logical                             :: is_self_closing !< Self closing tag flag.
    logical                             :: is_terminated   !< Terminated start tag flag.
+   logical                             :: is_closed       !< The comment, CDATA section or PI is closed.
 
    n = len(chars, kind=I8P)
    if (self%is_done) then
@@ -172,8 +173,9 @@ contains
    do while (pos<=n)
       if (self%open_kind>0) then
          ! a comment, CDATA section or PI continuing from the previous piece
-         if (.not.is_markup_closed(self=self, chars=chars, offset=offset, from=pos, search_from=pos, is_last=is_last, &
-                                   builder=builder, pos=pos)) exit
+         call report_markup(self=self, chars=chars, offset=offset, from=pos, search_from=pos, is_last=is_last, &
+                            builder=builder, pos=pos, is_closed=is_closed)
+         if (.not.is_closed) exit
       elseif (chars(pos:pos)/='<') then
          ! character data
          e = index(chars(pos:), '<', kind=I8P)
@@ -189,18 +191,21 @@ contains
       elseif (chars(pos:min(n, pos+3))=='<!--') then
          self%open_kind = DATA_COMMENT
          self%open_start = offset + pos
-         if (.not.is_markup_closed(self=self, chars=chars, offset=offset, from=pos, search_from=pos+4, is_last=is_last, &
-                                   builder=builder, pos=pos)) exit
+         call report_markup(self=self, chars=chars, offset=offset, from=pos, search_from=pos+4, is_last=is_last, &
+                            builder=builder, pos=pos, is_closed=is_closed)
+         if (.not.is_closed) exit
       elseif (chars(pos:min(n, pos+8))=='<![CDATA[') then
          self%open_kind = DATA_CDATA
          self%open_start = offset + pos
-         if (.not.is_markup_closed(self=self, chars=chars, offset=offset, from=pos, search_from=pos+9, is_last=is_last, &
-                                   builder=builder, pos=pos)) exit
+         call report_markup(self=self, chars=chars, offset=offset, from=pos, search_from=pos+9, is_last=is_last, &
+                            builder=builder, pos=pos, is_closed=is_closed)
+         if (.not.is_closed) exit
       elseif (chars(pos:min(n, pos+1))=='<?') then
          self%open_kind = DATA_PI
          self%open_start = offset + pos
-         if (.not.is_markup_closed(self=self, chars=chars, offset=offset, from=pos, search_from=pos+2, is_last=is_last, &
-                                   builder=builder, pos=pos)) exit
+         call report_markup(self=self, chars=chars, offset=offset, from=pos, search_from=pos+2, is_last=is_last, &
+                            builder=builder, pos=pos, is_closed=is_closed)
+         if (.not.is_closed) exit
       elseif (chars(pos:min(n, pos+1))=='<!') then
          k = after_declaration(source=chars, start=pos)
          if (k==0) then
@@ -405,7 +410,7 @@ contains
    endfunction located_in_file
 
    ! private procedures
-   function is_markup_closed(self, chars, offset, from, search_from, is_last, builder, pos) result(is_closed)
+   pure subroutine report_markup(self, chars, offset, from, search_from, is_last, builder, pos, is_closed)
    !< Report an open comment, CDATA section or PI up to its end, or up to the piece end if it continues in the next piece.
    !<
    !< @note When the end is not in the piece, the last characters that may start the terminator are not consumed (never
@@ -418,7 +423,7 @@ contains
    logical,              intent(in)    :: is_last     !< The source ends with this piece.
    class(xml_builder),   intent(inout) :: builder     !< Builder.
    integer(I8P),         intent(inout) :: pos         !< Position after the reported characters.
-   logical                             :: is_closed   !< The markup is closed: tokenizing goes on in this piece.
+   logical,              intent(out)   :: is_closed   !< The markup is closed: tokenizing goes on in this piece.
    character(len=:), allocatable       :: terminator  !< Markup terminator.
    integer(I8P)                        :: n           !< Piece length.
    integer(I8P)                        :: e           !< Relative position of the terminator.
@@ -460,7 +465,7 @@ contains
       if (last>=from) call builder%data(kind=self%open_kind, chars=chars(from:last), first=offset+from)
       pos = last + 1
    endif
-   endfunction is_markup_closed
+   endsubroutine report_markup
 
    pure subroutine add_attribute(attributes, na, name, value, quote)
    !< Add an attribute to the list of the current start tag (values are double quoted: `"` escaped in single quoted ones).
