@@ -15,6 +15,7 @@ character(*), parameter :: BLANKS   = ' '//achar(9)//achar(10)//achar(13) !< XML
 character(*), parameter :: NAME_END = BLANKS//'/>=' !< Characters ending a tag or attribute name.
 character(*), parameter :: CDATA_START = '<![CDATA[' !< CDATA section start.
 character(*), parameter :: CDATA_END   = ']]>'       !< CDATA section end.
+character(*), parameter :: XML_DECLARATION = '<?xml version="1.0"?>' !< XML declaration written by *save*.
 
 type, public:: xml_file
    !< XML file class.
@@ -36,6 +37,7 @@ type, public:: xml_file
       procedure, pass(self) :: find_all   !< Return the IDs of all tags matching a name or a path.
       procedure, pass(self) :: free       !< Free dynamic memory.
       procedure, pass(self) :: parse      !< Parse xml file.
+      procedure, pass(self) :: save       !< Save the whole file data into a file.
       procedure, pass(self) :: stringify  !< Convert the whole file data into a string.
       ! private methods
       procedure, pass(self), private :: append_inline       !< Append a tag with its subtree, without layout.
@@ -322,6 +324,39 @@ contains
    if (present(iostat)) iostat = iostat_
    if (present(iomsg).and.iostat_/=0) iomsg = iomsg_
    endsubroutine parse
+
+   subroutine save(self, filename, is_declared, iostat, iomsg)
+   !< Save the whole file data into a file: the prolog and the tags (as *stringify*), ended by a new line.
+   !<
+   !< @note If *is_declared* is true and the prolog does not start with an XML declaration (e.g. a document built in
+   !< code), the declaration `<?xml version="1.0"?>` is written first.
+   !< @note If *iostat* is passed, it returns 0 on success or the runtime I/O error code, and *iomsg* (unchanged on
+   !< success) describes the error; without *iostat* an I/O error stops the program, as Fortran I/O statements do.
+   class(xml_file),        intent(in)    :: self        !< XML file.
+   character(*),           intent(in)    :: filename    !< File name.
+   logical,      optional, intent(in)    :: is_declared !< Write the XML declaration, if missing.
+   integer(I4P), optional, intent(out)   :: iostat      !< IO status.
+   character(*), optional, intent(inout) :: iomsg       !< IO message.
+   logical                               :: is_declared_ !< Write the XML declaration, local variable.
+   integer(I4P)                          :: iostat_     !< IO status, local variable.
+   character(len=500)                    :: iomsg_      !< IO message, local variable.
+   integer(I4P)                          :: unit        !< File unit.
+
+   is_declared_ = .false. ; if (present(is_declared)) is_declared_ = is_declared
+   if (is_declared_.and.allocated(self%prolog)) is_declared_ = .not.starts_with_declaration(self%prolog)
+   open(newunit=unit, file=filename, access='STREAM', form='UNFORMATTED', status='REPLACE', iostat=iostat_, iomsg=iomsg_)
+   if (iostat_==0) then
+      if (is_declared_) write(unit=unit, iostat=iostat_, iomsg=iomsg_) XML_DECLARATION//new_line('a')
+      if (iostat_==0) write(unit=unit, iostat=iostat_, iomsg=iomsg_) self%stringify()//new_line('a')
+      close(unit)
+   endif
+   if (present(iostat)) then
+      iostat = iostat_
+      if (present(iomsg).and.iostat_/=0) iomsg = iomsg_
+   elseif (iostat_/=0) then
+      error stop 'xml_file%save: '//trim(iomsg_)
+   endif
+   endsubroutine save
 
    pure function stringify(self, linearize) result(string)
    !< Convert the whole file data into a string.
@@ -820,6 +855,15 @@ contains
    enddo
    problem = 'line '//trim(str(line, no_sign=.true.))//': '//message
    endsubroutine record_problem
+
+   pure function starts_with_declaration(prolog) result(is_declaration)
+   !< Check if a prolog starts with the XML declaration (`<?xml` followed by a blank, not a PI named `xml-...`).
+   character(*), intent(in) :: prolog         !< Prolog.
+   logical                  :: is_declaration !< Check result.
+
+   is_declaration = .false.
+   if (len(prolog)>5) is_declaration = prolog(1:5)=='<?xml'.and.scan(prolog(6:6), BLANKS)>0
+   endfunction starts_with_declaration
 
    pure subroutine flush_text(self, owner, is_tail, text, is_parent)
    !< Store the collected character data into its owner tag, if any, and reset them.

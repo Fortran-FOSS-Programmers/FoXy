@@ -84,7 +84,7 @@ source positions `pos(3)` (start, content, end), indentation, self-closing flag,
 `start_tag()`, `end_tag()`, `self_closing_tag()`.
 
 **`xml_file`** holds a flat `tag(:)` array (linearised DOM, not a tree of pointers) and a count `nt`. Key methods:
-`parse()`, `stringify()`, `add_tag()`, `delete_tag()`, `content()`.
+`parse()`, `stringify()`, `save()`, `add_tag()`, `delete_tag()`, `content()`.
 
 There are **two parsers**:
 - `xml_file%parse_from_string` — the document parser: a single-pass, quotes-aware tokenizer (start/end/self-closing
@@ -102,7 +102,8 @@ to the next sibling or the parent end); `content()` returns the direct text (tex
 `stringify` writes a tag with non-blank text/tails inline (no added layout), every other tag formatted as before.
 
 The prolog (XML declaration, DOCTYPE, comments and PIs before the root tag) is kept verbatim in `xml_file%prolog` and
-written back first by `stringify`. `parse` reports the first problem of malformed input (`iostat=XML_MALFORMED`, `iomsg`
+written back first by `stringify`; `save` writes prolog plus `stringify` to a file, adding `<?xml version="1.0"?>` on
+request when the prolog has no declaration. `parse` reports the first problem of malformed input (`iostat=XML_MALFORMED`, `iomsg`
 with its line) and file errors, while still building the document (tolerant parsing).
 
 Known parser limits: comments and PIs inside the document are dropped (not written back by `stringify`); attribute
