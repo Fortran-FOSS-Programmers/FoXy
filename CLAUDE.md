@@ -20,8 +20,8 @@ section of `fobos` and pinned in `src/third_party/fobos.lock`:
 fobis fetch   # on a fresh clone, before the first build
 ```
 
-`fpm.toml` pins its own (different) revisions of StringiFor and PENF: the fpm build is not guaranteed to match the
-FoBiS one.
+No dependency version is pinned anywhere: `fobos` and `fpm.toml` both track the default branch of each dependency, and
+`fobos.lock` is local only (ignored by `src/third_party/.gitignore`). Do not add `rev`/`tag`/`branch` pins.
 
 ## Build Commands
 
