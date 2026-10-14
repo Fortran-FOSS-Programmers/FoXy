@@ -27,6 +27,8 @@ type :: xml_tag
    private
    type(string)                      :: tag_name                   !< Tag name.
    type(string)                      :: tag_content                !< Tag content.
+   type(string)                      :: tag_tail                   !< Text after the end tag, up to the next sibling or the
+                                                                   !< parent end tag (mixed content).
    integer(I4P)                      :: pos(3)=[0_I4P,0_I4P,0_I4P] !< Characters position (in source) indexes (start, content, end).
    type(string), allocatable         :: attribute(:,:)             !< Attributes names/values pairs, [1:2, 1:].
    integer(I4P)                      :: attributes_number=0_I4P    !< Number of defined attributes.
@@ -55,6 +57,7 @@ type :: xml_tag
       procedure, pass(self) :: get_attribute               !< Return the value of the attribute named *name*.
       procedure, pass(self) :: get_id                      !< Return tag uniq ID.
       procedure, pass(self) :: get_parent_id               !< Return parent tag uniq ID.
+      procedure, pass(self) :: get_tail                    !< Return the text after the end tag.
       procedure, pass(self) :: is_attribute_present        !< Return .true. it the queried attribute name is defined.
       procedure, pass(self) :: is_parsed                   !< Check is tag is correctly parsed, i.e. its *tag_name* is allocated.
       procedure, pass(self) :: name                        !< Return tag name.
@@ -210,6 +213,7 @@ contains
 
    call self%tag_name%free
    call self%tag_content%free
+   call self%tag_tail%free
    self%pos = 0_I4P
    if (allocated(self%attribute)) then
       do j=1, size(self%attribute, dim=2)
@@ -276,6 +280,15 @@ contains
 
    id = self%id
    endfunction get_id
+
+   pure function get_tail(self) result(tail)
+   !< Return the text after the end tag (mixed content), an empty string if none.
+   class(xml_tag), intent(in)    :: self !< XML tag.
+   character(len=:), allocatable :: tail !< Text after the end tag.
+
+   tail = ''
+   if (self%tag_tail%is_allocated()) tail = self%tag_tail%chars()
+   endfunction get_tail
 
    elemental function get_parent_id(self) result(parent_id)
    !< Return parent tag uniq ID.
@@ -407,7 +420,7 @@ contains
 
    pure subroutine set(self, name, attribute, attributes, attributes_stream, sanitize_attributes_value, content, &
                        pos, indent, is_content_indented, is_self_closing, id, level, parent_id,                  &
-                       attributes_stream_alloc, content_alloc)
+                       attributes_stream_alloc, content_alloc, tail)
    !< Set tag data.
    class(xml_tag),            intent(inout)        :: self                      !< XML tag.
    character(*),              intent(in), optional :: name                      !< Tag name.
@@ -425,6 +438,7 @@ contains
    integer(I4P),              intent(in), optional :: parent_id                 !< Parent uniq ID.
    character(:), allocatable, intent(in), optional :: attributes_stream_alloc   !< Attributes list stream, allocatable input.
    character(:), allocatable, intent(in), optional :: content_alloc             !< Tag value, allocatable input.
+   character(*),              intent(in), optional :: tail                      !< Text after the end tag.
    logical                                         :: is_content_indented_      !< Activate value indentation.
 
    is_content_indented_ = .false. ; if (present(is_content_indented)) is_content_indented_ = is_content_indented
@@ -459,6 +473,7 @@ contains
          endif
       endif
    endif
+   if (present(tail)) self%tag_tail = tail
    endsubroutine set
 
    pure function self_closing_tag(self, is_indented) result(tag_)
@@ -916,6 +931,7 @@ contains
    call lhs%free
    if (rhs%tag_name%is_allocated()) lhs%tag_name = rhs%tag_name
    if (rhs%tag_content%is_allocated()) lhs%tag_content = rhs%tag_content
+   if (rhs%tag_tail%is_allocated()) lhs%tag_tail = rhs%tag_tail
    lhs%pos = rhs%pos
    if (rhs%attributes_number>0) then
       allocate(lhs%attribute(1:2, 1:rhs%attributes_number))

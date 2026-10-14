@@ -97,7 +97,12 @@ Stored text is the source text (so `stringify` round-trips); the read accessors 
 strip layout blanks and decode character references. Content may hold markup (nested tag as string), so it is never
 escaped on output: user data must go through `xml_escape`.
 
-Known parser limits: a tag's content is only the text before its first child (mixed content is lost); CDATA is kept as raw text (not decoded by the accessors yet); comments, PIs and DOCTYPE are dropped.
+Mixed content: each tag stores its text (before its first child) and its tail (`tag_tail`, the text after its end tag, up
+to the next sibling or the parent end); `content()` returns the direct text (text + children tails), CDATA literal;
+`stringify` writes a tag with non-blank text/tails inline (no added layout), every other tag formatted as before.
+
+Known parser limits: comments, PIs and DOCTYPE are dropped (not written back by `stringify`); malformed input is
+tolerated without error reporting; attribute values are not whitespace-normalized.
 
 Performance: parse and `stringify` are O(n) in the number of tags, lookups O(n) per path segment (tags array and stringify buffer grow
 geometrically, children lists are built once after parsing). Check any change on large inputs with the benchmark:

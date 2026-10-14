@@ -12,6 +12,8 @@ integer(I4P), parameter :: INITIAL_CAPACITY   = 64_I4P   !< Initial capacity of 
 integer(I4P), parameter :: INITIAL_BUFFER_LEN = 4096_I4P !< Initial length of the stringify buffer, doubled when full.
 character(*), parameter :: BLANKS   = ' '//achar(9)//achar(10)//achar(13) !< XML blanks: space, tab, new line, CR.
 character(*), parameter :: NAME_END = BLANKS//'/>=' !< Characters ending a tag or attribute name.
+character(*), parameter :: CDATA_START = '<![CDATA[' !< CDATA section start.
+character(*), parameter :: CDATA_END   = ']]>'       !< CDATA section end.
 
 type, public:: xml_file
    !< XML file class.
@@ -33,7 +35,12 @@ type, public:: xml_file
       procedure, pass(self) :: parse      !< Parse xml file.
       procedure, pass(self) :: stringify  !< Convert the whole file data into a string.
       ! private methods
+      procedure, pass(self), private :: append_inline       !< Append a tag with its subtree, without layout.
+      procedure, pass(self), private :: append_inline_body  !< Append a tag text, children and their tails, without layout.
       procedure, pass(self), private :: build_children      !< Build the children IDs lists from the parents IDs.
+      procedure, pass(self), private :: direct_text         !< Return a tag text plus its children tails (raw).
+      procedure, pass(self), private :: is_mixed            !< Check if a tag has mixed content.
+      procedure, pass(self), private :: raw_text            !< Return a tag stored text (raw).
       procedure, pass(self), private :: children_named      !< Return the IDs of the children named *name* of given tags.
       procedure, pass(self), private :: content_by_id       !< Return tag content of the tag with a given ID.
       procedure, pass(self), private :: content_by_name     !< Return tag content of tag named *name*.
@@ -109,9 +116,8 @@ contains
    integer(I4P),    intent(in)   :: id      !< Tag ID.
    character(len=:), allocatable :: content !< Tag content.
 
-   if (id>=1.and.id<=self%nt) call self%tag(id)%get_content(name=self%tag(id)%name(), content=content)
-   if (allocated(content)) then
-      content = xml_unescape(strip_blanks(content)) ! blanks first: encoded blanks are data
+   if (id>=1.and.id<=self%nt) then
+      content = text_value(self%direct_text(id))
    else
       content = ''
    endif
@@ -193,14 +199,16 @@ contains
    integer(I4P)                  :: t       !< Counter.
 
    if (allocated(content)) deallocate(content)
-   if (self%nt>0) then
-      do t=1, self%nt
-         call self%tag(t)%get_content(name=name, content=content)
-         if (allocated(content)) exit
-      enddo
-   endif
+   do t=1, self%nt
+      if (self%tag(t)%name()==name) then
+         content = self%direct_text(t)
+      else
+         call self%tag(t)%get_content(name=name, content=content) ! nested tag set as content string
+      endif
+      if (allocated(content)) exit
+   enddo
    if (allocated(content)) then
-      content = xml_unescape(strip_blanks(content)) ! blanks first: encoded blanks are data
+      content = text_value(content)
    else
       content = ''
    endif
@@ -319,7 +327,11 @@ contains
       do t=1, self%nt
          if (is_done(t)) cycle
          if (t>1) call append(buffer=buffer, n=n, piece=new_line('a'))
-         if (self%tag(t)%children_number>0) then
+         if (self%is_mixed(t)) then
+            call append(buffer=buffer, n=n, piece=self%tag(t)%start_tag(is_indented=.true.))
+            call self%append_inline_body(t=t, is_done=is_done, buffer=buffer, n=n)
+            call append(buffer=buffer, n=n, piece=self%tag(t)%end_tag())
+         elseif (self%tag(t)%children_number>0) then
             call append(buffer=buffer, n=n, piece=self%tag(t)%stringify(is_indented=.true., only_start=.true.))
             do c=1, self%tag(t)%children_number
                call self%stringify_recursive(tag=self%tag(self%tag(t)%child_id(c)), is_done=is_done, buffer=buffer, n=n)
@@ -340,6 +352,40 @@ contains
    endfunction stringify
 
    ! private methods
+   recursive pure subroutine append_inline(self, t, is_done, buffer, n)
+   !< Append to buffer a tag with its whole subtree as in the source, without added layout (mixed content).
+   class(xml_file),               intent(in)    :: self       !< XML file.
+   integer(I4P),                  intent(in)    :: t          !< Tag ID.
+   logical,                       intent(inout) :: is_done(:) !< List of stringified tags.
+   character(len=:), allocatable, intent(inout) :: buffer     !< Output buffer.
+   integer(I4P),                  intent(inout) :: n          !< Used length of the buffer.
+
+   if (self%tag(t)%children_number>0) then
+      call append(buffer=buffer, n=n, piece=self%tag(t)%start_tag())
+      call self%append_inline_body(t=t, is_done=is_done, buffer=buffer, n=n)
+      call append(buffer=buffer, n=n, piece=self%tag(t)%end_tag())
+   else
+      call append(buffer=buffer, n=n, piece=self%tag(t)%stringify())
+   endif
+   endsubroutine append_inline
+
+   recursive pure subroutine append_inline_body(self, t, is_done, buffer, n)
+   !< Append to buffer the text of a tag, then each child (inline) followed by its tail.
+   class(xml_file),               intent(in)    :: self       !< XML file.
+   integer(I4P),                  intent(in)    :: t          !< Tag ID.
+   logical,                       intent(inout) :: is_done(:) !< List of stringified tags.
+   character(len=:), allocatable, intent(inout) :: buffer     !< Output buffer.
+   integer(I4P),                  intent(inout) :: n          !< Used length of the buffer.
+   integer(I4P)                                 :: c          !< Counter.
+
+   call append(buffer=buffer, n=n, piece=self%raw_text(t))
+   do c=1, self%tag(t)%children_number
+      call self%append_inline(t=self%tag(t)%child_id(c), is_done=is_done, buffer=buffer, n=n)
+      is_done(self%tag(t)%child_id(c)) = .true.
+      call append(buffer=buffer, n=n, piece=self%tag(self%tag(t)%child_id(c))%get_tail())
+   enddo
+   endsubroutine append_inline_body
+
    pure subroutine build_children(self)
    !< Build the children IDs lists (in document order) of all tags from their parents IDs, in O(n).
    !<
@@ -369,6 +415,49 @@ contains
       endif
    enddo
    endsubroutine build_children
+
+   pure function direct_text(self, t) result(text)
+   !< Return the direct (raw) text of a tag: its text plus the tails of its children, the children text excluded.
+   class(xml_file), intent(in)   :: self   !< XML file.
+   integer(I4P),    intent(in)   :: t      !< Tag ID.
+   character(len=:), allocatable :: text   !< Direct text.
+   character(len=:), allocatable :: buffer !< Text buffer.
+   integer(I4P)                  :: n      !< Used length of the buffer.
+   integer(I4P)                  :: c      !< Counter.
+
+   n = 0
+   call append(buffer=buffer, n=n, piece=self%raw_text(t))
+   do c=1, self%tag(t)%children_number
+      call append(buffer=buffer, n=n, piece=self%tag(self%tag(t)%child_id(c))%get_tail())
+   enddo
+   text = buffer(1:n)
+   endfunction direct_text
+
+   pure function is_mixed(self, t) result(is_mixed_)
+   !< Return .true. if a tag has mixed content: children and not blank text or children tails.
+   class(xml_file), intent(in) :: self      !< XML file.
+   integer(I4P),    intent(in) :: t         !< Tag ID.
+   logical                     :: is_mixed_ !< Check result.
+   integer(I4P)                :: c         !< Counter.
+
+   is_mixed_ = .false.
+   if (self%tag(t)%children_number==0) return
+   is_mixed_ = verify(self%raw_text(t), BLANKS)>0
+   do c=1, self%tag(t)%children_number
+      if (is_mixed_) return
+      is_mixed_ = verify(self%tag(self%tag(t)%child_id(c))%get_tail(), BLANKS)>0
+   enddo
+   endfunction is_mixed
+
+   pure function raw_text(self, t) result(text)
+   !< Return the stored (raw) text of a tag, an empty string if none.
+   class(xml_file), intent(in)   :: self !< XML file.
+   integer(I4P),    intent(in)   :: t    !< Tag ID.
+   character(len=:), allocatable :: text !< Raw text.
+
+   call self%tag(t)%get_content(name=self%tag(t)%name(), content=text)
+   if (.not.allocated(text)) text = ''
+   endfunction raw_text
 
    pure function children_named(self, parents, name) result(ids)
    !< Return the IDs (in document order) of the tags named *name* that are direct children of any of *parents*.
@@ -412,6 +501,7 @@ contains
    integer(I4P), allocatable      :: stack_open_end(:)   !< End (`>`) positions of open tags start tags.
    integer(I4P)                   :: depth               !< Number of open tags.
    integer(I4P)                   :: owner               !< ID of the tag owning the current character data, 0 if none.
+   logical                        :: is_tail             !< The current character data is the owner tail, not its text.
    integer(I4P)                   :: n                   !< Source length.
    integer(I4P)                   :: pos                 !< Current position.
    integer(I4P)                   :: k                   !< Scan position.
@@ -425,6 +515,7 @@ contains
    allocate(stack(INITIAL_CAPACITY), stack_start(INITIAL_CAPACITY), stack_open_end(INITIAL_CAPACITY))
    depth = 0
    owner = 0
+   is_tail = .false.
    text = ''
    pos = 1
    do while (pos<=n)
@@ -465,8 +556,10 @@ contains
             if (self%tag(stack(l))%name()==name) exit
          enddo
          if (l>0) then
-            call flush_text(self=self, owner=owner, text=text)
+            call flush_text(self=self, owner=owner, is_tail=is_tail, text=text, is_parent=.false.)
             call self%tag(stack(l))%set(pos=[stack_start(l), stack_open_end(l), pos])
+            owner = stack(l) ! the following character data is its tail
+            is_tail = .true.
             depth = l - 1
          endif
          pos = k + e
@@ -479,7 +572,7 @@ contains
             pos = pos + 1
             cycle
          endif
-         call flush_text(self=self, owner=owner, text=text)
+         call flush_text(self=self, owner=owner, is_tail=is_tail, text=text, is_parent=.true.)
          call tag%free
          call self%add_tag(tag=tag)
          l = 0 ; if (depth>0) l = stack(depth)
@@ -530,6 +623,8 @@ contains
          if (.not.is_terminated) exit
          if (is_self_closing) then
             call self%tag(self%nt)%set(pos=[pos, k-1, -1_I4P], is_self_closing=.true.)
+            owner = self%nt ! the following character data is its tail
+            is_tail = .true.
          else
             call self%tag(self%nt)%set(pos=[pos, k-1, 0_I4P], is_self_closing=.false.)
             if (depth==size(stack, dim=1)) then
@@ -541,12 +636,13 @@ contains
             stack(depth) = self%nt
             stack_start(depth) = pos
             stack_open_end(depth) = k - 1
-            owner = self%nt
+            owner = self%nt ! the following character data is its text
+            is_tail = .false.
          endif
          pos = k
       endif
    enddo
-   call flush_text(self=self, owner=owner, text=text)
+   call flush_text(self=self, owner=owner, is_tail=is_tail, text=text, is_parent=.false.)
    call self%build_children
    endsubroutine parse_from_string
 
@@ -559,7 +655,11 @@ contains
    integer(I4P),                  intent(inout) :: n          !< Used length of the buffer.
    integer(I4P)                                 :: t          !< Counter.
 
-   if (tag%children_number>0) then
+   if (self%is_mixed(tag%get_id())) then
+      call append(buffer=buffer, n=n, piece=new_line('a')//tag%start_tag(is_indented=.true.))
+      call self%append_inline_body(t=tag%get_id(), is_done=is_done, buffer=buffer, n=n)
+      call append(buffer=buffer, n=n, piece=tag%end_tag())
+   elseif (tag%children_number>0) then
       call append(buffer=buffer, n=n, piece=new_line('a')//tag%stringify(is_indented=.true., only_start=.true.))
       do t=1, tag%children_number
          call self%stringify_recursive(tag=self%tag(tag%child_id(t)), is_done=is_done, buffer=buffer, n=n)
@@ -638,15 +738,29 @@ contains
    after = 0
    endfunction after_declaration
 
-   pure subroutine flush_text(self, owner, text)
-   !< Store the collected text into its owner tag, if any, and reset them: the text of a tag ends at its first child or at
-   !< its end tag.
-   class(xml_file),               intent(inout) :: self  !< XML file handler.
-   integer(I4P),                  intent(inout) :: owner !< ID of the tag owning the text, 0 if none.
-   character(len=:), allocatable, intent(inout) :: text  !< Collected text.
+   pure subroutine flush_text(self, owner, is_tail, text, is_parent)
+   !< Store the collected character data into its owner tag, if any, and reset them.
+   !<
+   !< The text of a tag ends at its first child or at its end tag; the tail of a tag (mixed content) is the character data
+   !< after its end tag, up to the next sibling or the parent end tag. Tails and the text of a tag with children are stored
+   !< raw (they are written back verbatim by mixed content tags), the text of a leaf tag is trimmed of spaces.
+   class(xml_file),               intent(inout) :: self      !< XML file handler.
+   integer(I4P),                  intent(inout) :: owner     !< ID of the tag owning the text, 0 if none.
+   logical,                       intent(inout) :: is_tail   !< The text is the owner tail.
+   character(len=:), allocatable, intent(inout) :: text      !< Collected text.
+   logical,                       intent(in)    :: is_parent !< The text ends because the owner first child starts.
 
-   if (owner>0) call self%tag(owner)%set(content=trim(adjustl(text)))
+   if (owner>0) then
+      if (is_tail) then
+         call self%tag(owner)%set(tail=text)
+      elseif (is_parent) then
+         call self%tag(owner)%set(content=text)
+      else
+         call self%tag(owner)%set(content=trim(adjustl(text)))
+      endif
+   endif
    owner = 0
+   is_tail = .false.
    text = ''
    endsubroutine flush_text
 
@@ -696,6 +810,41 @@ contains
       pos = pos + 1
    enddo
    endsubroutine skip_blanks
+
+   pure function text_value(raw) result(value)
+   !< Return the value of raw character data: layout blanks stripped, character references decoded, CDATA sections literal.
+   character(*), intent(in)      :: raw      !< Raw character data.
+   character(len=:), allocatable :: value    !< Value.
+   character(len=:), allocatable :: stripped !< Raw data without leading and trailing blanks.
+   integer(I4P)                  :: p        !< Current position.
+   integer(I4P)                  :: c        !< Relative position of next CDATA start.
+   integer(I4P)                  :: q        !< CDATA content start.
+   integer(I4P)                  :: e        !< Relative position of CDATA end.
+
+   stripped = strip_blanks(raw) ! blanks first: encoded blanks and CDATA blanks are data
+   if (index(stripped, CDATA_START)==0) then
+      value = xml_unescape(stripped)
+      return
+   endif
+   value = ''
+   p = 1
+   do while (p<=len(stripped))
+      c = index(stripped(p:), CDATA_START)
+      if (c==0) then
+         value = value//xml_unescape(stripped(p:))
+         exit
+      endif
+      value = value//xml_unescape(stripped(p:p+c-2))
+      q = p + c - 1 + len(CDATA_START)
+      e = index(stripped(q:), CDATA_END)
+      if (e==0) then ! unterminated, literal up to the end
+         value = value//stripped(q:)
+         exit
+      endif
+      value = value//stripped(q:q+e-2)
+      p = q + e - 1 + len(CDATA_END)
+   enddo
+   endfunction text_value
 
    pure function strip_blanks(string) result(stripped)
    !< Return string without leading and trailing blanks: spaces, tabs, new lines and carriage returns.
