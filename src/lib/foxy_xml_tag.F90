@@ -29,7 +29,7 @@ type :: xml_tag
    type(string)                      :: tag_content                !< Tag content.
    type(string)                      :: tag_tail                   !< Text after the end tag, up to the next sibling or the
                                                                    !< parent end tag (mixed content).
-   integer(I4P)                      :: pos(3)=[0_I4P,0_I4P,0_I4P] !< Characters position (in source) indexes (start, content, end).
+   integer(I8P)                      :: pos(3)=[0_I8P,0_I8P,0_I8P] !< Characters position (in source) indexes (start, content, end).
    type(string), allocatable         :: attribute(:,:)             !< Attributes names/values pairs, [1:2, 1:].
    integer(I4P)                      :: attributes_number=0_I4P    !< Number of defined attributes.
    integer(I4P)                      :: indent=0_I4P               !< Number of indent-white-spaces.
@@ -102,7 +102,7 @@ contains
    character(*),              intent(in), optional :: attributes(1:,1:)         !< Attributes list of name/value pairs [1:2,1:].
    character(*),              intent(in), optional :: attributes_stream         !< Attributes list as single stream.
    logical,                   intent(in), optional :: sanitize_attributes_value !< Sanitize attributes value.
-   integer(I4P),              intent(in), optional :: pos(1:)                   !< Characters position (in source) indexes.
+   integer(I8P),              intent(in), optional :: pos(1:)                   !< Characters position (in source) indexes.
    character(*),              intent(in), optional :: content                   !< Tag value.
    integer(I4P),              intent(in), optional :: indent                    !< Number of indent-white-spaces.
    logical,                   intent(in), optional :: is_content_indented       !< Activate content indentation.
@@ -140,7 +140,7 @@ contains
    character(*),              intent(in), optional :: attributes(1:,1:)         !< Attributes list of name/value pairs [1:2,1:].
    character(*),              intent(in), optional :: attributes_stream         !< Attributes list as single stream.
    logical,                   intent(in), optional :: sanitize_attributes_value !< Sanitize attributes value.
-   integer(I4P),              intent(in), optional :: pos(1:)                   !< Characters position (in source) indexes.
+   integer(I8P),              intent(in), optional :: pos(1:)                   !< Characters position (in source) indexes.
    integer(I4P),              intent(in), optional :: indent                    !< Number of indent-white-spaces.
    logical,                   intent(in), optional :: is_content_indented       !< Activate value indentation.
    integer(I4P),              intent(in), optional :: id                        !< Uniq ID.
@@ -215,7 +215,7 @@ contains
    call self%tag_name%free
    call self%tag_content%free
    call self%tag_tail%free
-   self%pos = 0_I4P
+   self%pos = 0_I8P
    if (allocated(self%attribute)) then
       do j=1, size(self%attribute, dim=2)
          do i=1, size(self%attribute, dim=1)
@@ -432,7 +432,7 @@ contains
    character(*),              intent(in), optional :: attributes_stream         !< Attributes list of name/value pairs as stream.
    logical,                   intent(in), optional :: sanitize_attributes_value !< Sanitize attributes value.
    character(*),              intent(in), optional :: content                   !< Tag value.
-   integer(I4P),              intent(in), optional :: pos(1:)                   !< Characters position (in source) indexes.
+   integer(I8P),              intent(in), optional :: pos(1:)                   !< Characters position (in source) indexes.
    integer(I4P),              intent(in), optional :: indent                    !< Number of indent-white-spaces.
    logical,                   intent(in), optional :: is_content_indented       !< Activate value indentation.
    logical,                   intent(in), optional :: is_self_closing           !< The tag is self closing.

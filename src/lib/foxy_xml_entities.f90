@@ -4,7 +4,7 @@ module foxy_xml_entities
 !<
 !< Character references are the predefined entities `&lt;`, `&gt;`, `&amp;`, `&quot;`, `&apos;` and the numeric
 !< references `&#N;` (decimal) and `&#xH;` (hexadecimal) of a Unicode code point, decoded as UTF-8 bytes.
-use penf, only : I4P
+use penf, only : I4P, I8P
 
 implicit none
 private
@@ -23,23 +23,23 @@ contains
    character(*), intent(in)      :: string    !< String to escape.
    character(len=:), allocatable :: escaped   !< Escaped string.
    character(len=:), allocatable :: reference !< Reference of current character.
-   integer(I4P)                  :: n         !< Length of escaped string.
-   integer(I4P)                  :: c         !< Counter.
+   integer(I8P)                  :: n         !< Length of escaped string.
+   integer(I8P)                  :: c         !< Counter.
 
-   if (scan(string, ESCAPED_CHARS)==0) then
+   if (scan(string, ESCAPED_CHARS, kind=I8P)==0) then
       escaped = string
       return
    endif
    n = 0
-   do c=1, len(string)
-      n = n + len(reference_of(string(c:c)))
+   do c=1, len(string, kind=I8P)
+      n = n + len(reference_of(string(c:c)), kind=I8P)
    enddo
    allocate(character(len=n) :: escaped)
    n = 0
-   do c=1, len(string)
+   do c=1, len(string, kind=I8P)
       reference = reference_of(string(c:c))
-      escaped(n+1:n+len(reference)) = reference
-      n = n + len(reference)
+      escaped(n+1:n+len(reference, kind=I8P)) = reference
+      n = n + len(reference, kind=I8P)
    enddo
    endfunction xml_escape
 
@@ -52,26 +52,27 @@ contains
    character(*), intent(in)      :: string    !< String to unescape.
    character(len=:), allocatable :: unescaped !< Unescaped string.
    character(len=:), allocatable :: decoded   !< Decoded reference.
-   character(len=len(string))    :: buffer    !< Unescaped characters: a reference is never shorter than its decoding.
-   integer(I4P)                  :: n         !< Length of unescaped string.
-   integer(I4P)                  :: c         !< Counter.
-   integer(I4P)                  :: e         !< Reference end (`;`) position, relative to `&`.
+   character(len=:), allocatable :: buffer    !< Unescaped characters: a reference is never shorter than its decoding.
+   integer(I8P)                  :: n         !< Length of unescaped string.
+   integer(I8P)                  :: c         !< Counter.
+   integer(I8P)                  :: e         !< Reference end (`;`) position, relative to `&`.
    logical                       :: is_valid  !< Flag for valid reference.
 
-   if (index(string, '&')==0) then
+   if (index(string, '&', kind=I8P)==0) then
       unescaped = string
       return
    endif
+   allocate(character(len=len(string, kind=I8P)) :: buffer) ! allocatable: no stack object as large as string
    n = 0
    c = 1
-   do while (c<=len(string))
+   do while (c<=len(string, kind=I8P))
       if (string(c:c)=='&') then
-         e = index(string(c+1:min(len(string), c+MAX_REFERENCE_LEN+1)), ';')
+         e = index(string(c+1:min(len(string, kind=I8P), c+MAX_REFERENCE_LEN+1)), ';', kind=I8P)
          if (e>1) then
             call decode_reference(reference=string(c+1:c+e-1), decoded=decoded, is_valid=is_valid)
             if (is_valid) then
-               buffer(n+1:n+len(decoded)) = decoded
-               n = n + len(decoded)
+               buffer(n+1:n+len(decoded, kind=I8P)) = decoded
+               n = n + len(decoded, kind=I8P)
                c = c + e + 1
                cycle
             endif

@@ -6,7 +6,7 @@ title: Features
 
 ## Input (Parsing)
 
-- [x] Parse XML from a **string** or a **file**
+- [x] Parse XML from a **string** or a **file**, also larger than 2 GiB (64-bit positions)
 - [x] Build a linearised DOM with full hierarchy tracking
   - [x] Nested tags supported
   - [x] Repeated tags with the same name supported

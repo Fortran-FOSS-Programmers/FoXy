@@ -42,7 +42,11 @@ Build output goes to `./exe/` (binaries, plus `exe/obj/` and `exe/mod/`).
 ```bash
 fobis build --mode tests-gnu && bash scripts/run_tests.sh
 fobis rule --ex makecoverage                     # debug + coverage build, tests, gcov
+FOXY_TEST_LARGE=1 exe/foxy_test_parse_large      # opt-in: > 2 GiB source (~9 GB RAM, 2.2 GB in $TMPDIR)
 ```
+
+Source positions and string indexes are `I8P` (sources over 2 GiB): use `index`/`len`/`scan`/`verify` with `kind=I8P`
+on document-sized strings, and allocatable (not automatic) work buffers.
 
 `scripts/run_tests.sh` is repo-agnostic (shared across the FoBiS repos): it runs every executable in `./exe/` and
 judges **PASS/FAIL by exit status only** (plus an optional `<name>.result` expected-output file). Every test in

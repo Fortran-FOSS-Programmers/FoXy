@@ -10,7 +10,7 @@ private
 
 integer(I4P), parameter, public :: XML_MALFORMED = 9001_I4P !< *iostat* of parse for malformed XML input.
 integer(I4P), parameter :: INITIAL_CAPACITY   = 64_I4P   !< Initial capacity of the tags array, doubled when full.
-integer(I4P), parameter :: INITIAL_BUFFER_LEN = 4096_I4P !< Initial length of the stringify buffer, doubled when full.
+integer(I8P), parameter :: INITIAL_BUFFER_LEN = 4096_I8P !< Initial length of the stringify buffer, doubled when full.
 character(*), parameter :: BLANKS   = ' '//achar(9)//achar(10)//achar(13) !< XML blanks: space, tab, new line, CR.
 character(*), parameter :: NAME_END = BLANKS//'/>=' !< Characters ending a tag or attribute name.
 character(*), parameter :: CDATA_START = '<![CDATA[' !< CDATA section start.
@@ -207,7 +207,7 @@ contains
    do t=1, self%nt
       if (self%tag(t)%name()==name) then
          content = self%direct_text(t)
-      elseif (index(without_markup(self%raw_text(t), is_cdata_removed=.true.), '<')>0) then
+      elseif (index(without_markup(self%raw_text(t), is_cdata_removed=.true.), '<', kind=I8P)>0) then
          call self%tag(t)%get_content(name=name, content=content) ! nested tag set as content string
       endif
       if (allocated(content)) exit
@@ -371,11 +371,12 @@ contains
    logical                               :: linearize_ !< Linearize sentinel, local var.
    character(len=:), allocatable         :: string     !< Output string containing the whole xml file.
    character(len=:), allocatable         :: buffer     !< Output buffer, grown geometrically (O(n) total copies).
-   integer(I4P)                          :: n          !< Used length of the buffer.
+   integer(I8P)                          :: n          !< Used length of the buffer.
    integer(I4P)                          :: t          !< Counter.
    integer(I4P)                          :: c          !< Counter.
    logical, allocatable                  :: is_done(:) !< List of stringified tags.
    character(len=:), allocatable         :: tail       !< Tail of a root tag.
+   integer(I8P)                          :: last       !< Last not blank character of a root tag tail.
 
    linearize_ = .false. ; if (present(linearize)) linearize_ = linearize
    n = 0
@@ -408,8 +409,8 @@ contains
          is_done(t) = .true.
          ! the tail of a root tag holds the markup after it (e.g. comments), trailing blanks are layout
          tail = self%tag(t)%get_tail()
-         c = verify(tail, BLANKS, back=.true.)
-         if (self%tag(t)%get_parent_id()==0.and.c>0) call append(buffer=buffer, n=n, piece=tail(1:c))
+         last = verify(tail, BLANKS, back=.true., kind=I8P)
+         if (self%tag(t)%get_parent_id()==0.and.last>0) call append(buffer=buffer, n=n, piece=tail(1:last))
       enddo
    endif
    if (n>0) then
@@ -426,7 +427,7 @@ contains
    integer(I4P),                  intent(in)    :: t          !< Tag ID.
    logical,                       intent(inout) :: is_done(:) !< List of stringified tags.
    character(len=:), allocatable, intent(inout) :: buffer     !< Output buffer.
-   integer(I4P),                  intent(inout) :: n          !< Used length of the buffer.
+   integer(I8P),                  intent(inout) :: n          !< Used length of the buffer.
 
    if (self%tag(t)%children_number>0) then
       call append(buffer=buffer, n=n, piece=self%tag(t)%start_tag())
@@ -443,7 +444,7 @@ contains
    integer(I4P),                  intent(in)    :: t          !< Tag ID.
    logical,                       intent(inout) :: is_done(:) !< List of stringified tags.
    character(len=:), allocatable, intent(inout) :: buffer     !< Output buffer.
-   integer(I4P),                  intent(inout) :: n          !< Used length of the buffer.
+   integer(I8P),                  intent(inout) :: n          !< Used length of the buffer.
    integer(I4P)                                 :: c          !< Counter.
 
    call append(buffer=buffer, n=n, piece=self%raw_text(t))
@@ -490,7 +491,7 @@ contains
    integer(I4P),    intent(in)   :: t      !< Tag ID.
    character(len=:), allocatable :: text   !< Direct text.
    character(len=:), allocatable :: buffer !< Text buffer.
-   integer(I4P)                  :: n      !< Used length of the buffer.
+   integer(I8P)                  :: n      !< Used length of the buffer.
    integer(I4P)                  :: c      !< Counter.
 
    n = 0
@@ -510,10 +511,10 @@ contains
 
    is_mixed_ = .false.
    if (self%tag(t)%children_number==0) return
-   is_mixed_ = verify(self%raw_text(t), BLANKS)>0
+   is_mixed_ = verify(self%raw_text(t), BLANKS, kind=I8P)>0
    do c=1, self%tag(t)%children_number
       if (is_mixed_) return
-      is_mixed_ = verify(self%tag(self%tag(t)%child_id(c))%get_tail(), BLANKS)>0
+      is_mixed_ = verify(self%tag(self%tag(t)%child_id(c))%get_tail(), BLANKS, kind=I8P)>0
    enddo
    endfunction is_mixed
 
@@ -568,21 +569,21 @@ contains
    character(len=1)               :: quote               !< Attribute value quote.
    type(xml_tag)                  :: tag                 !< Empty tag, added and then set.
    integer(I4P), allocatable      :: stack(:)            !< IDs of open tags.
-   integer(I4P), allocatable      :: stack_start(:)      !< Start (`<`) positions of open tags.
-   integer(I4P), allocatable      :: stack_open_end(:)   !< End (`>`) positions of open tags start tags.
+   integer(I8P), allocatable      :: stack_start(:)      !< Start (`<`) positions of open tags.
+   integer(I8P), allocatable      :: stack_open_end(:)   !< End (`>`) positions of open tags start tags.
    integer(I4P)                   :: depth               !< Number of open tags.
    integer(I4P)                   :: owner               !< ID of the tag owning the current character data, 0 if none.
    logical                        :: is_tail             !< The current character data is the owner tail, not its text.
-   integer(I4P)                   :: n                   !< Source length.
-   integer(I4P)                   :: pos                 !< Current position.
-   integer(I4P)                   :: k                   !< Scan position.
-   integer(I4P)                   :: e                   !< Relative position of a delimiter.
+   integer(I8P)                   :: n                   !< Source length.
+   integer(I8P)                   :: pos                 !< Current position.
+   integer(I8P)                   :: k                   !< Scan position.
+   integer(I8P)                   :: e                   !< Relative position of a delimiter.
    integer(I4P)                   :: l                   !< Stack level.
    logical                        :: is_self_closing     !< Self closing tag flag.
    logical                        :: is_terminated       !< Terminated start tag flag.
 
    call self%free
-   n = len(source_string)
+   n = len(source_string, kind=I8P)
    allocate(stack(INITIAL_CAPACITY), stack_start(INITIAL_CAPACITY), stack_open_end(INITIAL_CAPACITY))
    depth = 0
    owner = 0
@@ -592,7 +593,7 @@ contains
    do while (pos<=n)
       if (source_string(pos:pos)/='<') then
          ! character data
-         e = index(source_string(pos:), '<')
+         e = index(source_string(pos:), '<', kind=I8P)
          if (e==0) then
             k = n
          else
@@ -601,7 +602,7 @@ contains
          if (owner>0) text = text//source_string(pos:k)
          pos = k + 1
       elseif (source_string(pos:min(n, pos+3))=='<!--') then
-         e = index(source_string(pos+4:), '-->')
+         e = index(source_string(pos+4:), '-->', kind=I8P)
          if (e==0) then
             call record_problem(problem, source_string, pos, 'unterminated comment')
             exit
@@ -610,7 +611,7 @@ contains
          if (owner>0) text = text//source_string(pos:k)
          pos = k + 1
       elseif (source_string(pos:min(n, pos+8))=='<![CDATA[') then
-         e = index(source_string(pos+9:), ']]>')
+         e = index(source_string(pos+9:), ']]>', kind=I8P)
          if (e==0) then
             call record_problem(problem, source_string, pos, 'unterminated CDATA section')
             exit
@@ -619,7 +620,7 @@ contains
          if (owner>0) text = text//source_string(pos:k)
          pos = k + 1
       elseif (source_string(pos:min(n, pos+1))=='<?') then
-         e = index(source_string(pos+2:), '?>')
+         e = index(source_string(pos+2:), '?>', kind=I8P)
          if (e==0) then
             call record_problem(problem, source_string, pos, 'unterminated processing instruction')
             exit
@@ -637,7 +638,7 @@ contains
       elseif (source_string(pos:min(n, pos+1))=='</') then
          k = pos + 2
          call read_name(source=source_string, pos=k, name=name)
-         e = index(source_string(k:), '>')
+         e = index(source_string(k:), '>', kind=I8P)
          if (e==0) then
             call record_problem(problem, source_string, pos, 'unterminated end tag </'//name//'>')
             exit
@@ -671,7 +672,7 @@ contains
             cycle
          endif
          if (self%nt==0.and.pos>1) then ! the prolog is what precedes the first tag, if not only blanks
-            if (verify(source_string(1:pos-1), BLANKS)>0) self%prolog = source_string(1:pos-1)
+            if (verify(source_string(1:pos-1), BLANKS, kind=I8P)>0) self%prolog = source_string(1:pos-1)
          endif
          call flush_text(self=self, owner=owner, is_tail=is_tail, text=text, is_parent=.true.)
          call tag%free
@@ -716,7 +717,7 @@ contains
                                    tag_name//'>')
                cycle
             endif
-            e = index(source_string(k+1:), quote)
+            e = index(source_string(k+1:), quote, kind=I8P)
             if (e==0) then
                call record_problem(problem, source_string, k, 'unterminated value of attribute "'//name//'" in tag <'// &
                                    tag_name//'>')
@@ -733,11 +734,11 @@ contains
             exit
          endif
          if (is_self_closing) then
-            call self%tag(self%nt)%set(pos=[pos, k-1, -1_I4P], is_self_closing=.true.)
+            call self%tag(self%nt)%set(pos=[pos, k-1, -1_I8P], is_self_closing=.true.)
             owner = self%nt ! the following character data is its tail
             is_tail = .true.
          else
-            call self%tag(self%nt)%set(pos=[pos, k-1, 0_I4P], is_self_closing=.false.)
+            call self%tag(self%nt)%set(pos=[pos, k-1, 0_I8P], is_self_closing=.false.)
             if (depth==size(stack, dim=1)) then
                stack = [stack, stack]
                stack_start = [stack_start, stack_start]
@@ -764,7 +765,7 @@ contains
    type(xml_tag),                 intent(in)    :: tag        !< XML tag.
    logical,                       intent(inout) :: is_done(:) !< List of stringified tags.
    character(len=:), allocatable, intent(inout) :: buffer     !< Output buffer.
-   integer(I4P),                  intent(inout) :: n          !< Used length of the buffer.
+   integer(I8P),                  intent(inout) :: n          !< Used length of the buffer.
    integer(I4P)                                 :: t          !< Counter.
 
    if (self%is_mixed(tag%get_id())) then
@@ -804,18 +805,18 @@ contains
    pure subroutine append(buffer, n, piece)
    !< Append a piece to a buffer of used length *n*, doubling its capacity when full.
    character(len=:), allocatable, intent(inout) :: buffer !< Buffer.
-   integer(I4P),                  intent(inout) :: n      !< Used length of the buffer.
+   integer(I8P),                  intent(inout) :: n      !< Used length of the buffer.
    character(*),                  intent(in)    :: piece  !< Piece to append.
    character(len=:), allocatable                :: grown  !< Grown buffer.
 
-   if (.not.allocated(buffer)) allocate(character(len=max(INITIAL_BUFFER_LEN, len(piece))) :: buffer)
-   if (n + len(piece)>len(buffer)) then
-      allocate(character(len=max(2 * len(buffer), n + len(piece))) :: grown)
+   if (.not.allocated(buffer)) allocate(character(len=max(INITIAL_BUFFER_LEN, len(piece, kind=I8P))) :: buffer)
+   if (n + len(piece, kind=I8P)>len(buffer, kind=I8P)) then
+      allocate(character(len=max(2_I8P * len(buffer, kind=I8P), n + len(piece, kind=I8P))) :: grown)
       grown(1:n) = buffer(1:n)
       call move_alloc(from=grown, to=buffer)
    endif
-   buffer(n+1:n+len(piece)) = piece
-   n = n + len(piece)
+   buffer(n+1:n+len(piece, kind=I8P)) = piece
+   n = n + len(piece, kind=I8P)
    endsubroutine append
 
    pure function after_declaration(source, start) result(after)
@@ -823,18 +824,18 @@ contains
    !<
    !< @note Quoted strings and the `[...]` internal subset may contain `>`.
    character(*), intent(in) :: source  !< Source.
-   integer(I4P), intent(in) :: start   !< Declaration start (`<`) position.
-   integer(I4P)             :: after   !< Position after the declaration.
+   integer(I8P), intent(in) :: start   !< Declaration start (`<`) position.
+   integer(I8P)             :: after   !< Position after the declaration.
    integer(I4P)             :: brackets !< Internal subset nesting.
-   integer(I4P)             :: e       !< Relative position of closing quote.
+   integer(I8P)             :: e       !< Relative position of closing quote.
    character(len=1)         :: c       !< Current character.
 
    after = start + 2
    brackets = 0
-   do while (after<=len(source))
+   do while (after<=len(source, kind=I8P))
       c = source(after:after)
       if (c=='"'.or.c=="'") then
-         e = index(source(after+1:), c)
+         e = index(source(after+1:), c, kind=I8P)
          if (e==0) exit
          after = after + e
       elseif (c=='[') then
@@ -854,14 +855,14 @@ contains
    !< Record a problem of malformed input with its line, only if it is the first one.
    character(len=:), allocatable, intent(inout) :: problem !< First problem, unallocated if none yet.
    character(*),                  intent(in)    :: source  !< Source.
-   integer(I4P),                  intent(in)    :: pos     !< Position of the problem.
+   integer(I8P),                  intent(in)    :: pos     !< Position of the problem.
    character(*),                  intent(in)    :: message !< Problem description.
-   integer(I4P)                                 :: line    !< Line of the problem.
-   integer(I4P)                                 :: c       !< Counter.
+   integer(I8P)                                 :: line    !< Line of the problem.
+   integer(I8P)                                 :: c       !< Counter.
 
    if (allocated(problem)) return
    line = 1
-   do c=1, min(pos, len(source)) - 1
+   do c=1, min(pos, len(source, kind=I8P)) - 1
       if (source(c:c)==new_line('a')) line = line + 1
    enddo
    problem = 'line '//trim(str(line, no_sign=.true.))//': '//message
@@ -873,7 +874,7 @@ contains
    logical                  :: is_declaration !< Check result.
 
    is_declaration = .false.
-   if (len(prolog)>5) is_declaration = prolog(1:5)=='<?xml'.and.scan(prolog(6:6), BLANKS)>0
+   if (len(prolog, kind=I8P)>5) is_declaration = prolog(1:5)=='<?xml'.and.scan(prolog(6:6), BLANKS)>0
    endfunction starts_with_declaration
 
    pure subroutine flush_text(self, owner, is_tail, text, is_parent)
@@ -926,12 +927,12 @@ contains
    !< Read a (tag or attribute) name starting at *pos*, ended by a blank, `/`, `>`, `=` or the source end; *pos* is moved
    !< after the name.
    character(*),                  intent(in)    :: source !< Source.
-   integer(I4P),                  intent(inout) :: pos    !< Current position.
+   integer(I8P),                  intent(inout) :: pos    !< Current position.
    character(len=:), allocatable, intent(out)   :: name   !< Name, empty if none.
-   integer(I4P)                                 :: start  !< Name start.
+   integer(I8P)                                 :: start  !< Name start.
 
    start = pos
-   do while (pos<=len(source))
+   do while (pos<=len(source, kind=I8P))
       if (scan(source(pos:pos), NAME_END)>0) exit
       pos = pos + 1
    enddo
@@ -941,9 +942,9 @@ contains
    pure subroutine skip_blanks(source, pos)
    !< Move *pos* after the blanks (space, tab, new line, carriage return) starting at it.
    character(*), intent(in)    :: source !< Source.
-   integer(I4P), intent(inout) :: pos    !< Current position.
+   integer(I8P), intent(inout) :: pos    !< Current position.
 
-   do while (pos<=len(source))
+   do while (pos<=len(source, kind=I8P))
       if (scan(source(pos:pos), BLANKS)==0) exit
       pos = pos + 1
    enddo
@@ -955,27 +956,27 @@ contains
    character(*), intent(in)      :: raw      !< Raw character data.
    character(len=:), allocatable :: value    !< Value.
    character(len=:), allocatable :: stripped !< Raw data without leading and trailing blanks.
-   integer(I4P)                  :: p        !< Current position.
-   integer(I4P)                  :: c        !< Relative position of next CDATA start.
-   integer(I4P)                  :: q        !< CDATA content start.
-   integer(I4P)                  :: e        !< Relative position of CDATA end.
+   integer(I8P)                  :: p        !< Current position.
+   integer(I8P)                  :: c        !< Relative position of next CDATA start.
+   integer(I8P)                  :: q        !< CDATA content start.
+   integer(I8P)                  :: e        !< Relative position of CDATA end.
 
    stripped = strip_blanks(without_markup(raw)) ! blanks first: encoded blanks and CDATA blanks are data
-   if (index(stripped, CDATA_START)==0) then
+   if (index(stripped, CDATA_START, kind=I8P)==0) then
       value = xml_unescape(stripped)
       return
    endif
    value = ''
    p = 1
-   do while (p<=len(stripped))
-      c = index(stripped(p:), CDATA_START)
+   do while (p<=len(stripped, kind=I8P))
+      c = index(stripped(p:), CDATA_START, kind=I8P)
       if (c==0) then
          value = value//xml_unescape(stripped(p:))
          exit
       endif
       value = value//xml_unescape(stripped(p:p+c-2))
       q = p + c - 1 + len(CDATA_START)
-      e = index(stripped(q:), CDATA_END)
+      e = index(stripped(q:), CDATA_END, kind=I8P)
       if (e==0) then ! unterminated, literal up to the end
          value = value//stripped(q:)
          exit
@@ -991,35 +992,36 @@ contains
    character(*),      intent(in) :: raw              !< Raw character data.
    logical, optional, intent(in) :: is_cdata_removed !< Remove CDATA sections too.
    character(len=:), allocatable :: text             !< Character data without markup.
-   character(len=len(raw))       :: buffer           !< Kept characters.
+   character(len=:), allocatable :: buffer           !< Kept characters (allocatable: no stack object as large as raw).
    logical                       :: is_cdata_removed_ !< Remove CDATA sections too, local variable.
-   integer(I4P)                  :: n                !< Number of kept characters.
-   integer(I4P)                  :: p                !< Current position.
-   integer(I4P)                  :: k                !< End of the current markup.
-   integer(I4P)                  :: e                !< Relative position of the markup end.
+   integer(I8P)                  :: n                !< Number of kept characters.
+   integer(I8P)                  :: p                !< Current position.
+   integer(I8P)                  :: k                !< End of the current markup.
+   integer(I8P)                  :: e                !< Relative position of the markup end.
 
-   if (index(raw, '<')==0) then
+   if (index(raw, '<', kind=I8P)==0) then
       text = raw
       return
    endif
    is_cdata_removed_ = .false. ; if (present(is_cdata_removed)) is_cdata_removed_ = is_cdata_removed
+   allocate(character(len=len(raw, kind=I8P)) :: buffer)
    n = 0
    p = 1
-   do while (p<=len(raw))
+   do while (p<=len(raw, kind=I8P))
       k = 0
       if (raw(p:p)=='<') then
-         if (raw(p:min(len(raw), p+8))==CDATA_START) then
-            e = index(raw(p+9:), CDATA_END)
+         if (raw(p:min(len(raw, kind=I8P), p+8))==CDATA_START) then
+            e = index(raw(p+9:), CDATA_END, kind=I8P)
             if (e>0) k = p + e + 10
             if (k>0.and..not.is_cdata_removed_) then ! kept as it is
                buffer(n+1:n+k-p+1) = raw(p:k)
                n = n + k - p + 1
             endif
-         elseif (raw(p:min(len(raw), p+3))=='<!--') then
-            e = index(raw(p+4:), '-->')
+         elseif (raw(p:min(len(raw, kind=I8P), p+3))=='<!--') then
+            e = index(raw(p+4:), '-->', kind=I8P)
             if (e>0) k = p + e + 5
-         elseif (raw(p:min(len(raw), p+1))=='<?') then
-            e = index(raw(p+2:), '?>')
+         elseif (raw(p:min(len(raw, kind=I8P), p+1))=='<?') then
+            e = index(raw(p+2:), '?>', kind=I8P)
             if (e>0) k = p + e + 2
          endif
       endif
@@ -1038,14 +1040,14 @@ contains
    !< Return string without leading and trailing blanks: spaces, tabs, new lines and carriage returns.
    character(*), intent(in)      :: string   !< String to strip.
    character(len=:), allocatable :: stripped !< Stripped string.
-   integer(I4P)                  :: first    !< First not blank character position.
-   integer(I4P)                  :: last     !< Last not blank character position.
+   integer(I8P)                  :: first    !< First not blank character position.
+   integer(I8P)                  :: last     !< Last not blank character position.
 
-   first = verify(string, BLANKS)
+   first = verify(string, BLANKS, kind=I8P)
    if (first == 0) then
       stripped = ''
    else
-      last = verify(string, BLANKS, back=.true.)
+      last = verify(string, BLANKS, back=.true., kind=I8P)
       stripped = string(first:last)
    endif
    endfunction strip_blanks
@@ -1086,7 +1088,7 @@ contains
    logical                             :: cstart          !< Flag for stream capturing trigging.
    logical                             :: cend            !< Flag for stream capturing trigging.
    logical                             :: fast            !< Flag for activating efficient reading with one single read.
-   integer(I4P)                        :: filesize        !< Size of the file for fast reading.
+   integer(I8P)                        :: filesize        !< Size of the file for fast reading.
 
    fast = .false. ; if (present(fast_read)) fast = fast_read
    ! open file: a missing file is an open error, reported by iostat/iomsg
