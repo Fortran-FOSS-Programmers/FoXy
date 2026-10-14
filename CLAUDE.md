@@ -73,7 +73,7 @@ From `CONTRIBUTING.md`:
 
 ## Architecture
 
-Seven source modules, all in `src/lib/`:
+Eight source modules, all in `src/lib/`:
 
 ```
 foxy.f90          ← thin re-export wrapper (use this in user code)
@@ -83,6 +83,7 @@ foxy_xml_tag.F90  ← xml_tag type: single element (note .F90 = preprocessed)
 foxy_xml_entities.f90 ← xml_escape/xml_unescape: character references; text_value/without_markup/strip_blanks
 foxy_xml_tree.f90 ← tree queries (find, find_all, children, attribute, build_children) over a tags array
 foxy_xml_tokenizer.f90 ← resumable tokenizer (xml_tokenizer%feed) driving an abstract xml_builder
+foxy_xml_writer.f90 ← xml_writer type: streaming writer to a file, a unit or memory (sticky errors)
 ```
 
 **`xml_tag`** stores a single XML element: name, text content, `attribute(:,:)` (2-row array of name/value pairs),
