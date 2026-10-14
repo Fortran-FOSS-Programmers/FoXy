@@ -56,7 +56,9 @@ type :: xml_tag
       procedure, pass(self) :: get_content                 !< Return tag content.
       procedure, pass(self) :: get_attribute               !< Return the value of the attribute named *name*.
       procedure, pass(self) :: get_id                      !< Return tag uniq ID.
+      procedure, pass(self) :: get_level                   !< Return tag hierarchy level.
       procedure, pass(self) :: get_parent_id               !< Return parent tag uniq ID.
+      procedure, pass(self) :: get_pos                     !< Return tag positions in the source.
       procedure, pass(self) :: get_tail                    !< Return the text after the end tag.
       procedure, pass(self) :: is_attribute_present        !< Return .true. it the queried attribute name is defined.
       procedure, pass(self) :: is_parsed                   !< Check is tag is correctly parsed, i.e. its *tag_name* is allocated.
@@ -300,6 +302,22 @@ contains
 
    parent_id = self%parent_id
    endfunction get_parent_id
+
+   elemental function get_level(self) result(level)
+   !< Return tag hierarchy level.
+   class(xml_tag), intent(in) :: self  !< XML tag.
+   integer(I4P)               :: level !< Tag hierarchy level, 1 for a root tag.
+
+   level = self%level
+   endfunction get_level
+
+   pure function get_pos(self) result(pos)
+   !< Return tag positions in the source: start tag `<`, start tag `>`, end tag `<` (-1 if self closing, 0 if unclosed).
+   class(xml_tag), intent(in) :: self   !< XML tag.
+   integer(I8P)               :: pos(3) !< Positions.
+
+   pos = self%pos
+   endfunction get_pos
 
    pure function is_attribute_present(self, name) result(is_present)
    !< Return .true. it the queried attribute name is defined, .false. otherwise.

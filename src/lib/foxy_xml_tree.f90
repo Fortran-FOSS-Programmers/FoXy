@@ -13,6 +13,9 @@ public :: tree_attribute
 public :: tree_build_children
 public :: tree_children
 public :: tree_find_all
+public :: tree_level
+public :: tree_name
+public :: tree_parent
 public :: tags_indexes
 
 contains
@@ -128,6 +131,39 @@ contains
       ids = children_named(tag=tag, nt=nt, parents=ids, name=segment)
    enddo
    endfunction tree_find_all
+
+   pure function tree_level(tag, nt, id) result(level)
+   !< Return the level of the tag with ID *id* (1 for a root tag), 0 if it does not exist.
+   type(xml_tag), allocatable, intent(in) :: tag(:) !< Tags.
+   integer(I4P),               intent(in) :: nt     !< Number of tags.
+   integer(I4P),               intent(in) :: id     !< Tag ID.
+   integer(I4P)                           :: level  !< Tag level.
+
+   level = 0
+   if (id>=1.and.id<=nt) level = tag(id)%get_level()
+   endfunction tree_level
+
+   pure function tree_name(tag, nt, id) result(name)
+   !< Return the name of the tag with ID *id*, an empty string if it does not exist.
+   type(xml_tag), allocatable, intent(in) :: tag(:) !< Tags.
+   integer(I4P),               intent(in) :: nt     !< Number of tags.
+   integer(I4P),               intent(in) :: id     !< Tag ID.
+   character(len=:), allocatable          :: name   !< Tag name.
+
+   name = ''
+   if (id>=1.and.id<=nt) name = tag(id)%name()
+   endfunction tree_name
+
+   pure function tree_parent(tag, nt, id) result(parent)
+   !< Return the parent ID of the tag with ID *id* (0 for a root tag or if the tag does not exist).
+   type(xml_tag), allocatable, intent(in) :: tag(:) !< Tags.
+   integer(I4P),               intent(in) :: nt     !< Number of tags.
+   integer(I4P),               intent(in) :: id     !< Tag ID.
+   integer(I4P)                           :: parent !< Parent ID.
+
+   parent = 0
+   if (id>=1.and.id<=nt) parent = tag(id)%get_parent_id()
+   endfunction tree_parent
 
    pure function tags_indexes(nt) result(indexes)
    !< Return the tags indexes [1:nt].

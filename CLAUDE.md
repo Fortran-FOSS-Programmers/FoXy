@@ -73,13 +73,14 @@ From `CONTRIBUTING.md`:
 
 ## Architecture
 
-Six source modules, all in `src/lib/`:
+Seven source modules, all in `src/lib/`:
 
 ```
 foxy.f90          ← thin re-export wrapper (use this in user code)
 foxy_xml_file.f90 ← xml_file type: array-based DOM container
+foxy_xml_index.f90 ← xml_index type: tags of a file without content (scan in chunks, content read on demand)
 foxy_xml_tag.F90  ← xml_tag type: single element (note .F90 = preprocessed)
-foxy_xml_entities.f90 ← xml_escape/xml_unescape: character references
+foxy_xml_entities.f90 ← xml_escape/xml_unescape: character references; text_value/without_markup/strip_blanks
 foxy_xml_tree.f90 ← tree queries (find, find_all, children, attribute, build_children) over a tags array
 foxy_xml_tokenizer.f90 ← resumable tokenizer (xml_tokenizer%feed) driving an abstract xml_builder
 ```
@@ -102,6 +103,10 @@ There are **two parsers**:
   1 MiB) and feeds them (`parse_from_file`), so the file is never loaded whole; problem lines are counted afterwards.
   An unterminated comment/CDATA/PI is kept as text up to the source end, so chunked and whole parsing always agree
   (`foxy_test_parse_chunks` checks it down to 1-character chunks).
+  `xml_index%scan` feeds the same chunks to an `index_builder` (no character data stored, `stop_at` sets the builder
+  `is_stopped` flag checked by the tokenizer after each start tag); `content(id)` reads the direct text from the file
+  (children cut out using the end-tag `>` positions in `last(:)`), `text_range`/`content_range` give the byte ranges.
+  `foxy_test_index` checks the index against the DOM (tags, attributes, content) down to 1-character chunks.
 - `xml_tag%parse`/`search` — the older single-tag parser, still used by `xml_tag%get_content` (and so by
   `xml_file%content`) to look up nested tags by name.
 

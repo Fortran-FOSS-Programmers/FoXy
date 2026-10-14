@@ -1,10 +1,11 @@
 !< FoXy XML file class.
 module foxy_xml_file
 !< FoXy XML file class.
-use foxy_xml_entities, only : xml_unescape
+use foxy_xml_entities, only : text_value, without_markup
 use foxy_xml_tag, only : xml_tag
-use foxy_xml_tokenizer, only : xml_builder, xml_tokenizer, DATA_TEXT, DATA_PI
-use foxy_xml_tree, only : tree_attribute, tree_build_children, tree_children, tree_find_all
+use foxy_xml_tokenizer, only : xml_builder, xml_tokenizer, located, located_in_file, DATA_TEXT, DATA_PI
+use foxy_xml_tree, only : tree_attribute, tree_build_children, tree_children, tree_find_all, tree_level, tree_name, &
+                          tree_parent
 use penf
 
 implicit none
@@ -15,8 +16,6 @@ integer(I4P), parameter :: INITIAL_CAPACITY   = 64_I4P   !< Initial capacity of 
 integer(I8P), parameter :: INITIAL_BUFFER_LEN = 4096_I8P !< Initial length of the stringify buffer, doubled when full.
 integer(I8P), parameter :: FILE_CHUNK_SIZE = 1048576_I8P !< Default size of the chunks read from a file (1 MiB).
 character(*), parameter :: BLANKS   = ' '//achar(9)//achar(10)//achar(13) !< XML blanks: space, tab, new line, CR.
-character(*), parameter :: CDATA_START = '<![CDATA[' !< CDATA section start.
-character(*), parameter :: CDATA_END   = ']]>'       !< CDATA section end.
 character(*), parameter :: XML_DECLARATION = '<?xml version="1.0"?>' !< XML declaration written by *save*.
 
 type, public:: xml_file
@@ -38,6 +37,9 @@ type, public:: xml_file
       procedure, pass(self) :: find       !< Return the ID of the first tag matching a name or a path.
       procedure, pass(self) :: find_all   !< Return the IDs of all tags matching a name or a path.
       procedure, pass(self) :: free       !< Free dynamic memory.
+      procedure, pass(self) :: level      !< Return the level of the tag with a given ID.
+      procedure, pass(self) :: name       !< Return the name of the tag with a given ID.
+      procedure, pass(self) :: parent     !< Return the parent ID of the tag with a given ID.
       procedure, pass(self) :: parse      !< Parse xml file.
       procedure, pass(self) :: save       !< Save the whole file data into a file.
       procedure, pass(self) :: stringify  !< Convert the whole file data into a string.
@@ -268,6 +270,33 @@ contains
    call move_alloc(from=tag_new, to=self%tag)
    self%nt = n
    endsubroutine delete_tag
+
+   pure function level(self, id) result(level_)
+   !< Return the level of the tag with ID *id* (1 for a root tag), 0 if it does not exist.
+   class(xml_file), intent(in) :: self   !< XML file.
+   integer(I4P),    intent(in) :: id     !< Tag ID.
+   integer(I4P)                :: level_ !< Tag level.
+
+   level_ = tree_level(tag=self%tag, nt=self%nt, id=id)
+   endfunction level
+
+   pure function name(self, id) result(name_)
+   !< Return the name of the tag with ID *id*, an empty string if it does not exist.
+   class(xml_file), intent(in)   :: self  !< XML file.
+   integer(I4P),    intent(in)   :: id    !< Tag ID.
+   character(len=:), allocatable :: name_ !< Tag name.
+
+   name_ = tree_name(tag=self%tag, nt=self%nt, id=id)
+   endfunction name
+
+   pure function parent(self, id) result(parent_)
+   !< Return the parent ID of the tag with ID *id* (0 for a root tag or if the tag does not exist).
+   class(xml_file), intent(in) :: self    !< XML file.
+   integer(I4P),    intent(in) :: id      !< Tag ID.
+   integer(I4P)                :: parent_ !< Parent ID.
+
+   parent_ = tree_parent(tag=self%tag, nt=self%nt, id=id)
+   endfunction parent
 
    elemental subroutine free(self)
    !< Free dynamic memory.
@@ -652,13 +681,14 @@ contains
    self%is_tail = is_self_closing
    endsubroutine dom_start_tag_end
 
-   subroutine dom_end_tag(self, id, start, open_end, end_start)
+   subroutine dom_end_tag(self, id, start, open_end, end_start, end_end)
    !< An open tag is closed: the text so far ends, the following character data are its tail.
    class(dom_builder), intent(inout) :: self      !< DOM builder.
    integer(I4P),       intent(in)    :: id        !< Tag ID.
    integer(I8P),       intent(in)    :: start     !< Position of the start tag `<`.
    integer(I8P),       intent(in)    :: open_end  !< Position of the start tag `>`.
    integer(I8P),       intent(in)    :: end_start !< Position of the end tag `<`.
+   integer(I8P),       intent(in)    :: end_end   !< Position of the end tag `>`.
 
    call self%flush(is_parent=.false.)
    call self%doc%tag(id)%set(pos=[start, open_end, end_start])
@@ -740,58 +770,6 @@ contains
    n = n + len(piece, kind=I8P)
    endsubroutine append
 
-   pure function located(source, pos, message) result(problem)
-   !< Return a problem description prefixed by its line in the source.
-   character(*), intent(in)      :: source  !< Source.
-   integer(I8P), intent(in)      :: pos     !< Position of the problem.
-   character(*), intent(in)      :: message !< Problem description.
-   character(len=:), allocatable :: problem !< Located problem description.
-   integer(I8P)                  :: line    !< Line of the problem.
-   integer(I8P)                  :: c       !< Counter.
-
-   line = 1
-   do c=1, min(pos, len(source, kind=I8P)) - 1
-      if (source(c:c)==new_line('a')) line = line + 1
-   enddo
-   problem = 'line '//trim(str(line, no_sign=.true.))//': '//message
-   endfunction located
-
-   function located_in_file(filename, pos, message, chunk_size) result(problem)
-   !< Return a problem description prefixed by its line in a file (read again in chunks, counting the new lines).
-   character(*), intent(in)      :: filename   !< File name.
-   integer(I8P), intent(in)      :: pos        !< Position of the problem.
-   character(*), intent(in)      :: message    !< Problem description.
-   integer(I8P), intent(in)      :: chunk_size !< Size of the chunks read from the file.
-   character(len=:), allocatable :: problem    !< Located problem description.
-   character(len=:), allocatable :: chunk      !< Chunk read.
-   integer(I8P)                  :: line       !< Line of the problem.
-   integer(I8P)                  :: read_size  !< Characters read so far.
-   integer(I8P)                  :: piece      !< Size of the chunk to read.
-   integer(I8P)                  :: c          !< Counter.
-   integer(I4P)                  :: unit       !< File unit.
-   integer(I4P)                  :: iostat     !< IO status.
-
-   line = 1
-   open(newunit=unit, file=trim(adjustl(filename)), access='STREAM', form='UNFORMATTED', action='READ', status='OLD', &
-        iostat=iostat)
-   if (iostat==0) then
-      read_size = 0
-      do while (read_size<pos-1)
-         piece = min(chunk_size, pos - 1 - read_size)
-         if (allocated(chunk)) deallocate(chunk)
-         allocate(character(len=piece) :: chunk)
-         read(unit=unit, iostat=iostat) chunk
-         if (iostat/=0) exit
-         do c=1, piece
-            if (chunk(c:c)==new_line('a')) line = line + 1
-         enddo
-         read_size = read_size + piece
-      enddo
-      close(unit)
-   endif
-   problem = 'line '//trim(str(line, no_sign=.true.))//': '//message
-   endfunction located_in_file
-
    pure function starts_with_declaration(prolog) result(is_declaration)
    !< Check if a prolog starts with the XML declaration (`<?xml` followed by a blank, not a PI named `xml-...`).
    character(*), intent(in) :: prolog         !< Prolog.
@@ -800,107 +778,5 @@ contains
    is_declaration = .false.
    if (len(prolog, kind=I8P)>5) is_declaration = prolog(1:5)=='<?xml'.and.scan(prolog(6:6), BLANKS)>0
    endfunction starts_with_declaration
-
-   pure function text_value(raw) result(value)
-   !< Return the value of raw character data: comments and PIs removed, layout blanks stripped, character references
-   !< decoded, CDATA sections literal.
-   character(*), intent(in)      :: raw      !< Raw character data.
-   character(len=:), allocatable :: value    !< Value.
-   character(len=:), allocatable :: stripped !< Raw data without leading and trailing blanks.
-   integer(I8P)                  :: p        !< Current position.
-   integer(I8P)                  :: c        !< Relative position of next CDATA start.
-   integer(I8P)                  :: q        !< CDATA content start.
-   integer(I8P)                  :: e        !< Relative position of CDATA end.
-
-   stripped = strip_blanks(without_markup(raw)) ! blanks first: encoded blanks and CDATA blanks are data
-   if (index(stripped, CDATA_START, kind=I8P)==0) then
-      value = xml_unescape(stripped)
-      return
-   endif
-   value = ''
-   p = 1
-   do while (p<=len(stripped, kind=I8P))
-      c = index(stripped(p:), CDATA_START, kind=I8P)
-      if (c==0) then
-         value = value//xml_unescape(stripped(p:))
-         exit
-      endif
-      value = value//xml_unescape(stripped(p:p+c-2))
-      q = p + c - 1 + len(CDATA_START)
-      e = index(stripped(q:), CDATA_END, kind=I8P)
-      if (e==0) then ! unterminated, literal up to the end
-         value = value//stripped(q:)
-         exit
-      endif
-      value = value//stripped(q:q+e-2)
-      p = q + e - 1 + len(CDATA_END)
-   enddo
-   endfunction text_value
-
-   pure function without_markup(raw, is_cdata_removed) result(text)
-   !< Return raw character data without comments and processing instructions (and CDATA sections, if asked); markup inside
-   !< a CDATA section is data, an unterminated markup is kept as it is.
-   character(*),      intent(in) :: raw              !< Raw character data.
-   logical, optional, intent(in) :: is_cdata_removed !< Remove CDATA sections too.
-   character(len=:), allocatable :: text             !< Character data without markup.
-   character(len=:), allocatable :: buffer           !< Kept characters (allocatable: no stack object as large as raw).
-   logical                       :: is_cdata_removed_ !< Remove CDATA sections too, local variable.
-   integer(I8P)                  :: n                !< Number of kept characters.
-   integer(I8P)                  :: p                !< Current position.
-   integer(I8P)                  :: k                !< End of the current markup.
-   integer(I8P)                  :: e                !< Relative position of the markup end.
-
-   if (index(raw, '<', kind=I8P)==0) then
-      text = raw
-      return
-   endif
-   is_cdata_removed_ = .false. ; if (present(is_cdata_removed)) is_cdata_removed_ = is_cdata_removed
-   allocate(character(len=len(raw, kind=I8P)) :: buffer)
-   n = 0
-   p = 1
-   do while (p<=len(raw, kind=I8P))
-      k = 0
-      if (raw(p:p)=='<') then
-         if (raw(p:min(len(raw, kind=I8P), p+8))==CDATA_START) then
-            e = index(raw(p+9:), CDATA_END, kind=I8P)
-            if (e>0) k = p + e + 10
-            if (k>0.and..not.is_cdata_removed_) then ! kept as it is
-               buffer(n+1:n+k-p+1) = raw(p:k)
-               n = n + k - p + 1
-            endif
-         elseif (raw(p:min(len(raw, kind=I8P), p+3))=='<!--') then
-            e = index(raw(p+4:), '-->', kind=I8P)
-            if (e>0) k = p + e + 5
-         elseif (raw(p:min(len(raw, kind=I8P), p+1))=='<?') then
-            e = index(raw(p+2:), '?>', kind=I8P)
-            if (e>0) k = p + e + 2
-         endif
-      endif
-      if (k>0) then
-         p = k + 1
-      else
-         n = n + 1
-         buffer(n:n) = raw(p:p)
-         p = p + 1
-      endif
-   enddo
-   text = buffer(1:n)
-   endfunction without_markup
-
-   pure function strip_blanks(string) result(stripped)
-   !< Return string without leading and trailing blanks: spaces, tabs, new lines and carriage returns.
-   character(*), intent(in)      :: string   !< String to strip.
-   character(len=:), allocatable :: stripped !< Stripped string.
-   integer(I8P)                  :: first    !< First not blank character position.
-   integer(I8P)                  :: last     !< Last not blank character position.
-
-   first = verify(string, BLANKS, kind=I8P)
-   if (first == 0) then
-      stripped = ''
-   else
-      last = verify(string, BLANKS, back=.true., kind=I8P)
-      stripped = string(first:last)
-   endif
-   endfunction strip_blanks
 
 endmodule foxy_xml_file

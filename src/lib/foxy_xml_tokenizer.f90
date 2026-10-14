@@ -16,6 +16,8 @@ use penf
 
 implicit none
 private
+public :: located
+public :: located_in_file
 public :: xml_builder
 public :: xml_tokenizer
 public :: DATA_TEXT, DATA_CDATA, DATA_COMMENT, DATA_PI, DATA_DECLARATION, DATA_IGNORED
@@ -34,6 +36,7 @@ character(*), parameter :: NAME_END = BLANKS//'/>=' !< Characters ending a tag o
 
 type, abstract :: xml_builder
    !< Builder driven by the tokenizer: one call per token (character data and similar in pieces).
+   logical :: is_stopped=.false. !< Set by the builder to stop the tokenizer (checked after each complete start tag).
    contains
       procedure(start_tag_interface),     pass(self), deferred :: start_tag     !< A start tag begins.
       procedure(attribute_interface),     pass(self), deferred :: attribute     !< An attribute of the current start tag.
@@ -74,7 +77,7 @@ abstract interface
    logical,            intent(in)    :: is_self_closing !< The tag is self closing.
    endsubroutine start_tag_end_interface
 
-   subroutine end_tag_interface(self, id, start, open_end, end_start)
+   subroutine end_tag_interface(self, id, start, open_end, end_start, end_end)
    !< An open tag is closed by its end tag (its inner open tags, if any, are closed implicitly).
    import :: xml_builder, I4P, I8P
    class(xml_builder), intent(inout) :: self      !< Builder.
@@ -82,6 +85,7 @@ abstract interface
    integer(I8P),       intent(in)    :: start     !< Position of the start tag `<`.
    integer(I8P),       intent(in)    :: open_end  !< Position of the start tag `>`.
    integer(I8P),       intent(in)    :: end_start !< Position of the end tag `<`.
+   integer(I8P),       intent(in)    :: end_end   !< Position of the end tag `>`.
    endsubroutine end_tag_interface
 
    subroutine data_interface(self, kind, chars, first)
@@ -228,7 +232,7 @@ contains
             if (l<self%depth) call builder%problem(pos=offset+pos, message='end tag </'//name//'> closes open tag <'// &
                                                    self%stack(self%depth)%name//'>')
             call builder%end_tag(id=self%stack(l)%id, start=self%stack(l)%start, open_end=self%stack(l)%open_end, &
-                                 end_start=offset+pos)
+                                 end_start=offset+pos, end_end=offset+k+e-1)
             self%depth = l - 1
          endif
          pos = k + e
@@ -319,6 +323,10 @@ contains
             self%stack(self%depth) = tag
          endif
          pos = k
+         if (builder%is_stopped) then ! the builder needs no more tokens
+            self%is_done = .true.
+            exit
+         endif
       endif
    enddo
    if (is_last.or.self%is_done) then
@@ -343,6 +351,58 @@ contains
    self%open_start = 0_I8P
    self%is_done = .false.
    endsubroutine reset
+
+   pure function located(source, pos, message) result(problem)
+   !< Return a problem description prefixed by its line in the source.
+   character(*), intent(in)      :: source  !< Source.
+   integer(I8P), intent(in)      :: pos     !< Position of the problem.
+   character(*), intent(in)      :: message !< Problem description.
+   character(len=:), allocatable :: problem !< Located problem description.
+   integer(I8P)                  :: line    !< Line of the problem.
+   integer(I8P)                  :: c       !< Counter.
+
+   line = 1
+   do c=1, min(pos, len(source, kind=I8P)) - 1
+      if (source(c:c)==new_line('a')) line = line + 1
+   enddo
+   problem = 'line '//trim(str(line, no_sign=.true.))//': '//message
+   endfunction located
+
+   function located_in_file(filename, pos, message, chunk_size) result(problem)
+   !< Return a problem description prefixed by its line in a file (read again in chunks, counting the new lines).
+   character(*), intent(in)      :: filename   !< File name.
+   integer(I8P), intent(in)      :: pos        !< Position of the problem.
+   character(*), intent(in)      :: message    !< Problem description.
+   integer(I8P), intent(in)      :: chunk_size !< Size of the chunks read from the file.
+   character(len=:), allocatable :: problem    !< Located problem description.
+   character(len=:), allocatable :: chunk      !< Chunk read.
+   integer(I8P)                  :: line       !< Line of the problem.
+   integer(I8P)                  :: read_size  !< Characters read so far.
+   integer(I8P)                  :: piece      !< Size of the chunk to read.
+   integer(I8P)                  :: c          !< Counter.
+   integer(I4P)                  :: unit       !< File unit.
+   integer(I4P)                  :: iostat     !< IO status.
+
+   line = 1
+   open(newunit=unit, file=trim(adjustl(filename)), access='STREAM', form='UNFORMATTED', action='READ', status='OLD', &
+        iostat=iostat)
+   if (iostat==0) then
+      read_size = 0
+      do while (read_size<pos-1)
+         piece = min(chunk_size, pos - 1 - read_size)
+         if (allocated(chunk)) deallocate(chunk)
+         allocate(character(len=piece) :: chunk)
+         read(unit=unit, iostat=iostat) chunk
+         if (iostat/=0) exit
+         do c=1, piece
+            if (chunk(c:c)==new_line('a')) line = line + 1
+         enddo
+         read_size = read_size + piece
+      enddo
+      close(unit)
+   endif
+   problem = 'line '//trim(str(line, no_sign=.true.))//': '//message
+   endfunction located_in_file
 
    ! private procedures
    function is_markup_closed(self, chars, offset, from, search_from, is_last, builder, pos) result(is_closed)
