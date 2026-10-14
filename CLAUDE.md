@@ -98,6 +98,10 @@ There are **two parsers**:
   consumed; long text/comments/CDATA/PIs are reported in pieces, tags whole), positions are absolute `I8P`.
   `xml_file` uses the `dom_builder` (text/tail ownership, prolog, first problem; CDATA/comments/PIs kept as raw text of
   their owner tag, DOCTYPE only in the prolog); children lists are built once at the end (`tree_build_children`).
+  `parse(string=)` feeds the whole string once; `parse(filename=)` reads the file in chunks (`chunk_size`, default
+  1 MiB) and feeds them (`parse_from_file`), so the file is never loaded whole; problem lines are counted afterwards.
+  An unterminated comment/CDATA/PI is kept as text up to the source end, so chunked and whole parsing always agree
+  (`foxy_test_parse_chunks` checks it down to 1-character chunks).
 - `xml_tag%parse`/`search` — the older single-tag parser, still used by `xml_tag%get_content` (and so by
   `xml_file%content`) to look up nested tags by name.
 

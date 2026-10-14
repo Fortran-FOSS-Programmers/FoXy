@@ -13,6 +13,7 @@ private
 integer(I4P), parameter, public :: XML_MALFORMED = 9001_I4P !< *iostat* of parse for malformed XML input.
 integer(I4P), parameter :: INITIAL_CAPACITY   = 64_I4P   !< Initial capacity of the tags array, doubled when full.
 integer(I8P), parameter :: INITIAL_BUFFER_LEN = 4096_I8P !< Initial length of the stringify buffer, doubled when full.
+integer(I8P), parameter :: FILE_CHUNK_SIZE = 1048576_I8P !< Default size of the chunks read from a file (1 MiB).
 character(*), parameter :: BLANKS   = ' '//achar(9)//achar(10)//achar(13) !< XML blanks: space, tab, new line, CR.
 character(*), parameter :: CDATA_START = '<![CDATA[' !< CDATA section start.
 character(*), parameter :: CDATA_END   = ']]>'       !< CDATA section end.
@@ -48,6 +49,7 @@ type, public:: xml_file
       procedure, pass(self), private :: raw_text            !< Return a tag stored text (raw).
       procedure, pass(self), private :: content_by_id       !< Return tag content of the tag with a given ID.
       procedure, pass(self), private :: content_by_name     !< Return tag content of tag named *name*.
+      procedure, pass(self), private :: parse_from_file     !< Parse xml data from a file, read in chunks.
       procedure, pass(self), private :: parse_from_string   !< Parse xml data from string.
       procedure, pass(self), private :: stringify_recursive !< Convert recursively tags with children into a string.
       ! operators
@@ -279,7 +281,7 @@ contains
    if (allocated(self%prolog)) deallocate(self%prolog)
    endsubroutine free
 
-   subroutine parse(self, string, filename, iostat, iomsg, sanitize_attributes_value)
+   subroutine parse(self, string, filename, iostat, iomsg, sanitize_attributes_value, chunk_size)
    !< Parse xml data from string or file.
    !< XML data is linearized, a DOM structured is used.
    !<
@@ -289,29 +291,30 @@ contains
    !< (unchanged on success) describes the error, for malformed input the first problem found with its line.
    !< @note Leading and trailing spaces of attribute values are trimmed (default), unless *sanitize_attributes_value* is
    !< false: then values are kept as in the source (XML data).
+   !< @note A file is read in chunks of *chunk_size* characters (default 1 MiB): it is never loaded whole in memory.
    class(xml_file),        intent(inout) :: self     !< XML file.
    character(*), optional, intent(in)    :: string   !< String containing xml data.
    character(*), optional, intent(in)    :: filename !< File name containing xml data.
    integer(I4P), optional, intent(out)   :: iostat   !< IO status.
    character(*), optional, intent(inout) :: iomsg    !< IO message.
    logical,      optional, intent(in)    :: sanitize_attributes_value !< Trim attribute values spaces (default .true.).
-   character(len=:), allocatable         :: source   !< String containing xml data.
+   integer(I8P), optional, intent(in)    :: chunk_size !< Size of the chunks read from a file.
    character(len=:), allocatable         :: problem  !< First problem of malformed input.
    integer(I4P)                          :: iostat_  !< IO status, local variable.
    character(len=500)                    :: iomsg_   !< IO message, local variable.
    logical                               :: sanitize !< Trim attribute values spaces, local variable.
+   integer(I8P)                          :: chunk_size_ !< Size of the chunks read from a file, local variable.
 
    sanitize = .true. ; if (present(sanitize_attributes_value)) sanitize = sanitize_attributes_value
+   chunk_size_ = FILE_CHUNK_SIZE ; if (present(chunk_size)) chunk_size_ = max(1_I8P, chunk_size)
    iostat_ = 0
    iomsg_ = ''
    call self%free
    if (present(string)) then
       call self%parse_from_string(source_string=string, sanitize=sanitize, problem=problem)
    elseif (present(filename)) then
-      source = load_file_as_stream(filename=filename, fast_read=.true., iostat=iostat_, iomsg=iomsg_)
-      if (iostat_<0) iostat_ = 0 ! end of file is not an error
-      if (iostat_==0.and.allocated(source)) call self%parse_from_string(source_string=source, sanitize=sanitize, &
-                                                                        problem=problem)
+      call self%parse_from_file(filename=filename, sanitize=sanitize, chunk_size=chunk_size_, problem=problem, &
+                                iostat=iostat_, iomsg=iomsg_)
    endif
    if (iostat_==0.and.allocated(problem)) then
       iostat_ = XML_MALFORMED
@@ -487,6 +490,67 @@ contains
    call self%tag(t)%get_content(name=self%tag(t)%name(), content=text)
    if (.not.allocated(text)) text = ''
    endfunction raw_text
+
+   subroutine parse_from_file(self, filename, sanitize, chunk_size, problem, iostat, iomsg)
+   !< Parse xml data from a file, read in chunks: the tokenizer drives the DOM builder, the file is never loaded whole.
+   !<
+   !< @note The first problem of malformed input is returned; *iostat* and *iomsg* report the file errors (the document is
+   !< left empty).
+   class(xml_file),               intent(inout) :: self       !< XML file handler.
+   character(*),                  intent(in)    :: filename   !< File name.
+   logical,                       intent(in)    :: sanitize   !< Trim leading and trailing spaces of attribute values.
+   integer(I8P),                  intent(in)    :: chunk_size !< Size of the chunks read from the file.
+   character(len=:), allocatable, intent(out)   :: problem    !< First problem of malformed input, unallocated if none.
+   integer(I4P),                  intent(out)   :: iostat     !< IO status.
+   character(*),                  intent(inout) :: iomsg      !< IO message.
+   type(xml_tokenizer)                          :: tokenizer  !< Tokenizer.
+   type(dom_builder)                            :: builder    !< DOM builder.
+   character(len=:), allocatable                :: window     !< Characters not consumed yet, followed by the last chunk.
+   character(len=:), allocatable                :: rest       !< Characters not consumed yet.
+   integer(I8P)                                 :: file_size  !< File size.
+   integer(I8P)                                 :: read_size  !< Characters read so far.
+   integer(I8P)                                 :: piece      !< Size of the chunk to read.
+   integer(I8P)                                 :: offset     !< Position of the character before the window.
+   integer(I8P)                                 :: consumed   !< Characters consumed by the tokenizer.
+   integer(I4P)                                 :: unit       !< File unit.
+   logical                                      :: is_last    !< The window ends the file.
+
+   call self%free
+   builder%sanitize = sanitize
+   open(newunit=unit, file=trim(adjustl(filename)), access='STREAM', form='UNFORMATTED', action='READ', status='OLD', &
+        iostat=iostat, iomsg=iomsg)
+   if (iostat/=0) return
+   inquire(unit=unit, size=file_size)
+   read_size = 0
+   offset = 0
+   rest = ''
+   do
+      piece = max(0_I8P, min(chunk_size, file_size - read_size))
+      allocate(character(len=len(rest, kind=I8P)+piece) :: window)
+      window(1:len(rest, kind=I8P)) = rest
+      if (piece>0) then
+         read(unit=unit, iostat=iostat, iomsg=iomsg) window(len(rest, kind=I8P)+1:)
+         if (iostat/=0) then
+            close(unit)
+            return
+         endif
+         read_size = read_size + piece
+      endif
+      is_last = read_size>=file_size
+      call tokenizer%feed(chars=window, offset=offset, is_last=is_last, builder=builder, consumed=consumed)
+      offset = offset + consumed
+      rest = window(consumed+1:)
+      deallocate(window)
+      if (is_last) exit
+   enddo
+   close(unit)
+   call builder%finish
+   call move_alloc(from=builder%doc%tag, to=self%tag)
+   self%nt = builder%doc%nt
+   if (allocated(builder%doc%prolog)) call move_alloc(from=builder%doc%prolog, to=self%prolog)
+   if (allocated(builder%first_problem)) problem = located_in_file(filename=filename, pos=builder%problem_pos, &
+                                                                   message=builder%first_problem, chunk_size=chunk_size)
+   endsubroutine parse_from_file
 
    subroutine parse_from_string(self, source_string, sanitize, problem)
    !< Parse xml data from a string: the tokenizer drives the DOM builder. The first problem of malformed input is returned.
@@ -692,6 +756,42 @@ contains
    problem = 'line '//trim(str(line, no_sign=.true.))//': '//message
    endfunction located
 
+   function located_in_file(filename, pos, message, chunk_size) result(problem)
+   !< Return a problem description prefixed by its line in a file (read again in chunks, counting the new lines).
+   character(*), intent(in)      :: filename   !< File name.
+   integer(I8P), intent(in)      :: pos        !< Position of the problem.
+   character(*), intent(in)      :: message    !< Problem description.
+   integer(I8P), intent(in)      :: chunk_size !< Size of the chunks read from the file.
+   character(len=:), allocatable :: problem    !< Located problem description.
+   character(len=:), allocatable :: chunk      !< Chunk read.
+   integer(I8P)                  :: line       !< Line of the problem.
+   integer(I8P)                  :: read_size  !< Characters read so far.
+   integer(I8P)                  :: piece      !< Size of the chunk to read.
+   integer(I8P)                  :: c          !< Counter.
+   integer(I4P)                  :: unit       !< File unit.
+   integer(I4P)                  :: iostat     !< IO status.
+
+   line = 1
+   open(newunit=unit, file=trim(adjustl(filename)), access='STREAM', form='UNFORMATTED', action='READ', status='OLD', &
+        iostat=iostat)
+   if (iostat==0) then
+      read_size = 0
+      do while (read_size<pos-1)
+         piece = min(chunk_size, pos - 1 - read_size)
+         if (allocated(chunk)) deallocate(chunk)
+         allocate(character(len=piece) :: chunk)
+         read(unit=unit, iostat=iostat) chunk
+         if (iostat/=0) exit
+         do c=1, piece
+            if (chunk(c:c)==new_line('a')) line = line + 1
+         enddo
+         read_size = read_size + piece
+      enddo
+      close(unit)
+   endif
+   problem = 'line '//trim(str(line, no_sign=.true.))//': '//message
+   endfunction located_in_file
+
    pure function starts_with_declaration(prolog) result(is_declaration)
    !< Check if a prolog starts with the XML declaration (`<?xml` followed by a blank, not a PI named `xml-...`).
    character(*), intent(in) :: prolog         !< Prolog.
@@ -802,100 +902,5 @@ contains
       stripped = string(first:last)
    endif
    endfunction strip_blanks
-
-   function load_file_as_stream(filename, delimiter_start, delimiter_end, fast_read, iostat, iomsg) result(stream)
-   !< Load file contents and store as single characters stream.
-   character(*),           intent(in)  :: filename        !< File name.
-   character(*), optional, intent(in)  :: delimiter_start !< Delimiter from which start the stream.
-   character(*), optional, intent(in)  :: delimiter_end   !< Delimiter to which end the stream.
-   logical,      optional, intent(in)  :: fast_read       !< Flag for activating efficient reading with one single read.
-   integer(I4P), optional, intent(out) :: iostat          !< IO error.
-   character(*), optional, intent(out) :: iomsg           !< IO error message.
-   character(len=:), allocatable       :: stream          !< Output string containing the file data as a single stream.
-   integer(I4P)                        :: unit            !< Unit file.
-   integer(I4P)                        :: iostatd         !< IO error.
-   character(500)                      :: iomsgd          !< IO error message.
-   character(1)                        :: c1              !< Single character.
-   character(len=:), allocatable       :: string          !< Dummy string.
-   logical                             :: cstart          !< Flag for stream capturing trigging.
-   logical                             :: cend            !< Flag for stream capturing trigging.
-   logical                             :: fast            !< Flag for activating efficient reading with one single read.
-   integer(I8P)                        :: filesize        !< Size of the file for fast reading.
-
-   fast = .false. ; if (present(fast_read)) fast = fast_read
-   ! open file: a missing file is an open error, reported by iostat/iomsg
-   open(newunit=unit, file=adjustl(trim(filename)), access='STREAM', form='UNFORMATTED', status='OLD', iostat=iostatd, &
-        iomsg=iomsgd)
-   if (iostatd/=0) then
-      if (present(iostat)) iostat = iostatd
-      if (present(iomsg )) iomsg  = iomsgd
-      return
-   endif
-   ! loadg data
-   stream = ''
-   if (present(delimiter_start).and.present(delimiter_end)) then
-      ! load only data inside delimiter_start and delimiter_end
-      string = ''
-      Main_Read_Loop: do
-         read(unit=unit, iostat=iostatd, iomsg=iomsgd, end=10)c1
-         if (c1==delimiter_start(1:1)) then
-            cstart = .true.
-            string = c1
-            Start_Read_Loop: do while(len(string)<len(delimiter_start))
-               read(unit=unit, iostat=iostatd, iomsg=iomsgd, end=10)c1
-               string = string//c1
-               if (.not.(index(string=delimiter_start, substring=string)>0)) then
-                  cstart = .false.
-                  exit Start_Read_Loop
-               endif
-            enddo Start_Read_Loop
-            if (cstart) then
-               cend = .false.
-               stream = string
-               do while(.not.cend)
-                  read(unit=unit, iostat=iostatd, iomsg=iomsgd, end=10)c1
-                  if (c1==delimiter_end(1:1)) then ! maybe the end
-                     string = c1
-                     End_Read_Loop: do while(len(string)<len(delimiter_end))
-                        read(unit=unit, iostat=iostatd, iomsg=iomsgd, end=10)c1
-                        string = string//c1
-                        if (.not.(index(string=delimiter_end, substring=string)>0)) then
-                           stream = stream//string
-                           exit End_Read_Loop
-                        elseif (len(string)==len(delimiter_end)) then
-                           cend = .true.
-                           stream = stream//string
-                           exit Main_Read_Loop
-                        endif
-                     enddo End_Read_Loop
-                  else
-                     stream = stream//c1
-                  endif
-               enddo
-            endif
-         endif
-      enddo Main_Read_Loop
-   else
-      ! load all data
-      if (fast) then
-         ! load fast
-         inquire(file=adjustl(trim(filename)), size=filesize, iostat=iostatd, iomsg=iomsgd)
-         if (iostatd==0) then
-            if (allocated(stream)) deallocate(stream)
-            allocate(character(len=filesize):: stream)
-            read(unit=unit, iostat=iostatd, iomsg=iomsgd, end=10)stream
-         endif
-      else
-         ! load slow, one character loop
-         Read_Loop: do
-            read(unit=unit,iostat=iostatd,iomsg=iomsgd,end=10)c1
-            stream = stream//c1
-         enddo Read_Loop
-      endif
-   endif
-   10 close(unit)
-   if (present(iostat)) iostat = iostatd
-   if (present(iomsg))  iomsg  = iomsgd
-   endfunction load_file_as_stream
 
 endmodule foxy_xml_file

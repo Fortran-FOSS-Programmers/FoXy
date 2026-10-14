@@ -349,7 +349,7 @@ contains
    !< Report an open comment, CDATA section or PI up to its end, or up to the piece end if it continues in the next piece.
    !<
    !< @note When the end is not in the piece, the last characters that may start the terminator are not consumed (never
-   !< those before *search_from*, i.e. the opening markup).
+   !< those before *search_from*, i.e. the opening markup). An unterminated markup is reported up to the source end.
    class(xml_tokenizer), intent(inout) :: self        !< Tokenizer.
    character(*),         intent(in)    :: chars       !< Piece of the source.
    integer(I8P),         intent(in)    :: offset      !< Position of the character before the piece.
@@ -383,6 +383,8 @@ contains
       pos = last + 1
       is_closed = .true.
    elseif (is_last) then
+      ! unterminated: kept as it is up to the source end (as the pieces already reported, if any), parsing stops
+      if (n>=from) call builder%data(kind=self%open_kind, chars=chars(from:n), first=offset+from)
       select case(self%open_kind)
       case(DATA_COMMENT)
          call builder%problem(pos=self%open_start, message='unterminated comment')

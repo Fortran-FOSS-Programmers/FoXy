@@ -10,7 +10,7 @@ character(len=1), parameter :: NL = new_line('a') !< New line.
 type(xml_file)              :: xfile              !< XML file handler.
 integer(I4P)                :: iostat             !< IO status.
 character(len=256)          :: iomsg              !< IO message.
-logical                     :: test_passed(12)    !< List of passed tests.
+logical                     :: test_passed(13)    !< List of passed tests.
 
 test_passed = .false.
 
@@ -26,10 +26,11 @@ test_passed(4) = is_malformed('<a>'//NL//'<b>1</a>', ['line 2      ', '</a>     
 test_passed(5) = is_malformed('<a>1</x></a>', ['line 1      ', '</x>        ', 'without     '])
 test_passed(6) = is_malformed('<a>'//NL//'<b>1</b>', ['line 1      ', 'unclosed    ', '<a>         '])
 test_passed(7) = is_malformed('<a><!-- x</a>', ['unterminated', 'comment     ', 'line 1      '])
+test_passed(13) = xfile%content('a')=='<!-- x</a>' ! an unterminated comment is kept as text up to the source end
 test_passed(8) = is_malformed('<a>1 < 2</a>', ['<           ', 'line 1      ', 'tag         '])
 test_passed(9) = is_malformed('<a k=1>2</a>', ['unquoted    ', '"k"         ', '<a>         '])
 test_passed(10) = xfile%content('a')=='2' ! still built
-print "(A,L1)", 'Is malformed input reported? ', all(test_passed(4:10))
+print "(A,L1)", 'Is malformed input reported? ', all(test_passed(4:10)).and.test_passed(13)
 
 ! file errors: the runtime iostat/iomsg are passed through
 call xfile%parse(filename='foxy_test_parse_errors_missing_file.xml', iostat=iostat, iomsg=iomsg)
