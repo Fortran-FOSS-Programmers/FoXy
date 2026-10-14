@@ -207,7 +207,7 @@ contains
    do t=1, self%nt
       if (self%tag(t)%name()==name) then
          content = self%direct_text(t)
-      else
+      elseif (index(without_markup(self%raw_text(t), is_cdata_removed=.true.), '<')>0) then
          call self%tag(t)%get_content(name=name, content=content) ! nested tag set as content string
       endif
       if (allocated(content)) exit
@@ -369,6 +369,7 @@ contains
    integer(I4P)                          :: t          !< Counter.
    integer(I4P)                          :: c          !< Counter.
    logical, allocatable                  :: is_done(:) !< List of stringified tags.
+   character(len=:), allocatable         :: tail       !< Tail of a root tag.
 
    linearize_ = .false. ; if (present(linearize)) linearize_ = linearize
    n = 0
@@ -399,6 +400,10 @@ contains
             call append(buffer=buffer, n=n, piece=self%tag(t)%stringify(is_indented=.true.))
          endif
          is_done(t) = .true.
+         ! the tail of a root tag holds the markup after it (e.g. comments), trailing blanks are layout
+         tail = self%tag(t)%get_tail()
+         c = verify(tail, BLANKS, back=.true.)
+         if (self%tag(t)%get_parent_id()==0.and.c>0) call append(buffer=buffer, n=n, piece=tail(1:c))
       enddo
    endif
    if (n>0) then
@@ -541,9 +546,10 @@ contains
    !< Parse xml data from a string, with a single pass tokenizer.
    !<
    !< Markup is recognized in source order and quotes-aware: start, self closing and end tags (any blank separates names and
-   !< attributes, attribute values single or double quoted), CDATA sections (kept as raw text), comments, processing
-   !< instructions and DOCTYPE (skipped). The text of a tag is its character data (CDATA included) before its first child
-   !< tag. An end tag closes up to its matching start tag (inner open tags are closed implicitly), a stray end tag is ignored;
+   !< attributes, attribute values single or double quoted), CDATA sections, comments and processing instructions (kept as
+   !< raw text of their owner tag, the prolog before the first tag), declarations as DOCTYPE (skipped, kept only in the
+   !< prolog). The text of a tag is its character data (CDATA, comments and PIs included) before its first child tag. An
+   !< end tag closes up to its matching start tag (inner open tags are closed implicitly), a stray end tag is ignored;
    !< parsing stops at an unterminated markup. The first problem of malformed input is returned.
    class(xml_file),               intent(inout) :: self          !< XML file handler.
    character(*),                  intent(in)    :: source_string !< String containing xml data.
@@ -594,7 +600,9 @@ contains
             call record_problem(problem, source_string, pos, 'unterminated comment')
             exit
          endif
-         pos = pos + e + 6
+         k = pos + e + 5
+         if (owner>0) text = text//source_string(pos:k)
+         pos = k + 1
       elseif (source_string(pos:min(n, pos+8))=='<![CDATA[') then
          e = index(source_string(pos+9:), ']]>')
          if (e==0) then
@@ -610,7 +618,9 @@ contains
             call record_problem(problem, source_string, pos, 'unterminated processing instruction')
             exit
          endif
-         pos = pos + e + 3
+         k = pos + e + 2
+         if (owner>0) text = text//source_string(pos:k)
+         pos = k + 1
       elseif (source_string(pos:min(n, pos+1))=='<!') then
          k = after_declaration(source=source_string, start=pos)
          if (k==0) then
@@ -939,7 +949,8 @@ contains
    endsubroutine skip_blanks
 
    pure function text_value(raw) result(value)
-   !< Return the value of raw character data: layout blanks stripped, character references decoded, CDATA sections literal.
+   !< Return the value of raw character data: comments and PIs removed, layout blanks stripped, character references
+   !< decoded, CDATA sections literal.
    character(*), intent(in)      :: raw      !< Raw character data.
    character(len=:), allocatable :: value    !< Value.
    character(len=:), allocatable :: stripped !< Raw data without leading and trailing blanks.
@@ -948,7 +959,7 @@ contains
    integer(I4P)                  :: q        !< CDATA content start.
    integer(I4P)                  :: e        !< Relative position of CDATA end.
 
-   stripped = strip_blanks(raw) ! blanks first: encoded blanks and CDATA blanks are data
+   stripped = strip_blanks(without_markup(raw)) ! blanks first: encoded blanks and CDATA blanks are data
    if (index(stripped, CDATA_START)==0) then
       value = xml_unescape(stripped)
       return
@@ -972,6 +983,55 @@ contains
       p = q + e - 1 + len(CDATA_END)
    enddo
    endfunction text_value
+
+   pure function without_markup(raw, is_cdata_removed) result(text)
+   !< Return raw character data without comments and processing instructions (and CDATA sections, if asked); markup inside
+   !< a CDATA section is data, an unterminated markup is kept as it is.
+   character(*),      intent(in) :: raw              !< Raw character data.
+   logical, optional, intent(in) :: is_cdata_removed !< Remove CDATA sections too.
+   character(len=:), allocatable :: text             !< Character data without markup.
+   character(len=len(raw))       :: buffer           !< Kept characters.
+   logical                       :: is_cdata_removed_ !< Remove CDATA sections too, local variable.
+   integer(I4P)                  :: n                !< Number of kept characters.
+   integer(I4P)                  :: p                !< Current position.
+   integer(I4P)                  :: k                !< End of the current markup.
+   integer(I4P)                  :: e                !< Relative position of the markup end.
+
+   if (index(raw, '<')==0) then
+      text = raw
+      return
+   endif
+   is_cdata_removed_ = .false. ; if (present(is_cdata_removed)) is_cdata_removed_ = is_cdata_removed
+   n = 0
+   p = 1
+   do while (p<=len(raw))
+      k = 0
+      if (raw(p:p)=='<') then
+         if (raw(p:min(len(raw), p+8))==CDATA_START) then
+            e = index(raw(p+9:), CDATA_END)
+            if (e>0) k = p + e + 10
+            if (k>0.and..not.is_cdata_removed_) then ! kept as it is
+               buffer(n+1:n+k-p+1) = raw(p:k)
+               n = n + k - p + 1
+            endif
+         elseif (raw(p:min(len(raw), p+3))=='<!--') then
+            e = index(raw(p+4:), '-->')
+            if (e>0) k = p + e + 5
+         elseif (raw(p:min(len(raw), p+1))=='<?') then
+            e = index(raw(p+2:), '?>')
+            if (e>0) k = p + e + 2
+         endif
+      endif
+      if (k>0) then
+         p = k + 1
+      else
+         n = n + 1
+         buffer(n:n) = raw(p:p)
+         p = p + 1
+      endif
+   enddo
+   text = buffer(1:n)
+   endfunction without_markup
 
    pure function strip_blanks(string) result(stripped)
    !< Return string without leading and trailing blanks: spaces, tabs, new lines and carriage returns.

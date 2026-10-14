@@ -23,12 +23,12 @@ call xfile%parse(string=source)
 test_passed(2) = xfile%stringify()==source.and.xfile%content('b')=='1'
 print "(A,L1)", 'Is the prolog written back? ', all(test_passed(1:2))
 
-! comments inside the document are still dropped, a prolog of only blanks is layout
+! comments inside the document belong to their tag, not to the prolog; a prolog of only blanks is layout
 call xfile%parse(string='<a>1<!-- c -->2</a>')
-test_passed(3) = xfile%stringify()=='<a>12</a>'
+test_passed(3) = xfile%stringify()=='<a>1<!-- c -->2</a>'
 call xfile%parse(string=NL//'  <a>1</a>')
 test_passed(4) = xfile%stringify()=='<a>1</a>'
-print "(A,L1)", 'Are inner comments and blank prologs dropped? ', all(test_passed(3:4))
+print "(A,L1)", 'Are inner comments kept apart and blank prologs dropped? ', all(test_passed(3:4))
 
 ! real file, re-parse and linearized form
 call xfile%parse(filename='src/tests/data/quakeml_ci38457511.xml')

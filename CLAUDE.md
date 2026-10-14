@@ -88,8 +88,8 @@ source positions `pos(3)` (start, content, end), indentation, self-closing flag,
 
 There are **two parsers**:
 - `xml_file%parse_from_string` — the document parser: a single-pass, quotes-aware tokenizer (start/end/self-closing
-  tags, CDATA kept as raw text, comments/PIs/DOCTYPE skipped) with a stack of open tags; children lists are built once
-  at the end (`build_children`).
+  tags, CDATA/comments/PIs kept as raw text of their owner tag, DOCTYPE only in the prolog) with a stack of open tags;
+  children lists are built once at the end (`build_children`).
 - `xml_tag%parse`/`search` — the older single-tag parser, still used by `xml_tag%get_content` (and so by
   `xml_file%content`) to look up nested tags by name.
 
@@ -98,8 +98,8 @@ strip layout blanks and decode character references. Content may hold markup (ne
 escaped on output: user data must go through `xml_escape`.
 
 Mixed content: each tag stores its text (before its first child) and its tail (`tag_tail`, the text after its end tag, up
-to the next sibling or the parent end); `content()` returns the direct text (text + children tails), CDATA literal;
-`stringify` writes a tag with non-blank text/tails inline (no added layout), every other tag formatted as before.
+to the next sibling or the parent end); `content()` returns the direct text (text + children tails), CDATA literal,
+comments/PIs removed (`without_markup`); `stringify` writes a tag with non-blank text/tails inline (no added layout), every other tag formatted as before.
 
 The prolog (XML declaration, DOCTYPE, comments and PIs before the root tag) is kept verbatim in `xml_file%prolog` and
 written back first by `stringify`; `save` writes prolog plus `stringify` to a file, adding `<?xml version="1.0"?>` on
@@ -109,7 +109,11 @@ with its line) and file errors, while still building the document (tolerant pars
 Attribute values are stored as in the source; `get_attribute`/`attribute` normalize them on read (each literal tab, new
 line, CR or CR LF becomes a space, XML 1.0 3.3.3) before decoding references.
 
-Known parser limits: comments and PIs inside the document are dropped (not written back by `stringify`).
+Comments and PIs inside the document are raw text of their owner tag (after the root: the root tail, written back by
+`stringify`); the `content(name)` fallback on nested tags set as content string ignores tags inside CDATA/comments/PIs.
+
+Known parser limits: entities defined by a DTD are not expanded; attribute values are trimmed of leading/trailing spaces
+when parsed.
 
 Performance: parse and `stringify` are O(n) in the number of tags, lookups O(n) per path segment (tags array and stringify buffer grow
 geometrically, children lists are built once after parsing). Check any change on large inputs with the benchmark:

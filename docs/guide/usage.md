@@ -169,7 +169,8 @@ output = xfile%stringify()
 ```
 
 The prolog (XML declaration, DOCTYPE, comments and processing instructions before the root tag) is kept verbatim and
-written back first by `stringify()`; comments and processing instructions inside the document are dropped.
+written back first by `stringify()`. Comments and processing instructions inside the document are kept too (a tag
+holding one is written inline, as parsed), while `content()` skips them.
 
 ### Errors
 

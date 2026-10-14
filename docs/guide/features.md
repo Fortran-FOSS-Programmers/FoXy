@@ -14,7 +14,7 @@ title: Features
   - [x] Any blank (space, tab, new line) inside tags, single or double quoted attribute values
   - [x] `<`, `>` and the other quote kind allowed inside attribute values
   - [x] Prolog (XML declaration, DOCTYPE, comments and PIs before the root tag) kept and written back
-  - [x] Comments and processing instructions inside the document skipped, the text around them kept
+  - [x] Comments and processing instructions inside the document kept and written back, skipped by the accessors
   - [x] CDATA sections read literally
   - [x] Mixed content: text before, between and after child tags
 - [x] Character references decoded on read (`&lt;` `&gt;` `&amp;` `&quot;` `&apos;`, `&#N;`, `&#xH;`)
@@ -51,7 +51,7 @@ title: Features
 
 - [x] Parser performance profiling (`benchmarks/`, `fobis build --mode benchmark-gnu`)
 - [x] Keep the prolog (XML declaration, DOCTYPE, comments and PIs before the root tag) when writing
-- [ ] Keep comments and processing instructions inside the document when writing
+- [x] Keep comments and processing instructions inside the document when writing
 - [x] Report malformed input to the caller
 
 ## XML Syntax Supported
@@ -75,8 +75,6 @@ FoXy handles standard XML element syntax. Tags are case-sensitive and attributes
 ```
 
 ::: warning Limitations
-- Comments and processing instructions inside the document are skipped: `stringify()` does not write them back (the
-  prolog before the root tag is kept)
 - Entities defined by a DTD (e.g. `&nbsp;`) are not expanded, only the predefined and numeric references
 - Malformed input is tolerated: an end tag closes up to its matching start tag, a stray one is ignored; only the first
   problem is reported (`iostat`/`iomsg`)
