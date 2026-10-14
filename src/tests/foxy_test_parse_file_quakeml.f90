@@ -23,7 +23,7 @@ integer(I4P)                  :: origin                                         
 integer(I4P)                  :: magnitude                                          !< Preferred magnitude tag ID.
 integer(I4P)                  :: plane                                              !< Nodal plane tag ID.
 integer(I4P)                  :: i                                                  !< Counter.
-logical                       :: test_passed(6)                                     !< List of passed tests.
+logical                       :: test_passed(7)                                     !< List of passed tests.
 
 test_passed = .false.
 
@@ -88,6 +88,11 @@ print "(A,L1)", 'Is first nodal plane correct? ', test_passed(5)
 ! namespaced attributes are plain attributes
 test_passed(6) = xfile%attribute(id=xfile%find(path='event/origin'), name='catalog:datasource')=='ci'
 print "(A,L1)", 'Is namespaced attribute correct? ', test_passed(6)
+
+! character references are decoded: the source has "&amp;" in the attribute value
+test_passed(7) = xfile%attribute(id=xfile%find(name='eventParameters'), name='publicID')== &
+                 'quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=ci38457511&format=quakeml'
+print "(A,L1)", 'Is character reference decoded? ', test_passed(7)
 
 print "(A,L1)", new_line('a')//'Are all tests passed? ', all(test_passed)
 if (.not.all(test_passed)) error stop 1

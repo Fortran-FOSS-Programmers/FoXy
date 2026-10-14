@@ -1,6 +1,7 @@
 !< FoXy XML file class.
 module foxy_xml_file
 !< FoXy XML file class.
+use foxy_xml_entities, only : xml_unescape
 use foxy_xml_tag, only : xml_tag
 use penf
 
@@ -97,15 +98,15 @@ contains
    pure function content_by_id(self, id) result(content)
    !< Return tag content of the tag with ID *id*.
    !<
-   !< @note Only the tag own content is returned, without leading and trailing blanks; if the tag does not exist or has no
-   !< content, an empty string is returned.
+   !< @note Only the tag own content is returned, without leading and trailing blanks and with character references
+   !< decoded; if the tag does not exist or has no content, an empty string is returned.
    class(xml_file), intent(in)   :: self    !< XML file.
    integer(I4P),    intent(in)   :: id      !< Tag ID.
    character(len=:), allocatable :: content !< Tag content.
 
    if (id>=1.and.id<=self%nt) call self%tag(id)%get_content(name=self%tag(id)%name(), content=content)
    if (allocated(content)) then
-      content = strip_blanks(content)
+      content = xml_unescape(strip_blanks(content)) ! blanks first: encoded blanks are data
    else
       content = ''
    endif
@@ -182,6 +183,7 @@ contains
    !< @note If there is no value, the *tag_content* string is returned empty, but allocated.
    !< @note Leading and trailing blanks (new lines included) are layout, not data: they are stripped from the returned
    !< content, while the stored content keeps them for a faithful *stringify*.
+   !< @note Character references are decoded in the returned content, the stored content keeps them.
    class(xml_file), intent(in)   :: self    !< XML file.
    character(*),    intent(in)   :: name    !< Tag name.
    character(len=:), allocatable :: content !< Tag content.
@@ -195,7 +197,7 @@ contains
       enddo
    endif
    if (allocated(content)) then
-      content = strip_blanks(content)
+      content = xml_unescape(strip_blanks(content)) ! blanks first: encoded blanks are data
    else
       content = ''
    endif

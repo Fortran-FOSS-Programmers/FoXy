@@ -1,6 +1,7 @@
 !< FoXy XML tag class.
 module foxy_xml_tag
 !< FoXy XML tag class.
+use foxy_xml_entities, only : xml_unescape
 use penf
 use stringifor
 
@@ -253,7 +254,7 @@ contains
    pure function get_attribute(self, name) result(value)
    !< Return the value of the attribute named *name*.
    !<
-   !< @note If the attribute is not defined (or has no value), an empty string is returned.
+   !< @note If the attribute is not defined (or has no value), an empty string is returned. Character references are decoded.
    class(xml_tag), intent(in)    :: self  !< XML tag.
    character(*),   intent(in)    :: name  !< Attribute name.
    character(len=:), allocatable :: value !< Attribute value.
@@ -262,7 +263,7 @@ contains
    value = ''
    do a=1, self%attributes_number
       if (self%attribute(1, a)==name) then
-         if (self%attribute(2, a)%is_allocated()) value = self%attribute(2, a)%chars()
+         if (self%attribute(2, a)%is_allocated()) value = xml_unescape(self%attribute(2, a)%chars())
          exit
       endif
    enddo

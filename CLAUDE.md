@@ -69,12 +69,13 @@ From `CONTRIBUTING.md`:
 
 ## Architecture
 
-Three source modules, all in `src/lib/`:
+Four source modules, all in `src/lib/`:
 
 ```
 foxy.f90          ← thin re-export wrapper (use this in user code)
 foxy_xml_file.f90 ← xml_file type: array-based DOM container
 foxy_xml_tag.F90  ← xml_tag type: single element (note .F90 = preprocessed)
+foxy_xml_entities.f90 ← xml_escape/xml_unescape: character references
 ```
 
 **`xml_tag`** stores a single XML element: name, text content, `attribute(:,:)` (2-row array of name/value pairs),
@@ -91,8 +92,11 @@ There are **two parsers**:
 - `xml_tag%parse`/`search` — the older single-tag parser, still used by `xml_tag%get_content` (and so by
   `xml_file%content`) to look up nested tags by name.
 
-Known parser limits: a tag's content is only the text before its first child (mixed content is lost); no entity
-decoding (`&lt;` …); no CDATA; only blanks separate a tag name from its attributes in `parse_tag_name`; `add_tag`
+Stored text is the source text (so `stringify` round-trips); the read accessors (`content`, `attribute`, `get_attribute`)
+strip layout blanks and decode character references. Content may hold markup (nested tag as string), so it is never
+escaped on output: user data must go through `xml_escape`.
+
+Known parser limits: a tag's content is only the text before its first child (mixed content is lost); no CDATA; only blanks separate a tag name from its attributes in `parse_tag_name`; `add_tag`
 reallocates the whole array, so parsing is O(n²) in the number of tags.
 
 ## CI/CD
