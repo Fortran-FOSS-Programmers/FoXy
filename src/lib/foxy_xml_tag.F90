@@ -51,6 +51,8 @@ type :: xml_tag
       procedure, pass(self) :: end_tag                     !< Return `</tag_name>` end tag.
       procedure, pass(self) :: free                        !< Free (reset) tag.
       procedure, pass(self) :: get_content                 !< Return tag content.
+      procedure, pass(self) :: get_id                      !< Return tag uniq ID.
+      procedure, pass(self) :: get_parent_id               !< Return parent tag uniq ID.
       procedure, pass(self) :: is_attribute_present        !< Return .true. it the queried attribute name is defined.
       procedure, pass(self) :: is_parsed                   !< Check is tag is correctly parsed, i.e. its *tag_name* is allocated.
       procedure, pass(self) :: name                        !< Return tag name.
@@ -246,6 +248,22 @@ contains
       endif
    endif
    endsubroutine get_content
+
+   elemental function get_id(self) result(id)
+   !< Return tag uniq ID.
+   class(xml_tag), intent(in) :: self !< XML tag.
+   integer(I4P)               :: id   !< Tag uniq ID.
+
+   id = self%id
+   endfunction get_id
+
+   elemental function get_parent_id(self) result(parent_id)
+   !< Return parent tag uniq ID.
+   class(xml_tag), intent(in) :: self      !< XML tag.
+   integer(I4P)               :: parent_id !< Parent tag uniq ID, 0 for a root tag.
+
+   parent_id = self%parent_id
+   endfunction get_parent_id
 
    pure function is_attribute_present(self, name) result(is_present)
    !< Return .true. it the queried attribute name is defined, .false. otherwise.

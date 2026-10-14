@@ -82,9 +82,9 @@ Defined in `src/lib/foxy_xml_file.f90`. Holds a flat `tag(:)` array with hierarc
 |--------|-------------|
 | `xfile%parse([string=], [filename=])` | Parse XML from string or file; clears previous data |
 | `xfile%stringify([linearize])` | Serialise full DOM to string |
-| `xfile%content(name)` | Return text content of first tag named `name` |
-| `xfile%add_tag(tag)` | Append a tag to the DOM |
-| `xfile%delete_tag(name)` | Remove first tag named `name` |
+| `xfile%content(name)` | Return text content of first tag named `name`, without leading/trailing blanks |
+| `xfile%add_tag(tag)` | Append a root tag to the DOM (its ID is its index) |
+| `xfile%delete_tag(name)` | Remove first tag named `name` with its whole subtree; remaining IDs are renumbered |
 | `xfile%free()` | Deallocate all data |
 
 ---

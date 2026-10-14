@@ -30,7 +30,9 @@ endtype xml_file
 contains
    ! public methods
    elemental subroutine add_tag(self, tag)
-   !< Add tag to XML file.
+   !< Add tag to XML file, as a root tag (without parent and children).
+   !<
+   !< @note Tags IDs are the tags indexes into the tags array: the added tag ID is the new number of tags.
    class(xml_file), intent(inout) :: self       !< XML file.
    type(xml_tag),   intent(in)    :: tag        !< XML tag.
    type(xml_tag), allocatable     :: tag_new(:) !< New (extended) tags array.
@@ -43,6 +45,9 @@ contains
       allocate(tag_new(1:1))
       tag_new(1) = tag
    endif
+   call tag_new(self%nt + 1)%set(id=self%nt + 1, parent_id=0_I4P)
+   if (allocated(tag_new(self%nt + 1)%child_id)) deallocate(tag_new(self%nt + 1)%child_id)
+   tag_new(self%nt + 1)%children_number = 0_I4P
 
    call move_alloc(from=tag_new, to=self%tag)
    self%nt = self%nt + 1
@@ -74,30 +79,61 @@ contains
    endfunction content
 
    elemental subroutine delete_tag(self, name)
-   !< Delete tag from XML file.
-   class(xml_file), intent(inout) :: self       !< XML file.
-   character(*),    intent(in)    :: name       !< XML tag name.
-   type(xml_tag), allocatable     :: tag_new(:) !< New (extended) tags array.
-   integer(I4P)                   :: t          !< Counter.
+   !< Delete the first tag named *name*, together with its whole subtree, from XML file.
+   !<
+   !< @note Tags IDs are the tags indexes into the tags array: the remaining tags are renumbered, parent and children IDs
+   !< included. A child index is always greater than its parent one (document order for parsed tags, root tags for added
+   !< ones), thus the subtree is collected by a single forward sweep.
+   class(xml_file), intent(inout) :: self          !< XML file.
+   character(*),    intent(in)    :: name          !< XML tag name.
+   type(xml_tag), allocatable     :: tag_new(:)    !< New (reduced) tags array.
+   logical,       allocatable     :: is_deleted(:) !< Flag of deleted tags.
+   integer(I4P),  allocatable     :: new_id(:)     !< New ID of each tag, 0 if deleted.
+   integer(I4P),  allocatable     :: child_id(:)   !< Children IDs, renumbered.
+   integer(I4P)                   :: parent_id     !< Parent ID.
+   integer(I4P)                   :: t             !< Counter.
+   integer(I4P)                   :: n             !< Counter.
 
-   if (self%nt>0_I4P) then
-      do t=1, self%nt
-         if (name==self%tag(t)%name()) then
-            allocate(tag_new(1:self%nt - 1))
-            if (t==1) then
-               tag_new(t:) = self%tag(t+1:)
-            elseif (t==self%nt) then
-               tag_new(:t-1) = self%tag(:t-1)
-            else
-               tag_new(:t-1) = self%tag(:t-1)
-               tag_new(t:) = self%tag(t+1:)
-            endif
-            call move_alloc(from=tag_new, to=self%tag)
-            self%nt = self%nt - 1
-            exit
-         endif
-      enddo
-   endif
+   if (self%nt==0_I4P) return
+   allocate(is_deleted(self%nt), source=.false.)
+   do t=1, self%nt
+      if (name==self%tag(t)%name()) then
+         is_deleted(t) = .true.
+         exit
+      endif
+   enddo
+   if (.not.any(is_deleted)) return
+   do t=1, self%nt
+      parent_id = self%tag(t)%get_parent_id()
+      if (parent_id>0.and.parent_id<t) then
+         if (is_deleted(parent_id)) is_deleted(t) = .true.
+      endif
+   enddo
+
+   allocate(new_id(self%nt), source=0_I4P)
+   n = 0
+   do t=1, self%nt
+      if (.not.is_deleted(t)) then
+         n = n + 1
+         new_id(t) = n
+      endif
+   enddo
+   allocate(tag_new(1:n))
+   do t=1, self%nt
+      if (is_deleted(t)) cycle
+      tag_new(new_id(t)) = self%tag(t)
+      parent_id = self%tag(t)%get_parent_id()
+      if (parent_id>0) parent_id = new_id(parent_id)
+      call tag_new(new_id(t))%set(id=new_id(t), parent_id=parent_id)
+      if (allocated(self%tag(t)%child_id)) then
+         child_id = pack(new_id(self%tag(t)%child_id), new_id(self%tag(t)%child_id)>0)
+         deallocate(tag_new(new_id(t))%child_id)
+         if (size(child_id)>0) tag_new(new_id(t))%child_id = child_id
+         tag_new(new_id(t))%children_number = size(child_id)
+      endif
+   enddo
+   call move_alloc(from=tag_new, to=self%tag)
+   self%nt = n
    endsubroutine delete_tag
 
    elemental subroutine free(self)
@@ -233,13 +269,12 @@ contains
             call self%add_tag(tag=tag)
             current_level = current_level + 1
             ! get parent/child id
+            parent_id = 0_I4P ! root tag, unless a parent is found: never the previous tag parent
             if (current_level>1) then
                if (parent_stack(current_level-1)>0)  then
                   parent_id = parent_stack(current_level-1)
                   call self%add_child(parent_id=parent_stack(current_level - 1), child_id=self%nt)
                endif
-            elseif (current_level==1) then
-               parent_id = 0_I4P
             endif
             ! parent_stack(current_level) = self%nt
             if (current_level==1) then
