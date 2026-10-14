@@ -3,6 +3,7 @@ module foxy_xml_file
 !< FoXy XML file class.
 use foxy_xml_entities, only : xml_unescape
 use foxy_xml_tag, only : xml_tag
+use foxy_xml_tokenizer, only : xml_builder, xml_tokenizer, DATA_TEXT, DATA_PI
 use foxy_xml_tree, only : tree_attribute, tree_build_children, tree_children, tree_find_all
 use penf
 
@@ -13,7 +14,6 @@ integer(I4P), parameter, public :: XML_MALFORMED = 9001_I4P !< *iostat* of parse
 integer(I4P), parameter :: INITIAL_CAPACITY   = 64_I4P   !< Initial capacity of the tags array, doubled when full.
 integer(I8P), parameter :: INITIAL_BUFFER_LEN = 4096_I8P !< Initial length of the stringify buffer, doubled when full.
 character(*), parameter :: BLANKS   = ' '//achar(9)//achar(10)//achar(13) !< XML blanks: space, tab, new line, CR.
-character(*), parameter :: NAME_END = BLANKS//'/>=' !< Characters ending a tag or attribute name.
 character(*), parameter :: CDATA_START = '<![CDATA[' !< CDATA section start.
 character(*), parameter :: CDATA_END   = ']]>'       !< CDATA section end.
 character(*), parameter :: XML_DECLARATION = '<?xml version="1.0"?>' !< XML declaration written by *save*.
@@ -53,6 +53,34 @@ type, public:: xml_file
       ! operators
       final :: finalize !< Free dynamic memory when finalizing.
 endtype xml_file
+
+type, extends(xml_builder) :: dom_builder
+   !< Builder of the DOM of an XML file, driven by the tokenizer.
+   !<
+   !< The text of a tag ends at its first child or at its end tag; the tail of a tag (mixed content) is the character data
+   !< after its end tag, up to the next sibling or the parent end tag. Tails and the text of a tag with children are stored
+   !< raw (they are written back verbatim by mixed content tags), the text of a leaf tag is trimmed of spaces. CDATA
+   !< sections, comments and processing instructions are part of the text; the markup before the first tag is the prolog.
+   type(xml_file)                :: doc               !< Document being built.
+   logical                       :: sanitize=.true.   !< Trim leading and trailing spaces of attribute values.
+   integer(I4P)                  :: owner=0_I4P       !< ID of the tag owning the current character data, 0 if none.
+   logical                       :: is_tail=.false.   !< The current character data is the owner tail, not its text.
+   character(len=:), allocatable :: text              !< Current character data (buffer).
+   integer(I8P)                  :: text_n=0_I8P      !< Length of the current character data.
+   character(len=:), allocatable :: prolog            !< Markup before the first tag (buffer).
+   integer(I8P)                  :: prolog_n=0_I8P    !< Length of the markup before the first tag.
+   character(len=:), allocatable :: first_problem     !< First problem of malformed input, unallocated if none.
+   integer(I8P)                  :: problem_pos=0_I8P !< Position of the first problem.
+   contains
+      procedure, pass(self) :: start_tag     => dom_start_tag     !< A start tag begins.
+      procedure, pass(self) :: attribute     => dom_attribute     !< An attribute of the current start tag.
+      procedure, pass(self) :: start_tag_end => dom_start_tag_end !< The current start tag is complete.
+      procedure, pass(self) :: end_tag       => dom_end_tag       !< An open tag is closed by its end tag.
+      procedure, pass(self) :: data          => dom_data          !< Character data or other markup.
+      procedure, pass(self) :: problem       => dom_problem       !< A problem of malformed input.
+      procedure, pass(self) :: finish        => dom_finish        !< Complete the DOM at the source end.
+      procedure, pass(self) :: flush         => dom_flush         !< Store the current character data into its owner.
+endtype dom_builder
 contains
    ! public methods
    elemental subroutine add_tag(self, tag)
@@ -460,214 +488,25 @@ contains
    if (.not.allocated(text)) text = ''
    endfunction raw_text
 
-   pure subroutine parse_from_string(self, source_string, sanitize, problem)
-   !< Parse xml data from a string, with a single pass tokenizer.
-   !<
-   !< Markup is recognized in source order and quotes-aware: start, self closing and end tags (any blank separates names and
-   !< attributes, attribute values single or double quoted), CDATA sections, comments and processing instructions (kept as
-   !< raw text of their owner tag, the prolog before the first tag), declarations as DOCTYPE (skipped, kept only in the
-   !< prolog). The text of a tag is its character data (CDATA, comments and PIs included) before its first child tag. An
-   !< end tag closes up to its matching start tag (inner open tags are closed implicitly), a stray end tag is ignored;
-   !< parsing stops at an unterminated markup. The first problem of malformed input is returned.
+   subroutine parse_from_string(self, source_string, sanitize, problem)
+   !< Parse xml data from a string: the tokenizer drives the DOM builder. The first problem of malformed input is returned.
    class(xml_file),               intent(inout) :: self          !< XML file handler.
    character(*),                  intent(in)    :: source_string !< String containing xml data.
    logical,                       intent(in)    :: sanitize      !< Trim leading and trailing spaces of attribute values.
    character(len=:), allocatable, intent(out)   :: problem       !< First problem of malformed input, unallocated if none.
-   character(len=:), allocatable  :: tag_name            !< Name of the current start tag.
-   character(len=:), allocatable  :: name                !< Tag or attribute name.
-   character(len=:), allocatable  :: value               !< Attribute value.
-   character(len=:), allocatable  :: text                !< Text of the tag owning the current character data.
-   character(len=1)               :: quote               !< Attribute value quote.
-   type(xml_tag)                  :: tag                 !< Empty tag, added and then set.
-   integer(I4P), allocatable      :: stack(:)            !< IDs of open tags.
-   integer(I8P), allocatable      :: stack_start(:)      !< Start (`<`) positions of open tags.
-   integer(I8P), allocatable      :: stack_open_end(:)   !< End (`>`) positions of open tags start tags.
-   integer(I4P)                   :: depth               !< Number of open tags.
-   integer(I4P)                   :: owner               !< ID of the tag owning the current character data, 0 if none.
-   logical                        :: is_tail             !< The current character data is the owner tail, not its text.
-   integer(I8P)                   :: n                   !< Source length.
-   integer(I8P)                   :: pos                 !< Current position.
-   integer(I8P)                   :: k                   !< Scan position.
-   integer(I8P)                   :: e                   !< Relative position of a delimiter.
-   integer(I4P)                   :: l                   !< Stack level.
-   logical                        :: is_self_closing     !< Self closing tag flag.
-   logical                        :: is_terminated       !< Terminated start tag flag.
+   type(xml_tokenizer)                          :: tokenizer     !< Tokenizer.
+   type(dom_builder)                            :: builder       !< DOM builder.
+   integer(I8P)                                 :: consumed      !< Characters consumed by the tokenizer.
 
    call self%free
-   n = len(source_string, kind=I8P)
-   allocate(stack(INITIAL_CAPACITY), stack_start(INITIAL_CAPACITY), stack_open_end(INITIAL_CAPACITY))
-   depth = 0
-   owner = 0
-   is_tail = .false.
-   text = ''
-   pos = 1
-   do while (pos<=n)
-      if (source_string(pos:pos)/='<') then
-         ! character data
-         e = index(source_string(pos:), '<', kind=I8P)
-         if (e==0) then
-            k = n
-         else
-            k = pos + e - 2
-         endif
-         if (owner>0) text = text//source_string(pos:k)
-         pos = k + 1
-      elseif (source_string(pos:min(n, pos+3))=='<!--') then
-         e = index(source_string(pos+4:), '-->', kind=I8P)
-         if (e==0) then
-            call record_problem(problem, source_string, pos, 'unterminated comment')
-            exit
-         endif
-         k = pos + e + 5
-         if (owner>0) text = text//source_string(pos:k)
-         pos = k + 1
-      elseif (source_string(pos:min(n, pos+8))=='<![CDATA[') then
-         e = index(source_string(pos+9:), ']]>', kind=I8P)
-         if (e==0) then
-            call record_problem(problem, source_string, pos, 'unterminated CDATA section')
-            exit
-         endif
-         k = pos + e + 10
-         if (owner>0) text = text//source_string(pos:k)
-         pos = k + 1
-      elseif (source_string(pos:min(n, pos+1))=='<?') then
-         e = index(source_string(pos+2:), '?>', kind=I8P)
-         if (e==0) then
-            call record_problem(problem, source_string, pos, 'unterminated processing instruction')
-            exit
-         endif
-         k = pos + e + 2
-         if (owner>0) text = text//source_string(pos:k)
-         pos = k + 1
-      elseif (source_string(pos:min(n, pos+1))=='<!') then
-         k = after_declaration(source=source_string, start=pos)
-         if (k==0) then
-            call record_problem(problem, source_string, pos, 'unterminated declaration')
-            exit
-         endif
-         pos = k
-      elseif (source_string(pos:min(n, pos+1))=='</') then
-         k = pos + 2
-         call read_name(source=source_string, pos=k, name=name)
-         e = index(source_string(k:), '>', kind=I8P)
-         if (e==0) then
-            call record_problem(problem, source_string, pos, 'unterminated end tag </'//name//'>')
-            exit
-         endif
-         ! close up to the matching open tag, if any
-         do l=depth, 1, -1
-            if (self%tag(stack(l))%name()==name) exit
-         enddo
-         if (l==0) then
-            call record_problem(problem, source_string, pos, 'end tag </'//name//'> without matching start tag')
-         elseif (l<depth) then
-            call record_problem(problem, source_string, pos, 'end tag </'//name//'> closes open tag <'// &
-                                self%tag(stack(depth))%name()//'>')
-         endif
-         if (l>0) then
-            call flush_text(self=self, owner=owner, is_tail=is_tail, text=text, is_parent=.false.)
-            call self%tag(stack(l))%set(pos=[stack_start(l), stack_open_end(l), pos])
-            owner = stack(l) ! the following character data is its tail
-            is_tail = .true.
-            depth = l - 1
-         endif
-         pos = k + e
-      else
-         ! start or self closing tag
-         k = pos + 1
-         call read_name(source=source_string, pos=k, name=name)
-         if (len(name)==0) then ! not a tag, e.g. "a < b"
-            call record_problem(problem, source_string, pos, "character '<' not starting a tag")
-            if (owner>0) text = text//'<'
-            pos = pos + 1
-            cycle
-         endif
-         if (self%nt==0.and.pos>1) then ! the prolog is what precedes the first tag, if not only blanks
-            if (verify(source_string(1:pos-1), BLANKS, kind=I8P)>0) self%prolog = source_string(1:pos-1)
-         endif
-         call flush_text(self=self, owner=owner, is_tail=is_tail, text=text, is_parent=.true.)
-         call tag%free
-         call self%add_tag(tag=tag)
-         l = 0 ; if (depth>0) l = stack(depth)
-         call self%tag(self%nt)%set(name=name, id=self%nt, level=depth+1, indent=depth*2, parent_id=l)
-         tag_name = name
-         is_terminated = .false.
-         is_self_closing = .false.
-         do
-            call skip_blanks(source=source_string, pos=k)
-            if (k>n) exit
-            if (source_string(k:k)=='>') then
-               is_terminated = .true.
-               k = k + 1
-               exit
-            elseif (source_string(k:min(n, k+1))=='/>') then
-               is_terminated = .true.
-               is_self_closing = .true.
-               k = k + 2
-               exit
-            endif
-            call read_name(source=source_string, pos=k, name=name)
-            if (len(name)==0) then ! stray character
-               call record_problem(problem, source_string, k, "invalid character '"//source_string(k:k)//"' in tag <"// &
-                                   tag_name//'>')
-               k = k + 1
-               cycle
-            endif
-            call skip_blanks(source=source_string, pos=k)
-            if (k>n) exit
-            if (source_string(k:k)/='=') then ! attribute without value, ignored
-               call record_problem(problem, source_string, k, 'attribute "'//name//'" without value in tag <'//tag_name//'>')
-               cycle
-            endif
-            k = k + 1
-            call skip_blanks(source=source_string, pos=k)
-            if (k>n) exit
-            quote = source_string(k:k)
-            if (quote/='"'.and.quote/="'") then ! unquoted value, ignored
-               call record_problem(problem, source_string, k, 'unquoted value of attribute "'//name//'" in tag <'// &
-                                   tag_name//'>')
-               cycle
-            endif
-            e = index(source_string(k+1:), quote, kind=I8P)
-            if (e==0) then
-               call record_problem(problem, source_string, k, 'unterminated value of attribute "'//name//'" in tag <'// &
-                                   tag_name//'>')
-               k = n + 1
-               exit
-            endif
-            value = source_string(k+1:k+e-1)
-            k = k + e + 1
-            if (quote=="'") value = escaped_double_quotes(value) ! values are written double quoted
-            call self%tag(self%nt)%set(attribute_name=name, attribute_value=value, sanitize_attributes_value=sanitize)
-         enddo
-         if (.not.is_terminated) then
-            call record_problem(problem, source_string, pos, 'unterminated start tag <'//tag_name//'>')
-            exit
-         endif
-         if (is_self_closing) then
-            call self%tag(self%nt)%set(pos=[pos, k-1, -1_I8P], is_self_closing=.true.)
-            owner = self%nt ! the following character data is its tail
-            is_tail = .true.
-         else
-            call self%tag(self%nt)%set(pos=[pos, k-1, 0_I8P], is_self_closing=.false.)
-            if (depth==size(stack, dim=1)) then
-               stack = [stack, stack]
-               stack_start = [stack_start, stack_start]
-               stack_open_end = [stack_open_end, stack_open_end]
-            endif
-            depth = depth + 1
-            stack(depth) = self%nt
-            stack_start(depth) = pos
-            stack_open_end(depth) = k - 1
-            owner = self%nt ! the following character data is its text
-            is_tail = .false.
-         endif
-         pos = k
-      endif
-   enddo
-   if (depth>0) call record_problem(problem, source_string, stack_start(1), 'unclosed tag <'//self%tag(stack(1))%name()//'>')
-   call flush_text(self=self, owner=owner, is_tail=is_tail, text=text, is_parent=.false.)
-   call tree_build_children(tag=self%tag, nt=self%nt)
+   builder%sanitize = sanitize
+   call tokenizer%feed(chars=source_string, offset=0_I8P, is_last=.true., builder=builder, consumed=consumed)
+   call builder%finish
+   call move_alloc(from=builder%doc%tag, to=self%tag)
+   self%nt = builder%doc%nt
+   if (allocated(builder%doc%prolog)) call move_alloc(from=builder%doc%prolog, to=self%prolog)
+   if (allocated(builder%first_problem)) problem = located(source=source_string, pos=builder%problem_pos, &
+                                                          message=builder%first_problem)
    endsubroutine parse_from_string
 
    recursive pure subroutine stringify_recursive(self, tag, is_done, buffer, n)
@@ -703,6 +542,122 @@ contains
    call self%free
    endsubroutine finalize
 
+   ! dom_builder methods
+   subroutine dom_start_tag(self, id, parent_id, level, name, start)
+   !< A start tag begins: the text so far ends, a new tag is added.
+   class(dom_builder), intent(inout) :: self      !< DOM builder.
+   integer(I4P),       intent(in)    :: id        !< Tag ID (start tags count).
+   integer(I4P),       intent(in)    :: parent_id !< Parent tag ID, 0 for a root tag.
+   integer(I4P),       intent(in)    :: level     !< Tag level, 1 for a root tag.
+   character(*),       intent(in)    :: name      !< Tag name.
+   integer(I8P),       intent(in)    :: start     !< Position of `<`.
+   type(xml_tag)                     :: tag       !< Empty tag, added and then set.
+
+   if (self%doc%nt==0.and.self%prolog_n>0) then ! the prolog is what precedes the first tag, if not only blanks
+      if (verify(self%prolog(1:self%prolog_n), BLANKS, kind=I8P)>0) self%doc%prolog = self%prolog(1:self%prolog_n)
+   endif
+   call self%flush(is_parent=.true.)
+   call self%doc%add_tag(tag=tag)
+   call self%doc%tag(self%doc%nt)%set(name=name, id=self%doc%nt, level=level, indent=(level-1)*2, parent_id=parent_id)
+   endsubroutine dom_start_tag
+
+   subroutine dom_attribute(self, id, name, value)
+   !< An attribute of the current start tag.
+   class(dom_builder), intent(inout) :: self  !< DOM builder.
+   integer(I4P),       intent(in)    :: id    !< Tag ID.
+   character(*),       intent(in)    :: name  !< Attribute name.
+   character(*),       intent(in)    :: value !< Attribute value.
+
+   call self%doc%tag(id)%set(attribute_name=name, attribute_value=value, sanitize_attributes_value=self%sanitize)
+   endsubroutine dom_attribute
+
+   subroutine dom_start_tag_end(self, id, start, open_end, is_self_closing)
+   !< The current start tag is complete: the following character data are its text (its tail if self closing).
+   class(dom_builder), intent(inout) :: self            !< DOM builder.
+   integer(I4P),       intent(in)    :: id              !< Tag ID.
+   integer(I8P),       intent(in)    :: start           !< Position of `<`.
+   integer(I8P),       intent(in)    :: open_end        !< Position of `>`.
+   logical,            intent(in)    :: is_self_closing !< The tag is self closing.
+
+   if (is_self_closing) then
+      call self%doc%tag(id)%set(pos=[start, open_end, -1_I8P], is_self_closing=.true.)
+   else
+      call self%doc%tag(id)%set(pos=[start, open_end, 0_I8P], is_self_closing=.false.)
+   endif
+   self%owner = id
+   self%is_tail = is_self_closing
+   endsubroutine dom_start_tag_end
+
+   subroutine dom_end_tag(self, id, start, open_end, end_start)
+   !< An open tag is closed: the text so far ends, the following character data are its tail.
+   class(dom_builder), intent(inout) :: self      !< DOM builder.
+   integer(I4P),       intent(in)    :: id        !< Tag ID.
+   integer(I8P),       intent(in)    :: start     !< Position of the start tag `<`.
+   integer(I8P),       intent(in)    :: open_end  !< Position of the start tag `>`.
+   integer(I8P),       intent(in)    :: end_start !< Position of the end tag `<`.
+
+   call self%flush(is_parent=.false.)
+   call self%doc%tag(id)%set(pos=[start, open_end, end_start])
+   self%owner = id
+   self%is_tail = .true.
+   endsubroutine dom_end_tag
+
+   subroutine dom_data(self, kind, chars, first)
+   !< Character data or other markup: part of the prolog before the first tag, of the owner text afterwards (CDATA,
+   !< comments and PIs included, declarations and ignored markup excluded).
+   class(dom_builder), intent(inout) :: self  !< DOM builder.
+   integer(I4P),       intent(in)    :: kind  !< Data kind, DATA_*.
+   character(*),       intent(in)    :: chars !< Characters, as in the source.
+   integer(I8P),       intent(in)    :: first !< Position of the first character.
+
+   if (self%doc%nt==0) call append(buffer=self%prolog, n=self%prolog_n, piece=chars)
+   if (self%owner>0.and.kind>=DATA_TEXT.and.kind<=DATA_PI) call append(buffer=self%text, n=self%text_n, piece=chars)
+   endsubroutine dom_data
+
+   subroutine dom_problem(self, pos, message)
+   !< A problem of malformed input: only the first one is kept.
+   class(dom_builder), intent(inout) :: self    !< DOM builder.
+   integer(I8P),       intent(in)    :: pos     !< Position of the problem.
+   character(*),       intent(in)    :: message !< Problem description.
+
+   if (allocated(self%first_problem)) return
+   self%first_problem = message
+   self%problem_pos = pos
+   endsubroutine dom_problem
+
+   subroutine dom_finish(self)
+   !< Complete the DOM at the source end: store the last character data, build the children lists.
+   class(dom_builder), intent(inout) :: self !< DOM builder.
+
+   call self%flush(is_parent=.false.)
+   call tree_build_children(tag=self%doc%tag, nt=self%doc%nt)
+   endsubroutine dom_finish
+
+   subroutine dom_flush(self, is_parent)
+   !< Store the current character data into its owner tag, if any, and reset them.
+   class(dom_builder), intent(inout) :: self      !< DOM builder.
+   logical,            intent(in)    :: is_parent !< The text ends because the owner first child starts.
+
+   if (self%owner>0) then
+      if (self%text_n==0) then
+         if (self%is_tail) then
+            call self%doc%tag(self%owner)%set(tail='')
+         else
+            call self%doc%tag(self%owner)%set(content='')
+         endif
+      elseif (self%is_tail) then
+         call self%doc%tag(self%owner)%set(tail=self%text(1:self%text_n))
+      elseif (is_parent) then
+         call self%doc%tag(self%owner)%set(content=self%text(1:self%text_n))
+      else
+         call self%doc%tag(self%owner)%set(content=trim(adjustl(self%text(1:self%text_n))))
+      endif
+   endif
+   self%owner = 0
+   self%is_tail = .false.
+   self%text_n = 0
+   endsubroutine dom_flush
+
    ! non TBP
    pure subroutine append(buffer, n, piece)
    !< Append a piece to a buffer of used length *n*, doubling its capacity when full.
@@ -721,54 +676,21 @@ contains
    n = n + len(piece, kind=I8P)
    endsubroutine append
 
-   pure function after_declaration(source, start) result(after)
-   !< Return the position after a `<!...>` declaration (e.g. DOCTYPE) starting at *start*, 0 if it is unterminated.
-   !<
-   !< @note Quoted strings and the `[...]` internal subset may contain `>`.
-   character(*), intent(in) :: source  !< Source.
-   integer(I8P), intent(in) :: start   !< Declaration start (`<`) position.
-   integer(I8P)             :: after   !< Position after the declaration.
-   integer(I4P)             :: brackets !< Internal subset nesting.
-   integer(I8P)             :: e       !< Relative position of closing quote.
-   character(len=1)         :: c       !< Current character.
+   pure function located(source, pos, message) result(problem)
+   !< Return a problem description prefixed by its line in the source.
+   character(*), intent(in)      :: source  !< Source.
+   integer(I8P), intent(in)      :: pos     !< Position of the problem.
+   character(*), intent(in)      :: message !< Problem description.
+   character(len=:), allocatable :: problem !< Located problem description.
+   integer(I8P)                  :: line    !< Line of the problem.
+   integer(I8P)                  :: c       !< Counter.
 
-   after = start + 2
-   brackets = 0
-   do while (after<=len(source, kind=I8P))
-      c = source(after:after)
-      if (c=='"'.or.c=="'") then
-         e = index(source(after+1:), c, kind=I8P)
-         if (e==0) exit
-         after = after + e
-      elseif (c=='[') then
-         brackets = brackets + 1
-      elseif (c==']') then
-         brackets = brackets - 1
-      elseif (c=='>'.and.brackets<=0) then
-         after = after + 1
-         return
-      endif
-      after = after + 1
-   enddo
-   after = 0
-   endfunction after_declaration
-
-   pure subroutine record_problem(problem, source, pos, message)
-   !< Record a problem of malformed input with its line, only if it is the first one.
-   character(len=:), allocatable, intent(inout) :: problem !< First problem, unallocated if none yet.
-   character(*),                  intent(in)    :: source  !< Source.
-   integer(I8P),                  intent(in)    :: pos     !< Position of the problem.
-   character(*),                  intent(in)    :: message !< Problem description.
-   integer(I8P)                                 :: line    !< Line of the problem.
-   integer(I8P)                                 :: c       !< Counter.
-
-   if (allocated(problem)) return
    line = 1
    do c=1, min(pos, len(source, kind=I8P)) - 1
       if (source(c:c)==new_line('a')) line = line + 1
    enddo
    problem = 'line '//trim(str(line, no_sign=.true.))//': '//message
-   endsubroutine record_problem
+   endfunction located
 
    pure function starts_with_declaration(prolog) result(is_declaration)
    !< Check if a prolog starts with the XML declaration (`<?xml` followed by a blank, not a PI named `xml-...`).
@@ -778,79 +700,6 @@ contains
    is_declaration = .false.
    if (len(prolog, kind=I8P)>5) is_declaration = prolog(1:5)=='<?xml'.and.scan(prolog(6:6), BLANKS)>0
    endfunction starts_with_declaration
-
-   pure subroutine flush_text(self, owner, is_tail, text, is_parent)
-   !< Store the collected character data into its owner tag, if any, and reset them.
-   !<
-   !< The text of a tag ends at its first child or at its end tag; the tail of a tag (mixed content) is the character data
-   !< after its end tag, up to the next sibling or the parent end tag. Tails and the text of a tag with children are stored
-   !< raw (they are written back verbatim by mixed content tags), the text of a leaf tag is trimmed of spaces.
-   class(xml_file),               intent(inout) :: self      !< XML file handler.
-   integer(I4P),                  intent(inout) :: owner     !< ID of the tag owning the text, 0 if none.
-   logical,                       intent(inout) :: is_tail   !< The text is the owner tail.
-   character(len=:), allocatable, intent(inout) :: text      !< Collected text.
-   logical,                       intent(in)    :: is_parent !< The text ends because the owner first child starts.
-
-   if (owner>0) then
-      if (is_tail) then
-         call self%tag(owner)%set(tail=text)
-      elseif (is_parent) then
-         call self%tag(owner)%set(content=text)
-      else
-         call self%tag(owner)%set(content=trim(adjustl(text)))
-      endif
-   endif
-   owner = 0
-   is_tail = .false.
-   text = ''
-   endsubroutine flush_text
-
-   pure function escaped_double_quotes(string) result(escaped)
-   !< Return string with `"` replaced by `&quot;`.
-   character(*), intent(in)      :: string  !< String.
-   character(len=:), allocatable :: escaped !< Escaped string.
-   integer(I4P)                  :: c       !< Counter.
-
-   if (index(string, '"')==0) then
-      escaped = string
-      return
-   endif
-   escaped = ''
-   do c=1, len(string)
-      if (string(c:c)=='"') then
-         escaped = escaped//'&quot;'
-      else
-         escaped = escaped//string(c:c)
-      endif
-   enddo
-   endfunction escaped_double_quotes
-
-   pure subroutine read_name(source, pos, name)
-   !< Read a (tag or attribute) name starting at *pos*, ended by a blank, `/`, `>`, `=` or the source end; *pos* is moved
-   !< after the name.
-   character(*),                  intent(in)    :: source !< Source.
-   integer(I8P),                  intent(inout) :: pos    !< Current position.
-   character(len=:), allocatable, intent(out)   :: name   !< Name, empty if none.
-   integer(I8P)                                 :: start  !< Name start.
-
-   start = pos
-   do while (pos<=len(source, kind=I8P))
-      if (scan(source(pos:pos), NAME_END)>0) exit
-      pos = pos + 1
-   enddo
-   name = source(start:pos-1)
-   endsubroutine read_name
-
-   pure subroutine skip_blanks(source, pos)
-   !< Move *pos* after the blanks (space, tab, new line, carriage return) starting at it.
-   character(*), intent(in)    :: source !< Source.
-   integer(I8P), intent(inout) :: pos    !< Current position.
-
-   do while (pos<=len(source, kind=I8P))
-      if (scan(source(pos:pos), BLANKS)==0) exit
-      pos = pos + 1
-   enddo
-   endsubroutine skip_blanks
 
    pure function text_value(raw) result(value)
    !< Return the value of raw character data: comments and PIs removed, layout blanks stripped, character references

@@ -73,7 +73,7 @@ From `CONTRIBUTING.md`:
 
 ## Architecture
 
-Five source modules, all in `src/lib/`:
+Six source modules, all in `src/lib/`:
 
 ```
 foxy.f90          ← thin re-export wrapper (use this in user code)
@@ -81,6 +81,7 @@ foxy_xml_file.f90 ← xml_file type: array-based DOM container
 foxy_xml_tag.F90  ← xml_tag type: single element (note .F90 = preprocessed)
 foxy_xml_entities.f90 ← xml_escape/xml_unescape: character references
 foxy_xml_tree.f90 ← tree queries (find, find_all, children, attribute, build_children) over a tags array
+foxy_xml_tokenizer.f90 ← resumable tokenizer (xml_tokenizer%feed) driving an abstract xml_builder
 ```
 
 **`xml_tag`** stores a single XML element: name, text content, `attribute(:,:)` (2-row array of name/value pairs),
@@ -92,9 +93,11 @@ source positions `pos(3)` (start, content, end), indentation, self-closing flag,
 `parse()`, `stringify()`, `save()`, `add_tag()`, `delete_tag()`, `content()`.
 
 There are **two parsers**:
-- `xml_file%parse_from_string` — the document parser: a single-pass, quotes-aware tokenizer (start/end/self-closing
-  tags, CDATA/comments/PIs kept as raw text of their owner tag, DOCTYPE only in the prolog) with a stack of open tags;
-  children lists are built once at the end (`build_children`).
+- the document parser: `xml_tokenizer%feed` (`foxy_xml_tokenizer`), a single-pass, quotes-aware tokenizer with the
+  stack of open tags, reports each token to an `xml_builder`; the source may be fed in pieces (it returns what it
+  consumed; long text/comments/CDATA/PIs are reported in pieces, tags whole), positions are absolute `I8P`.
+  `xml_file` uses the `dom_builder` (text/tail ownership, prolog, first problem; CDATA/comments/PIs kept as raw text of
+  their owner tag, DOCTYPE only in the prolog); children lists are built once at the end (`tree_build_children`).
 - `xml_tag%parse`/`search` — the older single-tag parser, still used by `xml_tag%get_content` (and so by
   `xml_file%content`) to look up nested tags by name.
 

@@ -13,6 +13,7 @@ add_library(${LIB}
         foxy_xml_entities.f90
         foxy_xml_file.f90
         foxy_xml_tag.F90
+        foxy_xml_tokenizer.f90
         foxy_xml_tree.f90
         )
 add_library(${NAMESPACE}${LIB} ALIAS ${LIB})
