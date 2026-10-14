@@ -52,6 +52,8 @@ contains
    !< Return tag content of tag named *name*.
    !<
    !< @note If there is no value, the *tag_content* string is returned empty, but allocated.
+   !< @note Leading and trailing blanks (new lines included) are layout, not data: they are stripped from the returned
+   !< content, while the stored content keeps them for a faithful *stringify*.
    class(xml_file), intent(in)   :: self    !< XML file.
    character(*),    intent(in)   :: name    !< Tag name.
    character(len=:), allocatable :: content !< Tag content.
@@ -64,7 +66,11 @@ contains
          if (allocated(content)) exit
       enddo
    endif
-   if (.not.allocated(content)) content = ''
+   if (allocated(content)) then
+      content = strip_blanks(content)
+   else
+      content = ''
+   endif
    endfunction content
 
    elemental subroutine delete_tag(self, name)
@@ -242,6 +248,7 @@ contains
                if (current_level>1) parent_stack = [parent_stack(1:current_level-1),self%nt]
             endif
             end_content_pos = -1 ! initialize position for self closing tag
+            if (allocated(tag_content)) deallocate(tag_content) ! a self closing tag has no content, not the previous one
             if (.not.is_self_closing) then
                ! get tag content
                call get_tag_content(source=source_string, tag_name=tag_name, start_pos=end_pos + 1, content=tag_content, &
@@ -379,6 +386,23 @@ contains
       endif
    endif
    endsubroutine get_tag_content
+
+   pure function strip_blanks(string) result(stripped)
+   !< Return string without leading and trailing blanks: spaces, tabs, new lines and carriage returns.
+   character(*), intent(in)      :: string   !< String to strip.
+   character(len=:), allocatable :: stripped !< Stripped string.
+   character(*), parameter       :: BLANKS = ' '//achar(9)//achar(10)//achar(13) !< Blank characters.
+   integer(I4P)                  :: first    !< First not blank character position.
+   integer(I4P)                  :: last     !< Last not blank character position.
+
+   first = verify(string, BLANKS)
+   if (first == 0) then
+      stripped = ''
+   else
+      last = verify(string, BLANKS, back=.true.)
+      stripped = string(first:last)
+   endif
+   endfunction strip_blanks
 
    function load_file_as_stream(filename, delimiter_start, delimiter_end, fast_read, iostat, iomsg) result(stream)
    !< Load file contents and store as single characters stream.
