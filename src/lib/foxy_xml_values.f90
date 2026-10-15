@@ -195,25 +195,39 @@ contains
    character(len=:), allocatable, intent(out) :: iomsg        !< IO message.
    integer(I8P), allocatable                  :: segment(:,:) !< Segments: first, last position and number of tokens.
    integer(I1P)                               :: value        !< Value of a single token.
+   integer(I8P), allocatable                  :: wide(:)      !< Values read as I8P, range checked (not all compilers
+                                                              !< report an integer overflow in list-directed input).
+   integer(I8P)                               :: wide_value   !< Value of a single token read as I8P.
    integer(I8P)                               :: n            !< Number of values.
    integer(I8P)                               :: first        !< First position of a token.
    integer(I8P)                               :: last         !< Last position of a token.
    integer(I8P)                               :: s            !< Counter.
+   character(len=:), allocatable              :: chunk        !< Segment, blanks as spaces.
 
    call split(text=text, chars=INTEGER_CHARS, segment=segment, n=n, iostat=iostat, iomsg=iomsg)
    allocate(values(n))
    if (iostat/=0) return
+   allocate(wide(max(1_I8P, maxval(segment(3, :)))))
    n = 0
    do s=1, size(segment, dim=2)
       if (segment(3, s)==0) cycle
-      read(text(segment(1, s):segment(2, s)), *, iostat=iostat) values(n+1:n+segment(3, s))
+      chunk = blanks_as_spaces(text(segment(1, s):segment(2, s)))
+      read(chunk, *, iostat=iostat) wide(1:segment(3, s))
+      if (iostat==0) then
+         if (any(wide(1:segment(3, s))>huge(value).or.wide(1:segment(3, s))<-huge(value)-1_I1P)) then
+            iostat = XML_BAD_VALUE
+         else
+            values(n+1:n+segment(3, s)) = int(wide(1:segment(3, s)), I1P)
+         endif
+      endif
       if (iostat/=0) then
          ! find the token not converted
          last = segment(1, s) - 1
          do
             call next_token(text=text(:segment(2, s)), last=last, first=first)
             if (first==0) exit
-            read(text(first:last), *, iostat=iostat) value
+            read(text(first:last), *, iostat=iostat) wide_value
+            if (iostat==0.and.(wide_value>huge(value).or.wide_value<-huge(value)-1_I1P)) iostat = XML_BAD_VALUE
             if (iostat/=0) exit
          enddo
          iostat = XML_BAD_VALUE
@@ -238,25 +252,39 @@ contains
    character(len=:), allocatable, intent(out) :: iomsg        !< IO message.
    integer(I8P), allocatable                  :: segment(:,:) !< Segments: first, last position and number of tokens.
    integer(I2P)                               :: value        !< Value of a single token.
+   integer(I8P), allocatable                  :: wide(:)      !< Values read as I8P, range checked (not all compilers
+                                                              !< report an integer overflow in list-directed input).
+   integer(I8P)                               :: wide_value   !< Value of a single token read as I8P.
    integer(I8P)                               :: n            !< Number of values.
    integer(I8P)                               :: first        !< First position of a token.
    integer(I8P)                               :: last         !< Last position of a token.
    integer(I8P)                               :: s            !< Counter.
+   character(len=:), allocatable              :: chunk        !< Segment, blanks as spaces.
 
    call split(text=text, chars=INTEGER_CHARS, segment=segment, n=n, iostat=iostat, iomsg=iomsg)
    allocate(values(n))
    if (iostat/=0) return
+   allocate(wide(max(1_I8P, maxval(segment(3, :)))))
    n = 0
    do s=1, size(segment, dim=2)
       if (segment(3, s)==0) cycle
-      read(text(segment(1, s):segment(2, s)), *, iostat=iostat) values(n+1:n+segment(3, s))
+      chunk = blanks_as_spaces(text(segment(1, s):segment(2, s)))
+      read(chunk, *, iostat=iostat) wide(1:segment(3, s))
+      if (iostat==0) then
+         if (any(wide(1:segment(3, s))>huge(value).or.wide(1:segment(3, s))<-huge(value)-1_I2P)) then
+            iostat = XML_BAD_VALUE
+         else
+            values(n+1:n+segment(3, s)) = int(wide(1:segment(3, s)), I2P)
+         endif
+      endif
       if (iostat/=0) then
          ! find the token not converted
          last = segment(1, s) - 1
          do
             call next_token(text=text(:segment(2, s)), last=last, first=first)
             if (first==0) exit
-            read(text(first:last), *, iostat=iostat) value
+            read(text(first:last), *, iostat=iostat) wide_value
+            if (iostat==0.and.(wide_value>huge(value).or.wide_value<-huge(value)-1_I2P)) iostat = XML_BAD_VALUE
             if (iostat/=0) exit
          enddo
          iostat = XML_BAD_VALUE
@@ -281,25 +309,39 @@ contains
    character(len=:), allocatable, intent(out) :: iomsg        !< IO message.
    integer(I8P), allocatable                  :: segment(:,:) !< Segments: first, last position and number of tokens.
    integer(I4P)                               :: value        !< Value of a single token.
+   integer(I8P), allocatable                  :: wide(:)      !< Values read as I8P, range checked (not all compilers
+                                                              !< report an integer overflow in list-directed input).
+   integer(I8P)                               :: wide_value   !< Value of a single token read as I8P.
    integer(I8P)                               :: n            !< Number of values.
    integer(I8P)                               :: first        !< First position of a token.
    integer(I8P)                               :: last         !< Last position of a token.
    integer(I8P)                               :: s            !< Counter.
+   character(len=:), allocatable              :: chunk        !< Segment, blanks as spaces.
 
    call split(text=text, chars=INTEGER_CHARS, segment=segment, n=n, iostat=iostat, iomsg=iomsg)
    allocate(values(n))
    if (iostat/=0) return
+   allocate(wide(max(1_I8P, maxval(segment(3, :)))))
    n = 0
    do s=1, size(segment, dim=2)
       if (segment(3, s)==0) cycle
-      read(text(segment(1, s):segment(2, s)), *, iostat=iostat) values(n+1:n+segment(3, s))
+      chunk = blanks_as_spaces(text(segment(1, s):segment(2, s)))
+      read(chunk, *, iostat=iostat) wide(1:segment(3, s))
+      if (iostat==0) then
+         if (any(wide(1:segment(3, s))>huge(value).or.wide(1:segment(3, s))<-huge(value)-1_I4P)) then
+            iostat = XML_BAD_VALUE
+         else
+            values(n+1:n+segment(3, s)) = int(wide(1:segment(3, s)), I4P)
+         endif
+      endif
       if (iostat/=0) then
          ! find the token not converted
          last = segment(1, s) - 1
          do
             call next_token(text=text(:segment(2, s)), last=last, first=first)
             if (first==0) exit
-            read(text(first:last), *, iostat=iostat) value
+            read(text(first:last), *, iostat=iostat) wide_value
+            if (iostat==0.and.(wide_value>huge(value).or.wide_value<-huge(value)-1_I4P)) iostat = XML_BAD_VALUE
             if (iostat/=0) exit
          enddo
          iostat = XML_BAD_VALUE
@@ -328,6 +370,7 @@ contains
    integer(I8P)                               :: first        !< First position of a token.
    integer(I8P)                               :: last         !< Last position of a token.
    integer(I8P)                               :: s            !< Counter.
+   character(len=:), allocatable              :: chunk        !< Segment, blanks as spaces.
 
    call split(text=text, chars=INTEGER_CHARS, segment=segment, n=n, iostat=iostat, iomsg=iomsg)
    allocate(values(n))
@@ -335,7 +378,8 @@ contains
    n = 0
    do s=1, size(segment, dim=2)
       if (segment(3, s)==0) cycle
-      read(text(segment(1, s):segment(2, s)), *, iostat=iostat) values(n+1:n+segment(3, s))
+      chunk = blanks_as_spaces(text(segment(1, s):segment(2, s)))
+      read(chunk, *, iostat=iostat) values(n+1:n+segment(3, s))
       if (iostat/=0) then
          ! find the token not converted
          last = segment(1, s) - 1
@@ -371,6 +415,7 @@ contains
    integer(I8P)                               :: first        !< First position of a token.
    integer(I8P)                               :: last         !< Last position of a token.
    integer(I8P)                               :: s            !< Counter.
+   character(len=:), allocatable              :: chunk        !< Segment, blanks as spaces.
 
    call split(text=text, chars=REAL_CHARS, segment=segment, n=n, iostat=iostat, iomsg=iomsg)
    allocate(values(n))
@@ -378,7 +423,8 @@ contains
    n = 0
    do s=1, size(segment, dim=2)
       if (segment(3, s)==0) cycle
-      read(text(segment(1, s):segment(2, s)), *, iostat=iostat) values(n+1:n+segment(3, s))
+      chunk = blanks_as_spaces(text(segment(1, s):segment(2, s)))
+      read(chunk, *, iostat=iostat) values(n+1:n+segment(3, s))
       if (iostat/=0) then
          ! find the token not converted
          last = segment(1, s) - 1
@@ -414,6 +460,7 @@ contains
    integer(I8P)                               :: first        !< First position of a token.
    integer(I8P)                               :: last         !< Last position of a token.
    integer(I8P)                               :: s            !< Counter.
+   character(len=:), allocatable              :: chunk        !< Segment, blanks as spaces.
 
    call split(text=text, chars=REAL_CHARS, segment=segment, n=n, iostat=iostat, iomsg=iomsg)
    allocate(values(n))
@@ -421,7 +468,8 @@ contains
    n = 0
    do s=1, size(segment, dim=2)
       if (segment(3, s)==0) cycle
-      read(text(segment(1, s):segment(2, s)), *, iostat=iostat) values(n+1:n+segment(3, s))
+      chunk = blanks_as_spaces(text(segment(1, s):segment(2, s)))
+      read(chunk, *, iostat=iostat) values(n+1:n+segment(3, s))
       if (iostat/=0) then
          ! find the token not converted
          last = segment(1, s) - 1
@@ -446,6 +494,20 @@ contains
    endsubroutine to_values_R8P
 
    ! private procedures
+   pure function blanks_as_spaces(string) result(spaced)
+   !< Return a string with its tabs, new lines and carriage returns as spaces: list-directed input separates values by
+   !< blanks only (other characters are processor dependent, e.g. new lines are not separators for ifx).
+   character(*), intent(in)      :: string !< String.
+   character(len=:), allocatable :: spaced !< String with spaces as blanks.
+   integer(I8P)                  :: p      !< Position.
+
+   spaced = string
+   if (scan(string, BLANKS(2:), kind=I8P)==0) return
+   do p=1, len(spaced, kind=I8P)
+      if (spaced(p:p)==achar(9).or.spaced(p:p)==achar(10).or.spaced(p:p)==achar(13)) spaced(p:p) = ' '
+   enddo
+   endfunction blanks_as_spaces
+
    pure function excerpt(token) result(quoted)
    !< Return a token, cut to *EXCERPT_LEN* characters, to quote it in a message.
    character(*), intent(in)      :: token  !< Token.

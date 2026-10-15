@@ -23,6 +23,8 @@ integer(I8P)                  :: e                             !< Relative posit
 integer(I8P)                  :: clock(3)                      !< Clock counts (start, end) and rate.
 integer(I4P)                  :: id                            !< Tag ID.
 integer(I4P)                  :: mismatches                    !< Number of tags not agreeing with the index.
+integer(I4P)                  :: copies=100000_I4P             !< Number of tags before the target one (a variable:
+                                                               !< a constant repeat is folded by nvfortran, which fails).
 integer                       :: unit                          !< File unit.
 integer                       :: file_size                     !< File size.
 logical                       :: test_passed(12)               !< List of passed tests.
@@ -89,7 +91,7 @@ print "(A,L1)", 'Are attributes streams parsed? ', test_passed(7)
 if (.not.test_passed(7)) print "(A)", tag%stringify()
 
 ! a nested tag at the end of a large content: found in linear time
-tag = xml_tag(name='big', content=repeat('<x a="1">1</x>', 100000)//'<target>v</target>')
+tag = xml_tag(name='big', content=repeat('<x a="1">1</x>', copies)//'<target>v</target>')
 call system_clock(clock(1), clock(3))
 call tag%get_content(name='target', content=content)
 call system_clock(clock(2))

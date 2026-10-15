@@ -101,14 +101,19 @@ contains
    type(xml_tag), allocatable, intent(in) :: tag(:) !< Tags.
    integer(I4P),               intent(in) :: nt     !< Number of tags.
    integer(I4P),               intent(in) :: id     !< Tag ID.
-   integer(I4P), allocatable              :: ids(:) !< Children IDs, empty if there are none.
-   integer(I4P)                           :: t      !< Counter.
+   integer(I4P), allocatable              :: ids(:)      !< Children IDs, empty if there are none.
+   logical,      allocatable              :: is_child(:) !< Flag of children.
+   integer(I4P)                           :: t           !< Counter.
 
    if (id<0.or.id>nt) then
       allocate(ids(0))
       return
    endif
-   ids = pack(tags_indexes(nt), [(tag(t)%get_parent_id()==id, t=1, nt)])
+   allocate(is_child(nt)) ! a loop, not an implied-do mask: nvfortran evaluates the latter out of bounds
+   do t=1, nt
+      is_child(t) = tag(t)%get_parent_id()==id
+   enddo
+   ids = pack(tags_indexes(nt), is_child)
    endfunction tree_children
 
    pure function tree_find_all(tag, nt, name, path, parent) result(ids)
@@ -121,15 +126,16 @@ contains
    !<   of the previous one; all the tags matching a segment are explored, thus repeated parents are handled.
    !<
    !< @note If both *name* and *path* are passed, *path* is used; if none is passed, no tag is returned.
-   type(xml_tag), allocatable, intent(in)           :: tag(:)  !< Tags.
-   integer(I4P),               intent(in)           :: nt      !< Number of tags.
-   character(*),               intent(in), optional :: name    !< Tag name.
-   character(*),               intent(in), optional :: path    !< Tags path, e.g. `origin/latitude/value`.
-   integer(I4P),               intent(in), optional :: parent  !< Parent tag ID, 0 for the document root.
-   integer(I4P), allocatable                        :: ids(:)  !< Matching tags IDs, empty if there are none.
-   character(len=:), allocatable                    :: rest    !< Path segments still to match.
-   character(len=:), allocatable                    :: segment !< Current path segment.
-   integer(I4P)                                     :: t       !< Counter.
+   type(xml_tag), allocatable, intent(in)           :: tag(:)      !< Tags.
+   integer(I4P),               intent(in)           :: nt          !< Number of tags.
+   character(*),               intent(in), optional :: name        !< Tag name.
+   character(*),               intent(in), optional :: path        !< Tags path, e.g. `origin/latitude/value`.
+   integer(I4P),               intent(in), optional :: parent      !< Parent tag ID, 0 for the document root.
+   integer(I4P), allocatable                        :: ids(:)      !< Matching tags IDs, empty if there are none.
+   character(len=:), allocatable                    :: rest        !< Path segments still to match.
+   character(len=:), allocatable                    :: segment     !< Current path segment.
+   logical,      allocatable                        :: is_match(:) !< Flag of matching tags.
+   integer(I4P)                                     :: t           !< Counter.
 
    allocate(ids(0))
    if (present(parent)) then
@@ -149,7 +155,11 @@ contains
    if (present(parent)) then
       ids = children_named(tag=tag, nt=nt, parents=[parent], name=segment)
    else
-      ids = pack(tags_indexes(nt), [(tag(t)%name()==segment, t=1, nt)])
+      allocate(is_match(nt)) ! a loop, not an implied-do mask: nvfortran evaluates the latter out of bounds
+      do t=1, nt
+         is_match(t) = tag(t)%name()==segment
+      enddo
+      ids = pack(tags_indexes(nt), is_match)
    endif
    ! following segments, direct children of the previous ones
    do while (len(rest)>0.and.size(ids)>0)

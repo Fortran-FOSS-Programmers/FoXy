@@ -286,23 +286,33 @@ contains
 
    pure function utf8(code_point) result(bytes)
    !< Return the UTF-8 encoding of a (valid) Unicode code point.
+   !<
+   !< @note The bytes are set into a fixed length buffer: nvfortran gives a deferred-length string assigned from
+   !< `char(i)` (i not constant) the length i.
    integer(I4P), intent(in)      :: code_point !< Unicode code point.
    character(len=:), allocatable :: bytes      !< UTF-8 bytes.
+   character(len=4)              :: buffer     !< UTF-8 bytes buffer.
+   integer(I4P)                  :: n          !< Number of bytes.
 
    if (code_point<128) then
-      bytes = char(code_point)
+      n = 1
+      buffer(1:1) = char(code_point)
    elseif (code_point<2048) then
-      bytes = char(192 + code_point / 64)//            &
-              char(128 + mod(code_point, 64))
+      n = 2
+      buffer(1:1) = char(192 + code_point / 64)
+      buffer(2:2) = char(128 + mod(code_point, 64))
    elseif (code_point<65536) then
-      bytes = char(224 + code_point / 4096)//          &
-              char(128 + mod(code_point / 64, 64))//   &
-              char(128 + mod(code_point, 64))
+      n = 3
+      buffer(1:1) = char(224 + code_point / 4096)
+      buffer(2:2) = char(128 + mod(code_point / 64, 64))
+      buffer(3:3) = char(128 + mod(code_point, 64))
    else
-      bytes = char(240 + code_point / 262144)//        &
-              char(128 + mod(code_point / 4096, 64))// &
-              char(128 + mod(code_point / 64, 64))//   &
-              char(128 + mod(code_point, 64))
+      n = 4
+      buffer(1:1) = char(240 + code_point / 262144)
+      buffer(2:2) = char(128 + mod(code_point / 4096, 64))
+      buffer(3:3) = char(128 + mod(code_point / 64, 64))
+      buffer(4:4) = char(128 + mod(code_point, 64))
    endif
+   bytes = buffer(1:n)
    endfunction utf8
 endmodule foxy_xml_entities

@@ -52,7 +52,8 @@ type :: xml_index
       procedure, pass(self) :: level         !< Return the level of the tag with a given ID.
       procedure, pass(self) :: name          !< Return the name of the tag with a given ID.
       procedure, pass(self) :: parent        !< Return the parent ID of the tag with a given ID.
-      procedure, pass(self) :: scan          !< Scan a file, indexing its tags.
+      procedure, pass(self) :: scan => scan_file !< Scan a file, indexing its tags (procedure renamed: nvfortran links
+                                                 !< a binding named as one of StringiFor string to the latter).
       procedure, pass(self) :: stop_position !< Return the position after the start tag where the scan stopped.
       procedure, pass(self) :: text_range    !< Return the positions in the file of the text of a tag.
       ! private methods
@@ -273,7 +274,7 @@ contains
    parent_ = tree_parent(tag=self%tag, nt=self%nt, id=id)
    endfunction parent
 
-   subroutine scan(self, filename, stop_at, chunk_size, iostat, iomsg, sanitize_attributes_value)
+   subroutine scan_file(self, filename, stop_at, chunk_size, iostat, iomsg, sanitize_attributes_value)
    !< Scan a file, indexing its tags; the file is read in chunks (default 64 KiB), its content is not stored.
    !<
    !< @note If *stop_at* is passed, the scan stops after the start tag of the first tag with that name (the tags still
@@ -349,7 +350,7 @@ contains
    endif
    if (present(iostat)) iostat = iostat_
    if (present(iomsg).and.iostat_/=0) iomsg = iomsg_
-   endsubroutine scan
+   endsubroutine scan_file
 
    elemental function stop_position(self) result(pos)
    !< Return the position in the file after the start tag where the scan stopped (*stop_at*), 0 if it did not stop.

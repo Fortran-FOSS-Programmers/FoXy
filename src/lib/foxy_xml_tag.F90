@@ -89,18 +89,28 @@ interface xml_tag
    module procedure create_tag_flat, create_tag_nested
 endinterface
 
+type :: attribute_pair
+   !< An attribute of the found tag.
+   character(len=:), allocatable :: name  !< Attribute name.
+   character(len=:), allocatable :: value !< Attribute value.
+endtype attribute_pair
+
 type, extends(xml_builder) :: tag_builder
    !< Builder of a single tag of a source, driven by the tokenizer: the first tag or, if *name* is allocated, the first tag
    !< with that name (tags inside CDATA sections, comments and PIs excluded); the tokenizer stops once it is complete.
-   character(len=:), allocatable :: name                   !< Name of the searched tag, unallocated for the first tag.
-   logical                       :: sanitize=.false.       !< Trim leading and trailing spaces of attribute values.
-   type(xml_tag)                 :: tag                    !< Found tag: name and attributes.
-   integer(I4P)                  :: id=0_I4P               !< Tokenizer ID of the found tag, 0 if none.
-   integer(I8P)                  :: start=0_I8P            !< Position of the start tag `<`.
-   integer(I8P)                  :: open_end=0_I8P         !< Position of the start tag `>`, 0 if unterminated.
-   integer(I8P)                  :: end_start=0_I8P        !< Position of the end tag `<`, 0 if none.
-   integer(I8P)                  :: end_end=0_I8P          !< Position of the end tag `>`, 0 if none.
-   logical                       :: is_self_closing=.false. !< The found tag is self closing.
+   !<
+   !< @note The found tag is held by plain components, not by an *xml_tag*: nvfortran corrupts a local builder holding one.
+   character(len=:),     allocatable :: name                    !< Name of the searched tag, unallocated for the first tag.
+   logical                           :: sanitize=.false.        !< Trim leading and trailing spaces of attribute values.
+   character(len=:),     allocatable :: tag_name                !< Found tag name.
+   type(attribute_pair), allocatable :: pairs(:)                !< Found tag attributes.
+   integer(I4P)                      :: na=0_I4P                !< Number of attributes of the found tag.
+   integer(I4P)                      :: id=0_I4P                !< Tokenizer ID of the found tag, 0 if none.
+   integer(I8P)                      :: start=0_I8P             !< Position of the start tag `<`.
+   integer(I8P)                      :: open_end=0_I8P          !< Position of the start tag `>`, 0 if unterminated.
+   integer(I8P)                      :: end_start=0_I8P         !< Position of the end tag `<`, 0 if none.
+   integer(I8P)                      :: end_end=0_I8P           !< Position of the end tag `>`, 0 if none.
+   logical                           :: is_self_closing=.false. !< The found tag is self closing.
    contains
       procedure, pass(self) :: start_tag     => tag_start_tag     !< A start tag begins.
       procedure, pass(self) :: attribute     => tag_attribute     !< An attribute of the current start tag.
@@ -397,6 +407,7 @@ contains
    type(tag_builder)                     :: builder !< Single tag builder.
    character(len=:), allocatable         :: content !< Tag content.
    integer(I8P)                          :: tend_   !< Ending index of tag inside the string, local variable.
+   integer(I4P)                          :: a       !< Counter.
 
    call scan_tag(source=source, sanitize=.false., builder=builder)
    call self%tag_name%free
@@ -406,9 +417,10 @@ contains
    self%is_self_closing = .false.
    tend_ = 0_I8P
    if (builder%id>0) then
-      self%tag_name = builder%tag%tag_name
-      if (builder%tag%attributes_number>0) self%attribute = builder%tag%attribute(:, 1:builder%tag%attributes_number)
-      self%attributes_number = builder%tag%attributes_number
+      self%tag_name = builder%tag_name
+      do a=1, builder%na
+         call self%add_attribute_value(name=builder%pairs(a)%name, value=builder%pairs(a)%value)
+      enddo
       self%is_self_closing = builder%is_self_closing
       call tag_content(source=source, builder=builder, content=content)
       if (allocated(content)) self%tag_content = content
@@ -703,8 +715,8 @@ contains
 
    sanitize_values_ = .false. ; if (present(sanitize_values)) sanitize_values_ = sanitize_values
    call scan_tag(source='<_ '//attributes_stream//'/>', sanitize=sanitize_values_, builder=builder)
-   do a=1, builder%tag%attributes_number
-      call self%add_attribute_value(name=builder%tag%attribute(1, a)%chars(), value=builder%tag%attribute(2, a)%chars())
+   do a=1, builder%na
+      call self%add_attribute_value(name=builder%pairs(a)%name, value=builder%pairs(a)%value)
    enddo
    endsubroutine add_stream_attributes
 
@@ -839,7 +851,7 @@ contains
    endif
    self%id = id
    self%start = start
-   self%tag%tag_name = name
+   self%tag_name = name
    endsubroutine tag_start_tag
 
    pure subroutine tag_attribute(self, id, name, value)
@@ -848,8 +860,29 @@ contains
    integer(I4P),       intent(in)    :: id    !< Tag ID.
    character(*),       intent(in)    :: name  !< Attribute name.
    character(*),       intent(in)    :: value !< Attribute value.
+   type(attribute_pair), allocatable :: grown(:) !< Grown attributes list.
+   integer(I4P)                      :: a        !< Counter.
 
-   if (id==self%id) call self%tag%add_attribute_value(name=name, value=value, sanitize_value=self%sanitize)
+   if (id/=self%id) return
+   do a=1, self%na ! an attribute repeated: the last value is kept
+      if (self%pairs(a)%name==name) exit
+   enddo
+   if (a>self%na) then
+      if (.not.allocated(self%pairs)) allocate(self%pairs(4))
+      if (self%na==size(self%pairs, dim=1)) then
+         allocate(grown(2*self%na))
+         grown(1:self%na) = self%pairs(1:self%na)
+         call move_alloc(from=grown, to=self%pairs)
+      endif
+      self%na = self%na + 1
+      a = self%na
+      self%pairs(a)%name = name
+   endif
+   if (self%sanitize) then
+      self%pairs(a)%value = trim(adjustl(value))
+   else
+      self%pairs(a)%value = value
+   endif
    endsubroutine tag_attribute
 
    pure subroutine tag_start_tag_end(self, id, start, open_end, is_self_closing)

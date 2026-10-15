@@ -148,6 +148,20 @@ geometrically, children lists are built once after parsing). Check any change on
 `fobis build --mode benchmark-gnu && exe/benchmarks/foxy_benchmark_parse quakeml 100000` (also `flat`, `deep`;
 `benchmark-gnu-profile` builds it with `-pg` for gprof).
 
+## Portability (gfortran, ifx, nvfortran)
+
+The suite passes with gfortran 14/16, ifx 2025.3 and nvfortran 26.5. Compiler pitfalls met, keep the workarounds:
+
+- list-directed input: tabs/new lines are not value separators for ifx (`blanks_as_spaces` before each read), and an
+  integer overflow is not reported by nvfortran (I1P-I4P are read as I8P and range checked; I8P overflow stays
+  compiler dependent);
+- nvfortran: a deferred-length string assigned from `char(i)` (i not constant) gets length i (`utf8` fills a fixed
+  buffer); an implied-do logical mask `[(tag(t)%... , t=1, nt)]` is evaluated out of bounds (use a loop); a binding
+  named as a StringiFor `string` one (`scan`) is linked to the latter (`scan => scan_file`); a local builder holding an
+  `xml_tag` is corrupted (`tag_builder` keeps plain components); a constant `repeat(..., 100000)` is folded and crashes
+  the compiler (use a variable count);
+- ifx puts large temporaries (function results) on the stack: build with `-heap-arrays` (in the fobos intel modes).
+
 ## CI/CD
 
 GitHub Actions, built on two local composite actions (`.github/actions/setup-build-env`,
