@@ -81,7 +81,7 @@ foxy_xml_file.f90 ← xml_file type: array-based DOM container
 foxy_xml_index.f90 ← xml_index type: tags of a file without content (scan in chunks, content read on demand)
 foxy_xml_tag.F90  ← xml_tag type: single element (note .F90 = preprocessed)
 foxy_xml_entities.f90 ← xml_escape/xml_unescape: character references; text_value/without_markup/strip_blanks
-foxy_xml_tree.f90 ← tree queries (find, find_all, children, attribute, build_children) over a tags array
+foxy_xml_tree.f90 ← tree queries (find, find_all, children, attribute, namespace, build_children) over a tags array
 foxy_xml_tokenizer.f90 ← resumable tokenizer (xml_tokenizer%feed) driving an abstract xml_builder
 foxy_xml_writer.f90 ← xml_writer type: streaming writer to a file, a unit or memory (sticky errors)
 foxy_xml_values.f90 ← typed values: text to numbers/logicals (get_attribute/get_content), XML_NOT_FOUND, XML_BAD_VALUE
@@ -120,6 +120,12 @@ logical scalars and rank-1 allocatable numeric lists) share `foxy_xml_values`: o
 (rejecting what list-directed input would interpret: `,`, `/`, `r*`, quotes) and cuts the text in ~64 KiB segments at
 blanks, then one list-directed read per segment converts them. The specific procedures are boilerplate per kind: keep
 them in sync across kinds and across the two types.
+
+Namespaces are resolved lazily in `foxy_xml_tree` (nothing stored, parsing unchanged, no parse-time checks): the nearest
+`xmlns:p`/`xmlns` declaration up the ancestors (`resolve_namespace`). `find`/`find_all` names go through `name_pattern`:
+literal (as before), `{uri}local` (Clark), or prefixes resolved by `namespaces='xmlns:p="uri"'` (parsed as an attributes
+stream); path segments are split at `/` outside braces. `namespace(id)` is a pure function (no `iostat`): `''` with a
+prefix means the prefix is not declared.
 
 Stored text is the source text (so `stringify` round-trips); the read accessors (`content`, `attribute`, `get_attribute`)
 strip layout blanks and decode character references. Content may hold markup (nested tag as string), so it is never

@@ -5,7 +5,7 @@ use foxy_xml_entities, only : text_value, without_markup
 use foxy_xml_tag, only : xml_tag
 use foxy_xml_tokenizer, only : xml_builder, xml_tokenizer, located, located_in_file, DATA_TEXT, DATA_PI
 use foxy_xml_tree, only : tree_attribute, tree_attribute_text, tree_build_children, tree_children, tree_find_all, &
-                          tree_level, tree_name, tree_parent
+                          tree_level, tree_local_name, tree_name, tree_namespace, tree_parent, tree_prefix
 use foxy_xml_values, only : report, to_value, to_values, XML_NOT_FOUND
 use penf
 
@@ -49,8 +49,11 @@ type, public:: xml_file
                                get_content_I2P_1, get_content_I4P_1, get_content_I8P_1, get_content_R4P_1, &
                                get_content_R8P_1 !< Get the content of a tag as number(s) or logical.
       procedure, pass(self) :: level      !< Return the level of the tag with a given ID.
+      procedure, pass(self) :: local_name !< Return the local name of the tag with a given ID.
       procedure, pass(self) :: name       !< Return the name of the tag with a given ID.
+      procedure, pass(self) :: namespace  !< Return the namespace of the tag with a given ID.
       procedure, pass(self) :: parent     !< Return the parent ID of the tag with a given ID.
+      procedure, pass(self) :: prefix     !< Return the name prefix of the tag with a given ID.
       procedure, pass(self) :: parse      !< Parse xml file.
       procedure, pass(self) :: save       !< Save the whole file data into a file.
       procedure, pass(self) :: stringify  !< Convert the whole file data into a string.
@@ -206,23 +209,24 @@ contains
    endif
    endfunction content_by_id
 
-   pure function find(self, name, path, parent) result(id)
+   pure function find(self, name, path, parent, namespaces) result(id)
    !< Return the ID of the first tag (in document order) matching *name* or *path*, 0 if there is none.
    !<
    !< @note See *find_all* for the matching rules.
-   class(xml_file), intent(in)           :: self   !< XML file.
-   character(*),    intent(in), optional :: name   !< Tag name.
-   character(*),    intent(in), optional :: path   !< Tags path, e.g. `origin/latitude/value`.
-   integer(I4P),    intent(in), optional :: parent !< Parent tag ID, 0 for the document root.
-   integer(I4P)                          :: id     !< Tag ID.
-   integer(I4P), allocatable             :: ids(:) !< Matching tags IDs.
+   class(xml_file), intent(in)           :: self       !< XML file.
+   character(*),    intent(in), optional :: name       !< Tag name.
+   character(*),    intent(in), optional :: path       !< Tags path, e.g. `origin/latitude/value`.
+   integer(I4P),    intent(in), optional :: parent     !< Parent tag ID, 0 for the document root.
+   character(*),    intent(in), optional :: namespaces !< Declarations of the names prefixes.
+   integer(I4P)                          :: id         !< Tag ID.
+   integer(I4P), allocatable             :: ids(:)     !< Matching tags IDs.
 
-   ids = self%find_all(name=name, path=path, parent=parent)
+   ids = self%find_all(name=name, path=path, parent=parent, namespaces=namespaces)
    id = 0_I4P
    if (size(ids)>0) id = ids(1)
    endfunction find
 
-   pure function find_all(self, name, path, parent) result(ids)
+   pure function find_all(self, name, path, parent, namespaces) result(ids)
    !< Return the IDs of all tags (in document order) matching *name* or *path*.
    !<
    !< Matching rules:
@@ -232,13 +236,14 @@ contains
    !<   of the previous one; all the tags matching a segment are explored, thus repeated parents are handled.
    !<
    !< @note If both *name* and *path* are passed, *path* is used; if none is passed, no tag is returned.
-   class(xml_file), intent(in)           :: self   !< XML file.
-   character(*),    intent(in), optional :: name   !< Tag name.
-   character(*),    intent(in), optional :: path   !< Tags path, e.g. `origin/latitude/value`.
-   integer(I4P),    intent(in), optional :: parent !< Parent tag ID, 0 for the document root.
-   integer(I4P), allocatable             :: ids(:) !< Matching tags IDs, empty if there are none.
+   class(xml_file), intent(in)           :: self       !< XML file.
+   character(*),    intent(in), optional :: name       !< Tag name.
+   character(*),    intent(in), optional :: path       !< Tags path, e.g. `origin/latitude/value`.
+   integer(I4P),    intent(in), optional :: parent     !< Parent tag ID, 0 for the document root.
+   character(*),    intent(in), optional :: namespaces !< Declarations of the names prefixes.
+   integer(I4P), allocatable             :: ids(:)     !< Matching tags IDs, empty if there are none.
 
-   ids = tree_find_all(tag=self%tag, nt=self%nt, name=name, path=path, parent=parent)
+   ids = tree_find_all(tag=self%tag, nt=self%nt, name=name, path=path, parent=parent, namespaces=namespaces)
    endfunction find_all
 
    pure function content_by_name(self, name) result(content)
@@ -336,6 +341,15 @@ contains
    level_ = tree_level(tag=self%tag, nt=self%nt, id=id)
    endfunction level
 
+   pure function local_name(self, id) result(local_name_)
+   !< Return the local name (without prefix) of the tag with ID *id*, an empty string if it does not exist.
+   class(xml_file), intent(in)   :: self        !< XML file.
+   integer(I4P),    intent(in)   :: id          !< Tag ID.
+   character(len=:), allocatable :: local_name_ !< Tag local name.
+
+   local_name_ = tree_local_name(tag=self%tag, nt=self%nt, id=id)
+   endfunction local_name
+
    pure function name(self, id) result(name_)
    !< Return the name of the tag with ID *id*, an empty string if it does not exist.
    class(xml_file), intent(in)   :: self  !< XML file.
@@ -345,6 +359,19 @@ contains
    name_ = tree_name(tag=self%tag, nt=self%nt, id=id)
    endfunction name
 
+   pure function namespace(self, id) result(namespace_)
+   !< Return the namespace of the tag with ID *id*, declared by the nearest `xmlns:prefix` (`xmlns` for an unprefixed
+   !< name) attribute of the tag or of its ancestors.
+   !<
+   !< @note An empty string is returned for a tag in no namespace, for a prefix not declared (a prefixed tag without
+   !< namespace) and if the tag does not exist; the *xml* prefix is bound to its namespace.
+   class(xml_file), intent(in)   :: self       !< XML file.
+   integer(I4P),    intent(in)   :: id         !< Tag ID.
+   character(len=:), allocatable :: namespace_ !< Tag namespace.
+
+   namespace_ = tree_namespace(tag=self%tag, nt=self%nt, id=id)
+   endfunction namespace
+
    pure function parent(self, id) result(parent_)
    !< Return the parent ID of the tag with ID *id* (0 for a root tag or if the tag does not exist).
    class(xml_file), intent(in) :: self    !< XML file.
@@ -353,6 +380,15 @@ contains
 
    parent_ = tree_parent(tag=self%tag, nt=self%nt, id=id)
    endfunction parent
+
+   pure function prefix(self, id) result(prefix_)
+   !< Return the name prefix of the tag with ID *id*, an empty string if it has none or it does not exist.
+   class(xml_file), intent(in)   :: self    !< XML file.
+   integer(I4P),    intent(in)   :: id      !< Tag ID.
+   character(len=:), allocatable :: prefix_ !< Tag name prefix.
+
+   prefix_ = tree_prefix(tag=self%tag, nt=self%nt, id=id)
+   endfunction prefix
 
    elemental subroutine free(self)
    !< Free dynamic memory.
