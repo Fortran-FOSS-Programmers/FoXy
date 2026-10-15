@@ -31,7 +31,7 @@ FoBiS is the primary build tool (configured in `fobos`). CMake and fpm are also 
 fobis build --mode tests-gnu         # GNU, optimized
 fobis build --mode tests-gnu-debug   # GNU, -std=f2018, runtime checks, backtraces
 fobis clean --mode tests-gnu
-fobis build --lmodes                 # list modes (also tests-intel, tests-intel-debug)
+fobis build --lmodes                 # list modes (also tests-intel[-debug] for ifx, tests-nvidia[-debug] for nvfortran)
 fobis rule --ls                      # list rules (makecoverage, makecoverage-analysis, makedoc, ...)
 ```
 
