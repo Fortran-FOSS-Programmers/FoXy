@@ -26,33 +26,48 @@ fpm test
 
 [FoBiS.py](https://github.com/szaghi/FoBiS) is the primary build tool used for development and CI.
 
-Clone the repository with submodules:
+Clone the repository and fetch the dependencies (declared in `fobos`, fetched into `src/third_party/`):
 
 ```bash
-git clone --recursive https://github.com/Fortran-FOSS-Programmers/FoXy.git
+git clone https://github.com/Fortran-FOSS-Programmers/FoXy.git
 cd FoXy
+fobis fetch
 ```
 
 Build and run tests:
 
 ```bash
 # GNU, optimised
-FoBiS.py build -mode tests-gnu && bash scripts/run_tests.sh
+fobis build --mode tests-gnu && bash scripts/run_tests.sh
 
-# GNU, debug (array-bounds checking, backtraces)
-FoBiS.py build -mode tests-gnu-debug && bash scripts/run_tests.sh
+# GNU, debug (-std=f2018, runtime checks, backtraces)
+fobis build --mode tests-gnu-debug && bash scripts/run_tests.sh
 
-# Intel
-FoBiS.py build -mode tests-intel && bash scripts/run_tests.sh
+# Intel ifx (also tests-intel-debug)
+fobis build --mode tests-intel && bash scripts/run_tests.sh
+
+# NVIDIA nvfortran (also tests-nvidia-debug)
+fobis build --mode tests-nvidia && bash scripts/run_tests.sh
 ```
 
-Build artefacts go to `./exe/` (binaries), `./obj/`, and `./mod/`.
+Build artefacts go to `./exe/` (binaries, `exe/obj/`, `exe/mod/`). `fobis build --lmodes` lists all modes.
+
+### Compilers
+
+The test suite passes with gfortran 14+, ifx 2025.3 and nvfortran 26.5. Building FoXy with your own flags:
+
+- **ifx** — compile with `-heap-arrays`: ifx puts large temporaries (function results, e.g. the content of a big
+  tag) on the stack, which overflows on large documents.
+- **nvfortran** — preprocess the `.F90` sources with `-Mpreprocess`.
 
 ## CMake
 
+The CMake build uses the dependencies in `src/third_party/`: fetch them first.
+
 ```bash
-git clone --recursive https://github.com/Fortran-FOSS-Programmers/FoXy.git
+git clone https://github.com/Fortran-FOSS-Programmers/FoXy.git
 cd FoXy
+fobis fetch
 mkdir build && cd build
 cmake ..
 make
@@ -61,15 +76,10 @@ make install
 
 CMake generates package config files for use with `find_package(FoXy)` in downstream projects.
 
-## Updating Submodules
+## Dependencies
 
-If you cloned without `--recursive`, initialise the third-party dependencies manually:
-
-```bash
-git submodule update --init --recursive
-```
-
-Third-party libraries (in `src/third_party/`):
+`fobis fetch` clones the dependencies into `src/third_party/` (tracking their default branches) and records the
+fetched revisions in `src/third_party/fobos.lock`; `fobis fetch --update` updates them.
 
 | Library | Purpose |
 |---------|---------|

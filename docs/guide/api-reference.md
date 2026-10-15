@@ -136,7 +136,9 @@ new line) tokens. The `iostat` values, public constants of `foxy_xml_values` re-
 
 The tokens are checked against the characters of the type (integers: digits and signs; reals: also `.`, exponent
 letters `eEdD`, and `NaN`/`Inf`/`Infinity`), then converted by Fortran list-directed input: separators such as `,` or
-`/` and repeat counts (`2*5`) are rejected, not interpreted. A real out of range reads as an infinity. Without
+`/` and repeat counts (`2*5`) are rejected, not interpreted. A real out of range reads as an infinity. An integer out
+of range for `I1P`–`I4P` is always `XML_BAD_VALUE`; for `I8P` the check is the compiler runtime's: gfortran and ifx
+report every overflow, nvfortran (26.5) misses some (`9223372036854775808` reads as `-9223372036854775808`). Without
 `iostat`, errors are silent: the scalar keeps its value (a default), the list is empty.
 
 ---
