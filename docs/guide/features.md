@@ -21,6 +21,8 @@ title: Features
 - [x] Attribute values normalized on read: literal tabs and new lines become spaces
   - [x] Leading/trailing spaces trimmed when parsed (default), or kept with `parse(..., sanitize_attributes_value=.false.)`
 - [x] DOM queries by name, `/`-separated path or parent, tags and attributes read by ID
+- [x] Namespaces: prefix, local name and namespace of each tag, queries by namespace (`{uri}local` or a prefixes map),
+  resolved on demand
 - [x] Typed values: attributes and contents read as integers, reals, logicals or lists of numbers, errors reported
 - [x] Index of large files (`xml_index`): tags without content, content read on demand, scan stopped before raw data
 - [x] Malformed input and file errors reported through optional `iostat`/`iomsg` (first problem, with its line),
@@ -58,6 +60,7 @@ title: Features
 - [x] Keep comments and processing instructions inside the document when writing
 - [x] Report malformed input to the caller
 - [x] One tokenizer for documents, single tags (`xml_tag%parse`) and attributes streams
+- [x] Namespaces (queries by namespace, resolved on demand)
 
 ## XML Syntax Supported
 
@@ -81,6 +84,7 @@ FoXy handles standard XML element syntax. Tags are case-sensitive and attributes
 
 ::: warning Limitations
 - Entities defined by a DTD (e.g. `&nbsp;`) are not expanded, only the predefined and numeric references
+- Namespaces are not checked when parsing: an undeclared prefix is not reported (its namespace is `''`)
 - Malformed input is tolerated: an end tag closes up to its matching start tag, a stray one is ignored; only the first
   problem is reported (`iostat`/`iomsg`)
 :::

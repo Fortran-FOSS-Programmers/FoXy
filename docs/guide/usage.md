@@ -307,6 +307,29 @@ val = xfile%name(id)                              ! 'magnitude'; xfile%parent(id
 When a path segment matches several tags (e.g. many `origin` tags), all of them are explored, so
 `find_all(path='origin/latitude/value')` returns the latitudes of every origin.
 
+### Namespaces
+
+Names are matched literally, prefix included. To match by namespace, whatever prefix the document uses, write the
+name in Clark notation, `{uri}local`, or pass the prefixes of your query with `namespaces=`, written as XML
+declarations:
+
+```fortran
+character(*), parameter :: BED = 'http://quakeml.org/xmlns/bed/1.2'
+
+! <q:quakeml xmlns="http://quakeml.org/xmlns/bed/1.2" xmlns:q="http://quakeml.org/xmlns/quakeml/1.2">
+!   <eventParameters><event><origin>...
+ids = xfile%find_all(path='{'//BED//'}event/{'//BED//'}origin')                      ! Clark notation
+ids = xfile%find_all(path='bed:event/bed:origin', namespaces='xmlns:bed="'//BED//'"') ! query prefixes
+ids = xfile%find_all(path='event/origin', namespaces='xmlns="'//BED//'"')              ! query default namespace
+
+id  = xfile%find(name='q:quakeml')   ! literal name, as always
+val = xfile%prefix(id)               ! 'q'
+val = xfile%local_name(id)           ! 'quakeml'
+val = xfile%namespace(id)            ! 'http://quakeml.org/xmlns/quakeml/1.2'
+```
+
+Namespaces are resolved on demand through the ancestors declarations (`xml_index` too), at no parsing cost.
+
 ### Text values: references, CDATA and mixed content
 
 `content()` and `attribute()` return **values**: layout blanks stripped, character references decoded, CDATA sections

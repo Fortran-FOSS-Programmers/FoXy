@@ -109,18 +109,37 @@ Defined in `src/lib/foxy_xml_file.f90`. Holds a flat `tag(:)` array with hierarc
 | `xfile%save(filename, [is_declared=], [iostat=], [iomsg=])` | Write prolog plus `stringify()` and a final new line to a file; `is_declared=.true.` adds `<?xml version="1.0"?>` if the prolog has none; without `iostat` an I/O error stops the program |
 | `xfile%content(name)` | Return the direct text of the first tag named `name` (text plus children tails), without leading/trailing blanks, references decoded, CDATA literal |
 | `xfile%content(id=)` | Return the direct text of the tag with ID `id`, as `content(name)` |
-| `xfile%find([name=], [path=], [parent=])` | Return the ID of the first matching tag, `0` if none |
-| `xfile%find_all([name=], [path=], [parent=])` | Return the IDs of all matching tags, in document order |
+| `xfile%find([name=], [path=], [parent=], [namespaces=])` | Return the ID of the first matching tag, `0` if none |
+| `xfile%find_all([name=], [path=], [parent=], [namespaces=])` | Return the IDs of all matching tags, in document order. Names match literally, except `{uri}local` (Clark notation: local name in namespace `uri`, any prefix) and, with `namespaces=` (declarations as in XML, `'xmlns="uri1" xmlns:p="uri2"'`), every name, its prefix resolved by them. See [namespaces](#namespaces) |
 | `xfile%children(id)` | Return the IDs of the direct children of tag `id` (`0`: root tags) |
 | `xfile%attribute(id, name)` | Return the value of attribute `name` of tag `id`, as `get_attribute`, `''` if not defined |
 | `xfile%get_attribute(id, name, value, [iostat=], [iomsg=])` | Get attribute `name` of tag `id` as a number or a logical: `value` integer (`I1P`…`I8P`), real (`R4P`, `R8P`) or logical (`true`/`false`/`1`/`0`), unchanged on error; or `values=`, an allocatable rank-1 integer or real array, the blank-separated list (`"0 10 0 10 0 0"`), empty on error. See [typed values](#typed-values) |
 | `xfile%get_content(id, value, [iostat=], [iomsg=])` | Get the content of tag `id` (as `content(id=)`) as a number, a logical or (`values=`) a list, as `get_attribute` |
 | `xfile%name(id)` / `xfile%parent(id)` / `xfile%level(id)` | Return the name (`''`), parent ID and level (1 for a root tag) of tag `id` (`0` if it does not exist) |
+| `xfile%prefix(id)` / `xfile%local_name(id)` / `xfile%namespace(id)` | Return the name prefix (`''` if none), the local name and the namespace of tag `id` (`''` if it does not exist). See [namespaces](#namespaces) |
 | `xfile%add_tag(tag, [parent=], [id=])` | Append a tag as a root tag or as the last child of tag `parent` (one level deeper, indented 2 more spaces); `id` returns its ID (its index; `0` if `parent` is not a tag). Built documents number tags in insertion order |
 | `xfile%delete_tag(name)` | Remove first tag named `name` with its whole subtree; remaining IDs are renumbered |
 | `xfile%free()` | Deallocate all data |
 
 `XML_MALFORMED` (`9001`) is a public constant of `foxy_xml_file`, re-exported by `foxy`.
+
+### Namespaces
+
+Namespaces (Namespaces in XML 1.0) are resolved on demand, nothing is stored and parsing is unchanged: the namespace
+of a tag is the value of the nearest declaration of its prefix, `xmlns:prefix` (`xmlns` for an unprefixed name), on
+the tag or on its ancestors. The `xml` prefix is bound to `http://www.w3.org/XML/1998/namespace`; `xmlns=""` undeclares
+the default namespace. `namespace(id)` is `''` for a tag in no namespace and for a prefix not declared: since a prefix
+cannot be declared empty, a tag with `prefix(id)/=''` and `namespace(id)==''` has its prefix not declared. Undeclared
+prefixes are not reported by `parse`.
+
+| Name in `find`/`find_all` (and each `path` segment) | Matches |
+|----------|---------|
+| `p:local`, `local` | Tags with this exact name (prefix included), whatever their namespace |
+| `{uri}local` | Tags with local name `local` in namespace `uri`, whatever their prefix; `{}local`: in no namespace |
+| `p:local` with `namespaces=` | Tags with local name `local` in the namespace that `namespaces` declares for `p` (the document prefixes do not matter); a prefix not declared matches nothing |
+| `local` with `namespaces=` | Tags with local name `local` in the default namespace of `namespaces` (`xmlns="uri"`), in no namespace if it has none |
+
+A `/` inside braces is not a path separator, so `{uri}` may hold a URL. Attribute names are always matched literally.
 
 ### Typed values
 
@@ -152,7 +171,7 @@ file. Positions are 1-based byte offsets (`integer(I8P)`).
 | Method | Description |
 |--------|-------------|
 | `idx%scan(filename, [stop_at=], [chunk_size=], [iostat=], [iomsg=], [sanitize_attributes_value=])` | Index a file, read in chunks (default 64 KiB); with `stop_at` the scan stops after the start tag of the first tag with that name (e.g. `AppendedData`, before raw binary data); errors as `xfile%parse` |
-| `idx%find(...)`, `idx%find_all(...)`, `idx%children(id)`, `idx%attribute(id, name)`, `idx%name(id)`, `idx%parent(id)`, `idx%level(id)` | The `xml_file` queries, same arguments and results |
+| `idx%find(...)`, `idx%find_all(...)`, `idx%children(id)`, `idx%attribute(id, name)`, `idx%name(id)`, `idx%parent(id)`, `idx%level(id)`, `idx%prefix(id)`, `idx%local_name(id)`, `idx%namespace(id)` | The `xml_file` queries, same arguments and results |
 | `idx%get_attribute(...)`, `idx%get_content(...)` | The `xml_file` [typed values](#typed-values); `get_content` reads the content from the file |
 | `idx%content(id, [iostat=], [iomsg=])` | Read the content of tag `id` from the file, as `xfile%content(id=)`; `''` for a self-closing or unclosed tag |
 | `idx%text_range(id, first, last)` | Byte range of the text of tag `id` (up to its first child); `last < first` if empty |
