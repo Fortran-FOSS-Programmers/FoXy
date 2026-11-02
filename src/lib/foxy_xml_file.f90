@@ -1,11 +1,12 @@
 !< FoXy XML file class.
 module foxy_xml_file
 !< FoXy XML file class.
-use foxy_xml_entities, only : text_value, without_markup
+use foxy_xml_entities, only : is_name, text_value, without_markup, xml_escape
 use foxy_xml_tag, only : xml_tag
 use foxy_xml_tokenizer, only : xml_builder, xml_tokenizer, located, located_in_file, DATA_TEXT, DATA_PI
-use foxy_xml_tree, only : tree_attribute, tree_attribute_text, tree_build_children, tree_children, tree_find_all, &
-                          tree_level, tree_local_name, tree_name, tree_namespace, tree_parent, tree_prefix
+use foxy_xml_tree, only : tree_attribute, tree_attribute_name, tree_attribute_text, tree_attributes_number, &
+                          tree_build_children, tree_children, tree_find_all, tree_level, tree_local_name, tree_name, &
+                          tree_namespace, tree_parent, tree_prefix
 use foxy_xml_values, only : report, to_value, to_values, XML_NOT_FOUND
 use penf
 
@@ -30,11 +31,14 @@ type, public:: xml_file
       ! public methods
       procedure, pass(self) :: add_tag    !< Add tag to XML file.
       procedure, pass(self) :: attribute  !< Return the value of an attribute of the tag with a given ID.
+      procedure, pass(self) :: attribute_name    !< Return the name of the attribute with a given index of a tag.
+      procedure, pass(self) :: attributes_number !< Return the number of attributes of the tag with a given ID.
       procedure, pass(self) :: children   !< Return the IDs of the children of the tag with a given ID.
       generic               :: content => &
                                content_by_name, &
                                content_by_id      !< Return tag content, by tag name or ID.
-      procedure, pass(self) :: delete_tag !< Add tag from XML file.
+      procedure, pass(self) :: delete_attribute !< Delete an attribute of the tag with a given ID.
+      procedure, pass(self) :: delete_tag !< Delete a tag (by name or ID) with its subtree.
       procedure, pass(self) :: find       !< Return the ID of the first tag matching a name or a path.
       procedure, pass(self) :: find_all   !< Return the IDs of all tags matching a name or a path.
       procedure, pass(self) :: free       !< Free dynamic memory.
@@ -56,9 +60,13 @@ type, public:: xml_file
       procedure, pass(self) :: prefix     !< Return the name prefix of the tag with a given ID.
       procedure, pass(self) :: parse      !< Parse xml file.
       procedure, pass(self) :: save       !< Save the whole file data into a file.
+      procedure, pass(self) :: set_attribute !< Set (add or replace) an attribute of the tag with a given ID.
+      procedure, pass(self) :: set_content   !< Set the content of the tag with a given ID, replacing its children.
       procedure, pass(self) :: stringify  !< Convert the whole file data into a string.
+      procedure, pass(self) :: tags_number !< Return the number of tags.
       ! private methods
       procedure, pass(self), private :: append_inline       !< Append a tag with its subtree, without layout.
+      procedure, pass(self), private :: delete_subtree      !< Delete a tag and its subtree, renumbering the others.
       procedure, pass(self), private :: append_inline_body  !< Append a tag text, children and their tails, without layout.
       procedure, pass(self), private :: direct_text         !< Return a tag text plus its children tails (raw).
       procedure, pass(self), private :: is_mixed            !< Check if a tag has mixed content.
@@ -274,63 +282,138 @@ contains
    endif
    endfunction content_by_name
 
-   elemental subroutine delete_tag(self, name)
-   !< Delete the first tag named *name*, together with its whole subtree, from XML file.
+   elemental subroutine delete_tag(self, name, id)
+   !< Delete from XML file the first tag named *name* or, if *id* is passed, the tag with ID *id*, together with its whole
+   !< subtree (nothing is deleted if there is no such tag).
    !<
    !< @note Tags IDs are the tags indexes into the tags array: the remaining tags are renumbered, parent and children IDs
-   !< included. A child index is always greater than its parent one (document order for parsed tags, root tags for added
-   !< ones), thus the subtree is collected by a single forward sweep.
-   class(xml_file), intent(inout) :: self          !< XML file.
-   character(*),    intent(in)    :: name          !< XML tag name.
-   type(xml_tag), allocatable     :: tag_new(:)    !< New (reduced) tags array.
-   logical,       allocatable     :: is_deleted(:) !< Flag of deleted tags.
-   integer(I4P),  allocatable     :: new_id(:)     !< New ID of each tag, 0 if deleted.
-   integer(I4P),  allocatable     :: child_id(:)   !< Children IDs, renumbered.
-   integer(I4P)                   :: parent_id     !< Parent ID.
-   integer(I4P)                   :: t             !< Counter.
-   integer(I4P)                   :: n             !< Counter.
+   !< included (the IDs before the deleted tag do not change).
+   class(xml_file), intent(inout)        :: self !< XML file.
+   character(*),    intent(in), optional :: name !< XML tag name.
+   integer(I4P),    intent(in), optional :: id   !< XML tag ID.
+   integer(I4P)                          :: t    !< Counter.
 
-   if (self%nt==0_I4P) return
-   allocate(is_deleted(self%nt), source=.false.)
-   do t=1, self%nt
-      if (name==self%tag(t)%name()) then
-         is_deleted(t) = .true.
-         exit
-      endif
-   enddo
-   if (.not.any(is_deleted)) return
-   do t=1, self%nt
-      parent_id = self%tag(t)%get_parent_id()
-      if (parent_id>0.and.parent_id<t) then
-         if (is_deleted(parent_id)) is_deleted(t) = .true.
-      endif
-   enddo
-
-   allocate(new_id(self%nt), source=0_I4P)
-   n = 0
-   do t=1, self%nt
-      if (.not.is_deleted(t)) then
-         n = n + 1
-         new_id(t) = n
-      endif
-   enddo
-   allocate(tag_new(1:n))
-   do t=1, self%nt
-      if (is_deleted(t)) cycle
-      tag_new(new_id(t)) = self%tag(t)
-      parent_id = self%tag(t)%get_parent_id()
-      if (parent_id>0) parent_id = new_id(parent_id)
-      call tag_new(new_id(t))%set(id=new_id(t), parent_id=parent_id)
-      if (allocated(self%tag(t)%child_id)) then
-         child_id = pack(new_id(self%tag(t)%child_id), new_id(self%tag(t)%child_id)>0)
-         deallocate(tag_new(new_id(t))%child_id)
-         if (size(child_id)>0) tag_new(new_id(t))%child_id = child_id
-         tag_new(new_id(t))%children_number = size(child_id)
-      endif
-   enddo
-   call move_alloc(from=tag_new, to=self%tag)
-   self%nt = n
+   if (present(id)) then
+      if (id>=1.and.id<=self%nt) call self%delete_subtree(id=id, is_root_deleted=.true.)
+   elseif (present(name)) then
+      do t=1, self%nt
+         if (name==self%tag(t)%name()) then
+            call self%delete_subtree(id=t, is_root_deleted=.true.)
+            exit
+         endif
+      enddo
+   endif
    endsubroutine delete_tag
+
+   pure function attribute_name(self, id, a) result(name)
+   !< Return the name of the attribute with index *a* (1 for the first one, in source order) of the tag with ID *id*, an
+   !< empty string if it does not exist; with *attributes_number*, the attributes of a tag can be listed.
+   class(xml_file), intent(in)   :: self !< XML file.
+   integer(I4P),    intent(in)   :: id   !< Tag ID.
+   integer(I4P),    intent(in)   :: a    !< Attribute index.
+   character(len=:), allocatable :: name !< Attribute name.
+
+   name = tree_attribute_name(tag=self%tag, nt=self%nt, id=id, a=a)
+   endfunction attribute_name
+
+   pure function attributes_number(self, id) result(number)
+   !< Return the number of attributes of the tag with ID *id*, 0 if it does not exist.
+   class(xml_file), intent(in) :: self   !< XML file.
+   integer(I4P),    intent(in) :: id     !< Tag ID.
+   integer(I4P)                :: number !< Number of attributes.
+
+   number = tree_attributes_number(tag=self%tag, nt=self%nt, id=id)
+   endfunction attributes_number
+
+   pure subroutine delete_attribute(self, id, name, iostat, iomsg)
+   !< Delete the attribute named *name* of the tag with ID *id*.
+   !<
+   !< @note *iostat* is *XML_NOT_FOUND* if the tag or the attribute does not exist (*iomsg* unchanged on success).
+   class(xml_file),        intent(inout) :: self    !< XML file.
+   integer(I4P),           intent(in)    :: id      !< Tag ID.
+   character(*),           intent(in)    :: name    !< Attribute name.
+   integer(I4P), optional, intent(out)   :: iostat  !< IO status.
+   character(*), optional, intent(inout) :: iomsg   !< IO message.
+   integer(I4P)                          :: iostat_ !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_  !< IO message, local variable.
+
+   iostat_ = 0
+   iomsg_ = ''
+   if (id<1.or.id>self%nt) then
+      iostat_ = XML_NOT_FOUND
+      iomsg_ = 'tag with ID '//trim(str(id, no_sign=.true.))//' not found'
+   elseif (.not.self%tag(id)%is_attribute_present(name=name)) then
+      iostat_ = XML_NOT_FOUND
+      iomsg_ = 'attribute "'//name//'" not found in tag "'//self%tag(id)%name()//'"'
+   else
+      call self%tag(id)%delete_attributes(name=name)
+   endif
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg)
+   endsubroutine delete_attribute
+
+   pure subroutine set_attribute(self, id, name, value, iostat, iomsg)
+   !< Set the attribute named *name* of the tag with ID *id*: added (last) or, if present, its value replaced; *value* is
+   !< escaped (`&`, `<`, `"`), *attribute* returns it as passed.
+   !<
+   !< @note *iostat* is *XML_NOT_FOUND* if the tag does not exist, *XML_MALFORMED* if *name* is not an XML name (nothing is
+   !< set); *iomsg* is unchanged on success.
+   class(xml_file),        intent(inout) :: self    !< XML file.
+   integer(I4P),           intent(in)    :: id      !< Tag ID.
+   character(*),           intent(in)    :: name    !< Attribute name.
+   character(*),           intent(in)    :: value   !< Attribute value.
+   integer(I4P), optional, intent(out)   :: iostat  !< IO status.
+   character(*), optional, intent(inout) :: iomsg   !< IO message.
+   integer(I4P)                          :: iostat_ !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_  !< IO message, local variable.
+
+   iostat_ = 0
+   iomsg_ = ''
+   if (id<1.or.id>self%nt) then
+      iostat_ = XML_NOT_FOUND
+      iomsg_ = 'tag with ID '//trim(str(id, no_sign=.true.))//' not found'
+   elseif (.not.is_name(name)) then
+      iostat_ = XML_MALFORMED
+      iomsg_ = 'attribute name "'//name//'" is not an XML name'
+   else
+      call self%tag(id)%set(attribute_name=name, attribute_value=xml_escape(value))
+   endif
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg)
+   endsubroutine set_attribute
+
+   pure subroutine set_content(self, id, content, iostat, iomsg)
+   !< Set the content of the tag with ID *id*: its children (with their subtrees) are deleted, *content* becomes its whole
+   !< content (a self closing tag gets an end tag).
+   !<
+   !< @note As for *xml_tag* contents, *content* is stored as it is (it may hold markup): character data from the user must
+   !< be escaped first with *xml_escape*. The children deleted renumber the following tags, as *delete_tag*.
+   !< @note *iostat* is *XML_NOT_FOUND* if the tag does not exist (*iomsg* unchanged on success).
+   class(xml_file),        intent(inout) :: self    !< XML file.
+   integer(I4P),           intent(in)    :: id      !< Tag ID.
+   character(*),           intent(in)    :: content !< Tag content.
+   integer(I4P), optional, intent(out)   :: iostat  !< IO status.
+   character(*), optional, intent(inout) :: iomsg   !< IO message.
+   integer(I4P)                          :: iostat_ !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_  !< IO message, local variable.
+
+   iostat_ = 0
+   iomsg_ = ''
+   if (id<1.or.id>self%nt) then
+      iostat_ = XML_NOT_FOUND
+      iomsg_ = 'tag with ID '//trim(str(id, no_sign=.true.))//' not found'
+   else
+      if (self%tag(id)%children_number>0) call self%delete_subtree(id=id, is_root_deleted=.false.)
+      call self%tag(id)%set(content=content, is_self_closing=.false.)
+   endif
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg)
+   endsubroutine set_content
+
+   elemental function tags_number(self) result(number)
+   !< Return the number of tags (IDs are 1 to the number of tags).
+   class(xml_file), intent(in) :: self   !< XML file.
+   integer(I4P)                :: number !< Number of tags.
+
+   number = self%nt
+   endfunction tags_number
 
    pure function level(self, id) result(level_)
    !< Return the level of the tag with ID *id* (1 for a root tag), 0 if it does not exist.
@@ -568,6 +651,60 @@ contains
       call append(buffer=buffer, n=n, piece=self%tag(self%tag(t)%child_id(c))%get_tail())
    enddo
    endsubroutine append_inline_body
+
+   pure subroutine delete_subtree(self, id, is_root_deleted)
+   !< Delete the subtree of the tag with ID *id* (the tag included if *is_root_deleted*), renumbering the other tags.
+   !<
+   !< @note A child index is always greater than its parent one (document order for parsed tags, insertion order for added
+   !< ones), thus the subtree is collected by a single forward sweep.
+   class(xml_file), intent(inout) :: self            !< XML file.
+   integer(I4P),    intent(in)    :: id              !< Tag ID.
+   logical,         intent(in)    :: is_root_deleted !< The tag itself is deleted too.
+   type(xml_tag), allocatable     :: tag_new(:)      !< New (reduced) tags array.
+   logical,       allocatable     :: is_deleted(:)   !< Flag of deleted tags.
+   logical,       allocatable     :: is_in_subtree(:) !< Flag of the subtree tags (the tag included).
+   integer(I4P),  allocatable     :: new_id(:)       !< New ID of each tag, 0 if deleted.
+   integer(I4P),  allocatable     :: child_id(:)     !< Children IDs, renumbered.
+   integer(I4P)                   :: parent_id       !< Parent ID.
+   integer(I4P)                   :: t               !< Counter.
+   integer(I4P)                   :: n               !< Counter.
+
+   allocate(is_in_subtree(self%nt), source=.false.)
+   is_in_subtree(id) = .true.
+   do t=id+1, self%nt
+      parent_id = self%tag(t)%get_parent_id()
+      if (parent_id>=id.and.parent_id<t) then
+         if (is_in_subtree(parent_id)) is_in_subtree(t) = .true.
+      endif
+   enddo
+   is_deleted = is_in_subtree
+   if (.not.is_root_deleted) is_deleted(id) = .false.
+
+   allocate(new_id(self%nt), source=0_I4P)
+   n = 0
+   do t=1, self%nt
+      if (.not.is_deleted(t)) then
+         n = n + 1
+         new_id(t) = n
+      endif
+   enddo
+   allocate(tag_new(1:n))
+   do t=1, self%nt
+      if (is_deleted(t)) cycle
+      tag_new(new_id(t)) = self%tag(t)
+      parent_id = self%tag(t)%get_parent_id()
+      if (parent_id>0) parent_id = new_id(parent_id)
+      call tag_new(new_id(t))%set(id=new_id(t), parent_id=parent_id)
+      if (allocated(self%tag(t)%child_id)) then
+         child_id = pack(new_id(self%tag(t)%child_id), new_id(self%tag(t)%child_id)>0)
+         deallocate(tag_new(new_id(t))%child_id)
+         if (size(child_id)>0) tag_new(new_id(t))%child_id = child_id
+         tag_new(new_id(t))%children_number = size(child_id)
+      endif
+   enddo
+   call move_alloc(from=tag_new, to=self%tag)
+   self%nt = n
+   endsubroutine delete_subtree
 
    pure function direct_text(self, t) result(text)
    !< Return the direct (raw) text of a tag: its text plus the tails of its children, the children text excluded.

@@ -56,6 +56,8 @@ type :: xml_tag
       procedure, pass(self) :: free                        !< Free (reset) tag.
       procedure, pass(self) :: get_content                 !< Return tag content.
       procedure, pass(self) :: get_attribute               !< Return the value of the attribute named *name*.
+      procedure, pass(self) :: get_attribute_name          !< Return the name of the attribute with a given index.
+      procedure, pass(self) :: get_attributes_number       !< Return the number of attributes.
       procedure, pass(self) :: get_id                      !< Return tag uniq ID.
       procedure, pass(self) :: get_indent                  !< Return tag indentation.
       procedure, pass(self) :: get_level                   !< Return tag hierarchy level.
@@ -284,6 +286,24 @@ contains
       endif
    endif
    endsubroutine get_content
+
+   pure function get_attribute_name(self, a) result(name)
+   !< Return the name of the attribute with index *a* (1 for the first one, in source order), empty if it does not exist.
+   class(xml_tag), intent(in)    :: self !< XML tag.
+   integer(I4P),   intent(in)    :: a    !< Attribute index.
+   character(len=:), allocatable :: name !< Attribute name.
+
+   name = ''
+   if (a>=1.and.a<=self%attributes_number) name = self%attribute(1, a)%chars()
+   endfunction get_attribute_name
+
+   elemental function get_attributes_number(self) result(number)
+   !< Return the number of attributes.
+   class(xml_tag), intent(in) :: self   !< XML tag.
+   integer(I4P)               :: number !< Number of attributes.
+
+   number = self%attributes_number
+   endfunction get_attributes_number
 
    pure function get_attribute(self, name) result(value)
    !< Return the value of the attribute named *name*.

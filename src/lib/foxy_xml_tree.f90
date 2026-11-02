@@ -14,6 +14,8 @@ use penf
 implicit none
 private
 public :: tree_attribute
+public :: tree_attribute_name
+public :: tree_attributes_number
 public :: tree_attribute_text
 public :: tree_build_children
 public :: tree_children
@@ -37,6 +39,29 @@ type :: name_pattern
 endtype name_pattern
 
 contains
+   pure function tree_attribute_name(tag, nt, id, a) result(name)
+   !< Return the name of the attribute with index *a* (source order) of the tag with ID *id*, empty if it does not exist.
+   type(xml_tag), allocatable, intent(in) :: tag(:) !< Tags.
+   integer(I4P),               intent(in) :: nt     !< Number of tags.
+   integer(I4P),               intent(in) :: id     !< Tag ID.
+   integer(I4P),               intent(in) :: a      !< Attribute index.
+   character(len=:), allocatable          :: name   !< Attribute name.
+
+   name = ''
+   if (id>=1.and.id<=nt) name = tag(id)%get_attribute_name(a)
+   endfunction tree_attribute_name
+
+   pure function tree_attributes_number(tag, nt, id) result(number)
+   !< Return the number of attributes of the tag with ID *id*, 0 if it does not exist.
+   type(xml_tag), allocatable, intent(in) :: tag(:) !< Tags.
+   integer(I4P),               intent(in) :: nt     !< Number of tags.
+   integer(I4P),               intent(in) :: id     !< Tag ID.
+   integer(I4P)                           :: number !< Number of attributes.
+
+   number = 0
+   if (id>=1.and.id<=nt) number = tag(id)%get_attributes_number()
+   endfunction tree_attributes_number
+
    pure function tree_attribute(tag, nt, id, name) result(value)
    !< Return the value of the attribute named *name* of the tag with ID *id*.
    !<

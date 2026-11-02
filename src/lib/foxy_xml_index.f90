@@ -10,8 +10,9 @@ use foxy_xml_entities, only : text_value
 use foxy_xml_file, only : XML_MALFORMED
 use foxy_xml_tag, only : xml_tag
 use foxy_xml_tokenizer, only : xml_builder, xml_tokenizer, located_in_file
-use foxy_xml_tree, only : tree_attribute, tree_attribute_text, tree_build_children, tree_children, tree_find_all, &
-                          tree_level, tree_local_name, tree_name, tree_namespace, tree_parent, tree_prefix
+use foxy_xml_tree, only : tree_attribute, tree_attribute_name, tree_attribute_text, tree_attributes_number, &
+                          tree_build_children, tree_children, tree_find_all, tree_level, tree_local_name, tree_name, &
+                          tree_namespace, tree_parent, tree_prefix
 use foxy_xml_values, only : report, to_value, to_values, XML_NOT_FOUND
 use penf
 
@@ -33,6 +34,8 @@ type :: xml_index
    contains
       ! public methods
       procedure, pass(self) :: attribute     !< Return the value of an attribute of the tag with a given ID.
+      procedure, pass(self) :: attribute_name    !< Return the name of the attribute with a given index of a tag.
+      procedure, pass(self) :: attributes_number !< Return the number of attributes of the tag with a given ID.
       procedure, pass(self) :: children      !< Return the IDs of the children of the tag with a given ID.
       procedure, pass(self) :: content       !< Return the content of the tag with a given ID, read from the file.
       procedure, pass(self) :: content_range !< Return the positions in the file of the content of a tag.
@@ -58,6 +61,7 @@ type :: xml_index
       procedure, pass(self) :: scan => scan_file !< Scan a file, indexing its tags (procedure renamed: nvfortran links
                                                  !< a binding named as one of StringiFor string to the latter).
       procedure, pass(self) :: stop_position !< Return the position after the start tag where the scan stopped.
+      procedure, pass(self) :: tags_number   !< Return the number of tags.
       procedure, pass(self) :: text_range    !< Return the positions in the file of the text of a tag.
       ! private methods
       procedure, pass(self), private :: attribute_text !< Return an attribute value, reporting a missing one.
@@ -111,6 +115,33 @@ endtype index_builder
 
 contains
    ! public methods
+   pure function attribute_name(self, id, a) result(name)
+   !< Return the name of the attribute with index *a* (source order) of the tag with ID *id* (as *xml_file%attribute_name*).
+   class(xml_index), intent(in)  :: self !< XML index.
+   integer(I4P),     intent(in)  :: id   !< Tag ID.
+   integer(I4P),     intent(in)  :: a    !< Attribute index.
+   character(len=:), allocatable :: name !< Attribute name, empty if it does not exist.
+
+   name = tree_attribute_name(tag=self%tag, nt=self%nt, id=id, a=a)
+   endfunction attribute_name
+
+   pure function attributes_number(self, id) result(number)
+   !< Return the number of attributes of the tag with ID *id*, 0 if it does not exist.
+   class(xml_index), intent(in) :: self   !< XML index.
+   integer(I4P),     intent(in) :: id     !< Tag ID.
+   integer(I4P)                 :: number !< Number of attributes.
+
+   number = tree_attributes_number(tag=self%tag, nt=self%nt, id=id)
+   endfunction attributes_number
+
+   elemental function tags_number(self) result(number)
+   !< Return the number of tags indexed (IDs are 1 to the number of tags).
+   class(xml_index), intent(in) :: self   !< XML index.
+   integer(I4P)                 :: number !< Number of tags.
+
+   number = self%nt
+   endfunction tags_number
+
    pure function attribute(self, id, name) result(value)
    !< Return the value of the attribute named *name* of the tag with ID *id* (as *xml_file%attribute*).
    class(xml_index), intent(in)  :: self  !< XML index.
