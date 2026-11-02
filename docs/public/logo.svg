@@ -1,18 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="FoXy">
-  <defs>
-    <linearGradient id="fur" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ff8a3d"/>
-      <stop offset="1" stop-color="#e8590c"/>
-    </linearGradient>
-  </defs>
-  <rect width="64" height="64" rx="14" fill="#1e2a38"/>
-  <!-- the head: two ears and a muzzle pointing down, the shape of a fox and of the brackets of a tag -->
-  <path d="M9 12 L24 22 L40 22 L55 12 L52 34 L32 54 L12 34 Z" fill="url(#fur)"/>
-  <path d="M13 17 L21 22.5 L15 28 Z M51 17 L43 22.5 L49 28 Z" fill="#1e2a38" opacity="0.55"/>
-  <!-- the white cheeks, a V meeting at the nose -->
-  <path d="M12 34 L24 33 L32 42 L40 33 L52 34 L32 54 Z" fill="#fff4ea"/>
-  <!-- the eyes, < and >: the markup in the face -->
-  <path d="M26 26 L20.5 29 L26 32" fill="none" stroke="#1e2a38" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M38 26 L43.5 29 L38 32" fill="none" stroke="#1e2a38" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="32" cy="50" r="2.6" fill="#1e2a38"/>
+  <!-- a low-poly arctic fox: slate facets, orange inside the ears; the eyes and the white blaze read </> -->
+  <path d="M8 10 L24 22 L14 30 Z" fill="#33415c"/>
+  <path d="M56 10 L40 22 L50 30 Z" fill="#2d3a52"/>
+  <path d="M12.5 15 L21 22.2 L15.5 26.4 Z M51.5 15 L43 22.2 L48.5 26.4 Z" fill="#f08c2e"/>
+  <path d="M24 22 L40 22 L32 34 Z" fill="#4c5c7d"/>
+  <path d="M14 30 L24 22 L32 34 Z" fill="#3d4b69"/>
+  <path d="M50 30 L40 22 L32 34 Z" fill="#44536f"/>
+  <path d="M14 30 L32 34 L32 54 Z" fill="#eef2f7"/>
+  <path d="M50 30 L32 34 L32 54 Z" fill="#cfd8e4"/>
+  <path d="M25.5 24.8 L21.5 27.5 L25.5 30.2 M38.5 24.8 L42.5 27.5 L38.5 30.2" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M28.6 31.2 L31.4 31.2 L35.6 23.4 L32.8 23.4 Z" fill="#ffffff"/>
+  <circle cx="32" cy="51.5" r="2.3" fill="#1e2a38"/>
 </svg>

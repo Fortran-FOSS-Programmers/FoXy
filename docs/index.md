@@ -6,7 +6,7 @@ hero:
   text: Fortran XML for poor people
   image:
     src: /logo.svg
-    alt: the FoXy logo, a fox face whose eyes are the angle brackets of a tag
+    alt: the FoXy logo, a low-poly arctic fox whose eyes and white blaze read </>
   tagline: "Read, edit and write XML from modern Fortran: a DOM for documents, an index for huge files, a streaming writer for any size. Pure Fortran 2008, one module."
   actions:
     - theme: brand

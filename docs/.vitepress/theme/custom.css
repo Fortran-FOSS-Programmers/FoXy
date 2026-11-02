@@ -1,29 +1,29 @@
-/* FoXy palette: fox orange, amber, slate (public/logo.svg uses the same colours). */
+/* FoXy palette: the slate of the fox's facets, the orange inside its ears (public/logo.svg uses the same colours). */
 :root {
-  --vp-c-brand-1: #c2410c;
-  --vp-c-brand-2: #d9530f;
-  --vp-c-brand-3: #c2410c;
-  --vp-c-brand-soft: rgba(232, 89, 12, 0.13);
+  --vp-c-brand-1: #3d4b69;
+  --vp-c-brand-2: #4c5c7d;
+  --vp-c-brand-3: #33415c;
+  --vp-c-brand-soft: rgba(76, 92, 125, 0.14);
 
   --vp-home-hero-name-color: transparent;
-  --vp-home-hero-name-background: linear-gradient(120deg, #c2410c 10%, #f59f00 60%, #1e2a38 100%);
-  --vp-home-hero-image-background-image: linear-gradient(135deg, rgba(232, 89, 12, 0.4) 25%, rgba(245, 159, 0, 0.35) 60%, rgba(30, 42, 56, 0.3));
+  --vp-home-hero-name-background: linear-gradient(120deg, #2d3a52 15%, #4c5c7d 55%, #e8590c 100%);
+  --vp-home-hero-image-background-image: linear-gradient(135deg, rgba(76, 92, 125, 0.45) 30%, rgba(240, 140, 46, 0.35));
   --vp-home-hero-image-filter: blur(56px);
 
   --vp-custom-block-tip-border: transparent;
-  --vp-custom-block-tip-bg: rgba(245, 159, 0, 0.12);
+  --vp-custom-block-tip-bg: rgba(240, 140, 46, 0.11);
 }
 
 .dark {
-  --vp-c-brand-1: #ffa066;
-  --vp-c-brand-2: #ff8a3d;
-  --vp-c-brand-3: #d9530f;
-  --vp-c-brand-soft: rgba(255, 160, 102, 0.16);
-  --vp-home-hero-name-background: linear-gradient(120deg, #ffa066 10%, #ffd166 60%, #fff4ea 100%);
-  --vp-custom-block-tip-bg: rgba(255, 209, 102, 0.1);
+  --vp-c-brand-1: #9fb2d4;
+  --vp-c-brand-2: #8499bf;
+  --vp-c-brand-3: #4c5c7d;
+  --vp-c-brand-soft: rgba(159, 178, 212, 0.16);
+  --vp-home-hero-name-background: linear-gradient(120deg, #cfd8e4 15%, #9fb2d4 55%, #f5a462 100%);
+  --vp-custom-block-tip-bg: rgba(245, 164, 98, 0.1);
 }
 
-/* the feature cards answer the pointer in colour */
+/* the feature cards answer the pointer in the orange of the ears */
 .VPFeature.link:hover {
-  border-color: var(--vp-c-brand-1) !important;
+  border-color: #f08c2e !important;
 }
