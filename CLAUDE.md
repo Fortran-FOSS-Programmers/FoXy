@@ -168,7 +168,7 @@ parents interleave); names are compared without copies (`xml_tag%is_named`). Che
 
 ## Portability (gfortran, ifx, nvfortran)
 
-The suite passes with gfortran 14/16, ifx 2025.3 and nvfortran 26.5. Compiler pitfalls met, keep the workarounds:
+The suite passes with gfortran 14/16, ifx 2025.3 and nvfortran 26.5/26.9. Compiler pitfalls met, keep the workarounds:
 
 - list-directed input: tabs/new lines are not value separators for ifx (`blanks_as_spaces` before each read), and an
   integer overflow is not reported by nvfortran (I1P-I4P are read as I8P and range checked; I8P overflow stays
@@ -179,6 +179,8 @@ The suite passes with gfortran 14/16, ifx 2025.3 and nvfortran 26.5. Compiler pi
   `xml_tag` is corrupted (`tag_builder` keeps plain components); a constant `repeat(..., 100000)` is folded and crashes
   the compiler (use a variable count);
 - ifx puts large temporaries (function results) on the stack: build with `-heap-arrays` (in the fobos intel modes).
+- StringiFor keys its nvfortran workarounds on `_NVF`: the fobos nvidia modes define it (`$CSTATIC_NV`); without it
+  nvfortran 26.5/26.9 builds empty strings (33 of 36 tests fail, since StringiFor cc63426, 2026-10-30).
 
 ## CI/CD
 
