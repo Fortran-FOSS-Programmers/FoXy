@@ -1,0 +1,4 @@
+$ mixed_content
+[Use  < 1e-2, see <ref/>.]
+[dt]
+<p>Use <code>dt</code> &lt; 1e-2, see <![CDATA[<ref/>]]><!-- todo -->.</p>

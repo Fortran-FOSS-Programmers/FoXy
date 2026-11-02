@@ -1,0 +1,24 @@
+$ solver
+case.xml has 18 tags
+case name=cavity version=2
+  mesh
+    grid ni=64 nj=32 nk=1
+    domain: 0.0 1.0 0.0 0.5 0.0 0.0
+  time
+    dt unit=s: 1.0e-3
+    steps: 500
+    adaptive: true
+  fluid name=air
+    density unit=kg/m3: 1.225
+    viscosity unit=Pa s: 1.8e-5
+  boundary side=west type=inflow
+    velocity: 1.0 0.0 0.0
+  boundary side=east type=outflow
+  boundary side=north type=wall
+  boundary side=south type=wall
+  output every=100: results.xml
+  notes: Lid-driven cavity & inflow, after <paper ref="1">.
+boundary west: inflow
+boundary east: outflow
+boundary north: wall
+boundary south: wall

@@ -1,0 +1,8 @@
+$ solver
+broken.xml: line 5: end tag </time> closes open tag <steps>
+dt is still read: 1.0e-3
+notes:  Lid-driven cavity & inflow, after <paper ref="1">.
+escape: a &lt; b &amp; &quot;c&quot;
+raw:    1 < 2 & été
+mixed:  the  moves at  m/s
+<p>the <b>lid</b> moves at <v>1</v> m/s</p>

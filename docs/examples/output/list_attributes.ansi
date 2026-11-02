@@ -1,0 +1,4 @@
+$ list_attributes
+ni = 64
+nj = 32
+nk = 1

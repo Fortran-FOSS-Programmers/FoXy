@@ -1,0 +1,7 @@
+$ cat series.xml
+<?xml version="1.0"?>
+<series>
+  <point i="1" x="0.50"/>
+  <point i="2" x="1.00"/>
+  <point i="3" x="1.50"/>
+</series>

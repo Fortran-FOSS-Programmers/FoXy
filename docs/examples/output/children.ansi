@@ -1,0 +1,5 @@
+$ children
+dt = 1.0e-3
+steps = 500
+adaptive = true
+parent of dt: 5, level of dt: 3

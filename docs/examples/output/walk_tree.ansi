@@ -1,0 +1,19 @@
+$ walk_tree
+case
+. mesh
+. . grid
+. . domain
+. time
+. . dt
+. . steps
+. . adaptive
+. fluid
+. . density
+. . viscosity
+. boundary
+. . velocity
+. boundary
+. boundary
+. boundary
+. output
+. notes

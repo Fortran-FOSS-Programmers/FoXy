@@ -23,6 +23,7 @@ modes = tests-gnu
         tests-nvidia-debug
         benchmark-gnu
         benchmark-gnu-profile
+        foxy-static-gnu
 
 [common-variables]
 $CSHARED_GNU = -DGNU -cpp -c -fPIC -frealloc-lhs
@@ -66,6 +67,14 @@ build_dir = exe
 [tests-nvidia-debug]
 template  = template-static-nvidia-debug
 build_dir = exe
+
+# library (lib/libfoxy.a, modules in lib/mod): used by scripts/docs_examples.sh
+[foxy-static-gnu]
+template  = template-static-gnu
+build_dir = lib
+target    = foxy.f90
+output    = libfoxy.a
+mklib     = static
 
 # benchmarks (out of src/: never built as tests); usage in benchmarks/foxy_benchmark_parse.f90
 [benchmark-gnu]

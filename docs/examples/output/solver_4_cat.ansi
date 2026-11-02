@@ -1,0 +1,29 @@
+$ cat restart.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- the case of a (pretend) flow solver: the input of the FoXy tutorial -->
+<case name="cavity" version="2">
+  <mesh>
+    <grid ni="64" nj="32" nk="1"/>
+    <domain>0.0 1.0 0.0 0.5 0.0 0.0</domain>
+  </mesh>
+  <time>
+    <dt unit="ms">0.5</dt>
+    <steps>1000</steps>
+    <adaptive>true</adaptive>
+  </time>
+  <fluid name="air">
+    <density unit="kg/m3">1.225</density>
+    <viscosity unit="Pa s">1.8e-5</viscosity>
+  </fluid>
+  <boundary side="west" type="inflow">
+    <velocity>1.0 0.0 0.0</velocity>
+  </boundary>
+  <boundary side="east" type="outflow"/>
+  <boundary side="north" type="wall"/>
+  <boundary side="south" type="wall"/>
+  <output>results.xml</output>
+  <restart>
+    <from>results.xml</from>
+    <step>500</step>
+  </restart>
+</case>

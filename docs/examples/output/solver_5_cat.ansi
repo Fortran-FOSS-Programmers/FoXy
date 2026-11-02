@@ -1,0 +1,17 @@
+$ cat results.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<results case="cavity" steps="500">
+  <snapshot step="100" time="0.100">
+    <residual>converged &amp; stable</residual>
+    <pressure format="ascii">1.000 0.500 0.333</pressure>
+  </snapshot>
+  <snapshot step="300" time="0.300">
+    <residual>converged &amp; stable</residual>
+    <pressure format="ascii">0.333 0.167 0.111</pressure>
+  </snapshot>
+  <snapshot step="500" time="0.500">
+    <residual>converged &amp; stable</residual>
+    <pressure format="ascii">0.200 0.100 0.067</pressure>
+  </snapshot>
+  <!-- 3 snapshots -->
+</results>

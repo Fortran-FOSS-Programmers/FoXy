@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<coupled xmlns="https://example.org/flow" xmlns:th="https://example.org/thermal">
+  <case name="cavity">
+    <dt>1.0e-3</dt>
+    <th:case name="plate">
+      <th:dt>5.0e-3</th:dt>
+      <conductivity xmlns="https://example.org/materials">237.0</conductivity>
+    </th:case>
+  </case>
+</coupled>

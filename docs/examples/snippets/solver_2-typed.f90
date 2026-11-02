@@ -1,0 +1,6 @@
+call case_file%get_content(id=case_file%find(path='case/time/dt'), value=dt)
+call case_file%get_content(id=case_file%find(path='case/time/steps'), value=steps)
+call case_file%get_content(id=case_file%find(path='case/time/adaptive'), value=adaptive)
+call case_file%get_content(id=case_file%find(path='case/mesh/domain'), values=domain)
+call case_file%get_attribute(id=case_file%find(name='grid'), name='ni', value=ni)
+call case_file%get_attribute(id=case_file%find(name='grid'), name='nj', value=nj)

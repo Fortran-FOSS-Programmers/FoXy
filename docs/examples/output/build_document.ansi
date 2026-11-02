@@ -1,0 +1,7 @@
+$ build_document
+<config>
+  <dt unit="s">0.01</dt>
+  <solver kind="cg" tol="1e-6">
+    <restart/>
+  </solver>
+</config>

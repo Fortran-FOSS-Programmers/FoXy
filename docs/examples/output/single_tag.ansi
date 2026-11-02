@@ -1,0 +1,4 @@
+$ single_tag
+grid: ni=64, <grid ni="64" nj="32"/>
+<dt unit="s" max="1">1e-3</dt>
+content: 1e-3

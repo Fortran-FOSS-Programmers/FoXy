@@ -1,0 +1,5 @@
+$ solver
+dt =  1.000E-03, steps = 500, adaptive = T
+grid 64 x 32, domain  0.0  1.0  0.0  0.5  0.0  0.0
+not found, density kept:  1.000
+invalid character "k" in "kg/m3" in attribute "unit" of tag "density"
