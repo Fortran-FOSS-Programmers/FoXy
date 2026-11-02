@@ -10,7 +10,7 @@ character(len=:), allocatable :: source             !< String containing the sou
 type(xml_file)                :: xfile              !< XML file handler.
 integer(I4P), allocatable     :: ids(:)             !< Tags IDs.
 integer(I4P)                  :: id                 !< Tag ID.
-logical                       :: test_passed(16)    !< List of passed tests.
+logical                       :: test_passed(19)    !< List of passed tests.
 
 test_passed = .false.
 
@@ -81,6 +81,18 @@ test_passed(15) = xfile%attribute(id=ids(1), name='missing')==''.and.xfile%attri
 ids = xfile%children(0_I4P)
 test_passed(16) = size(ids)==1.and.xfile%content(id=-1_I4P)==''
 print "(A,L1)", 'Are children and attributes correct? ', all(test_passed(14:16))
+
+! document order of the matches below nested candidates: `d/x` matches x(4) under d(1) and x(3) under d(2)
+call xfile%parse(string='<d><d><x/></d><x/><y><x/></y></d>')
+ids = xfile%find_all(path='d/x')
+test_passed(17) = size(ids)==2
+if (test_passed(17)) test_passed(17) = all(ids==[3, 4]).and.xfile%find(path='d/x')==3
+ids = xfile%find_all(name='x', parent=1)
+test_passed(18) = size(ids)==1
+if (test_passed(18)) test_passed(18) = ids(1)==4.and.xfile%find(name='x', parent=0)==0.and.xfile%find(name='d', parent=0)==1
+test_passed(19) = xfile%find(name='x')==3.and.xfile%find(path='d/y/x')==6.and.xfile%find(path='d/z')==0.and. &
+                  size(xfile%find_all(path='y/x'))==1
+print "(A,L1)", 'Are matches in document order? ', all(test_passed(17:19))
 
 print "(A,L1)", new_line('a')//'Are all tests passed? ', all(test_passed)
 if (.not.all(test_passed)) error stop 1

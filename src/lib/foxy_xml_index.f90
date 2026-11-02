@@ -11,7 +11,7 @@ use foxy_xml_file, only : XML_MALFORMED
 use foxy_xml_tag, only : xml_tag
 use foxy_xml_tokenizer, only : xml_builder, xml_tokenizer, located_in_file
 use foxy_xml_tree, only : tree_attribute, tree_attribute_name, tree_attribute_text, tree_attributes_number, &
-                          tree_build_children, tree_children, tree_find_all, tree_level, tree_local_name, tree_name, &
+                          tree_build_children, tree_children, tree_find, tree_find_all, tree_level, tree_local_name, tree_name, &
                           tree_namespace, tree_parent, tree_prefix
 use foxy_xml_values, only : report, to_value, to_values, XML_NOT_FOUND
 use penf
@@ -253,11 +253,8 @@ contains
    integer(I4P),     intent(in), optional :: parent     !< Parent tag ID, 0 for the document root.
    character(*),     intent(in), optional :: namespaces !< Declarations of the names prefixes.
    integer(I4P)                           :: id         !< Tag ID.
-   integer(I4P), allocatable              :: ids(:)     !< Matching tags IDs.
 
-   ids = tree_find_all(tag=self%tag, nt=self%nt, name=name, path=path, parent=parent, namespaces=namespaces)
-   id = 0_I4P
-   if (size(ids)>0) id = ids(1)
+   id = tree_find(tag=self%tag, nt=self%nt, name=name, path=path, parent=parent, namespaces=namespaces)
    endfunction find
 
    pure function find_all(self, name, path, parent, namespaces) result(ids)

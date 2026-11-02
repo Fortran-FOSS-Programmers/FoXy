@@ -65,6 +65,8 @@ type :: xml_tag
       procedure, pass(self) :: get_pos                     !< Return tag positions in the source.
       procedure, pass(self) :: get_tail                    !< Return the text after the end tag.
       procedure, pass(self) :: is_attribute_present        !< Return .true. it the queried attribute name is defined.
+      procedure, pass(self) :: is_named                    !< Return .true. if the tag is named *name*.
+      procedure, pass(self) :: is_content_markup           !< Return .true. if the content may hold markup.
       procedure, pass(self) :: is_parsed                   !< Check is tag is correctly parsed, i.e. its *tag_name* is allocated.
       procedure, pass(self) :: name                        !< Return tag name.
       procedure, pass(self) :: parse                       !< Parse the tag contained into a source string.
@@ -399,6 +401,25 @@ contains
 
    is_parsed = self%tag_name%is_allocated()
    endfunction is_parsed
+
+   elemental function is_content_markup(self) result(is_markup)
+   !< Return true if the content holds a `<` (it may hold markup, e.g. nested tags), without copying it.
+   class(xml_tag), intent(in) :: self      !< XML tag.
+   logical                    :: is_markup !< Check result.
+
+   is_markup = .false.
+   if (self%tag_content%is_allocated()) is_markup = index(self%tag_content%raw, '<', kind=I8P)>0
+   endfunction is_content_markup
+
+   elemental function is_named(self, name) result(is_match)
+   !< Return true if the tag is named *name* (no copy of the name, for lookups).
+   class(xml_tag), intent(in) :: self     !< XML tag.
+   character(*),   intent(in) :: name     !< Name.
+   logical                    :: is_match !< Check result.
+
+   is_match = .false.
+   if (self%tag_name%is_allocated()) is_match = self%tag_name==name
+   endfunction is_named
 
    pure function name(self)
    !< Return tag name.

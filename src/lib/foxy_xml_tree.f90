@@ -19,6 +19,7 @@ public :: tree_attributes_number
 public :: tree_attribute_text
 public :: tree_build_children
 public :: tree_children
+public :: tree_find
 public :: tree_find_all
 public :: tree_level
 public :: tree_local_name
@@ -175,54 +176,33 @@ contains
    !<   declaration is in no namespace, a prefix not declared matches nothing.
    !<
    !< @note If both *name* and *path* are passed, *path* is used; if none is passed, no tag is returned.
-   type(xml_tag), allocatable, intent(in)           :: tag(:)       !< Tags.
-   integer(I4P),               intent(in)           :: nt           !< Number of tags.
-   character(*),               intent(in), optional :: name         !< Tag name.
-   character(*),               intent(in), optional :: path         !< Tags path, e.g. `origin/latitude/value`.
-   integer(I4P),               intent(in), optional :: parent       !< Parent tag ID, 0 for the document root.
-   character(*),               intent(in), optional :: namespaces   !< Namespaces declarations of the names prefixes.
-   integer(I4P), allocatable                        :: ids(:)       !< Matching tags IDs, empty if there are none.
-   type(xml_tag)                                    :: declarations !< Namespaces declarations, as attributes.
-   type(name_pattern)                               :: pattern      !< Current name to match.
-   character(len=:), allocatable                    :: rest         !< Path segments still to match.
-   character(len=:), allocatable                    :: segment      !< Current path segment.
-   logical,      allocatable                        :: is_match(:)  !< Flag of matching tags.
-   integer(I4P)                                     :: t            !< Counter.
+   type(xml_tag), allocatable, intent(in)           :: tag(:)     !< Tags.
+   integer(I4P),               intent(in)           :: nt         !< Number of tags.
+   character(*),               intent(in), optional :: name       !< Tag name.
+   character(*),               intent(in), optional :: path       !< Tags path, e.g. `origin/latitude/value`.
+   integer(I4P),               intent(in), optional :: parent     !< Parent tag ID, 0 for the document root.
+   character(*),               intent(in), optional :: namespaces !< Namespaces declarations of the names prefixes.
+   integer(I4P), allocatable                        :: ids(:)     !< Matching tags IDs, empty if there are none.
 
-   allocate(ids(0))
-   if (present(namespaces)) declarations = xml_tag(name='_', attributes_stream=namespaces)
-   if (present(parent)) then
-      if (parent<0.or.parent>nt) return
-   endif
-   if (present(path)) then
-      rest = path
-      call next_path_segment(rest=rest, segment=segment)
-   elseif (present(name)) then
-      rest = ''
-      segment = name
-   else
-      return
-   endif
-   if (len(segment)==0) return
-   ! first segment
-   pattern = name_pattern_of(name=segment, declarations=declarations, is_mapped=present(namespaces))
-   if (present(parent)) then
-      ids = children_named(tag=tag, nt=nt, parents=[parent], pattern=pattern)
-   else
-      allocate(is_match(nt)) ! a loop, not an implied-do mask: nvfortran evaluates the latter out of bounds
-      do t=1, nt
-         is_match(t) = is_matching(tag=tag, nt=nt, id=t, pattern=pattern)
-      enddo
-      ids = pack(tags_indexes(nt), is_match)
-   endif
-   ! following segments, direct children of the previous ones
-   do while (len(rest)>0.and.size(ids)>0)
-      call next_path_segment(rest=rest, segment=segment)
-      if (len(segment)==0) exit
-      pattern = name_pattern_of(name=segment, declarations=declarations, is_mapped=present(namespaces))
-      ids = children_named(tag=tag, nt=nt, parents=ids, pattern=pattern)
-   enddo
+   ids = find_tags(tag=tag, nt=nt, name=name, path=path, parent=parent, namespaces=namespaces, is_first=.false.)
    endfunction tree_find_all
+
+   pure function tree_find(tag, nt, name, path, parent, namespaces) result(id)
+   !< Return the ID of the first tag (in document order) matching *name* or *path* (see *tree_find_all*), 0 if none; a
+   !< name is searched up to its first match only.
+   type(xml_tag), allocatable, intent(in)           :: tag(:)     !< Tags.
+   integer(I4P),               intent(in)           :: nt         !< Number of tags.
+   character(*),               intent(in), optional :: name       !< Tag name.
+   character(*),               intent(in), optional :: path       !< Tags path, e.g. `origin/latitude/value`.
+   integer(I4P),               intent(in), optional :: parent     !< Parent tag ID, 0 for the document root.
+   character(*),               intent(in), optional :: namespaces !< Namespaces declarations of the names prefixes.
+   integer(I4P)                                     :: id         !< First matching tag ID.
+   integer(I4P), allocatable                        :: ids(:)     !< Matching tags IDs.
+
+   ids = find_tags(tag=tag, nt=nt, name=name, path=path, parent=parent, namespaces=namespaces, is_first=.true.)
+   id = 0_I4P
+   if (size(ids)>0) id = ids(1)
+   endfunction tree_find
 
    pure function tree_level(tag, nt, id) result(level)
    !< Return the level of the tag with ID *id* (1 for a root tag), 0 if it does not exist.
@@ -303,27 +283,154 @@ contains
    endfunction tags_indexes
 
    ! private procedures
-   pure function children_named(tag, nt, parents, pattern) result(ids)
-   !< Return the IDs (in document order) of the tags matching *pattern* that are direct children of any of *parents*.
-   type(xml_tag), allocatable, intent(in) :: tag(:)       !< Tags.
-   integer(I4P),               intent(in) :: nt           !< Number of tags.
-   integer(I4P),               intent(in) :: parents(:)   !< Parents IDs, 0 for the document root.
-   type(name_pattern),         intent(in) :: pattern      !< Tag name to match.
-   integer(I4P), allocatable              :: ids(:)       !< Children IDs.
-   logical,      allocatable              :: is_parent(:) !< Flag of parents, [0:nt].
-   logical,      allocatable              :: is_match(:)  !< Flag of matching tags.
-   integer(I4P)                           :: t            !< Counter.
+   pure function find_tags(tag, nt, name, path, parent, namespaces, is_first) result(ids)
+   !< Return the IDs of the tags (in document order) matching *name* or *path* (see *tree_find_all*), only the first one
+   !< if *is_first*.
+   type(xml_tag), allocatable, intent(in)           :: tag(:)       !< Tags.
+   integer(I4P),               intent(in)           :: nt           !< Number of tags.
+   character(*),               intent(in), optional :: name         !< Tag name.
+   character(*),               intent(in), optional :: path         !< Tags path, e.g. `origin/latitude/value`.
+   integer(I4P),               intent(in), optional :: parent       !< Parent tag ID, 0 for the document root.
+   character(*),               intent(in), optional :: namespaces   !< Namespaces declarations of the names prefixes.
+   logical,                    intent(in)           :: is_first     !< Only the first match is needed.
+   integer(I4P), allocatable                        :: ids(:)       !< Matching tags IDs, empty if there are none.
+   type(xml_tag)                                    :: declarations !< Namespaces declarations, as attributes.
+   logical                                          :: is_first_    !< Stop at the first match of the first segment.
+   type(name_pattern)                               :: pattern      !< Current name to match.
+   character(len=:), allocatable                    :: rest         !< Path segments still to match.
+   character(len=:), allocatable                    :: segment      !< Current path segment.
+   integer(I4P), allocatable                        :: buffer(:)    !< Matching tags IDs found.
+   integer(I4P)                                     :: n            !< Number of matching tags found.
+   integer(I4P)                                     :: t            !< Counter.
 
-   allocate(is_parent(0:nt), source=.false.)
-   do t=1, size(parents, dim=1)
-      is_parent(parents(t)) = .true.
+   allocate(ids(0))
+   if (present(namespaces)) declarations = xml_tag(name='_', attributes_stream=namespaces)
+   if (present(parent)) then
+      if (parent<0.or.parent>nt) return
+   endif
+   if (present(path)) then
+      rest = path
+      call next_path_segment(rest=rest, segment=segment)
+   elseif (present(name)) then
+      rest = ''
+      segment = name
+   else
+      return
+   endif
+   if (len(segment)==0) return
+   ! first segment
+   pattern = name_pattern_of(name=segment, declarations=declarations, is_mapped=present(namespaces))
+   is_first_ = is_first.and.len(rest)==0 ! a path needs all the candidates of its first segment
+   if (present(parent)) then
+      ids = children_named(tag=tag, nt=nt, parents=[parent], pattern=pattern, is_first=is_first_)
+   else
+      allocate(buffer(nt))
+      n = 0
+      do t=1, nt
+         if (is_matching(tag=tag, nt=nt, id=t, pattern=pattern)) then
+            n = n + 1
+            buffer(n) = t
+            if (is_first_) exit
+         endif
+      enddo
+      ids = buffer(1:n)
+   endif
+   ! following segments, direct children of the previous ones
+   do while (len(rest)>0.and.size(ids)>0)
+      call next_path_segment(rest=rest, segment=segment)
+      if (len(segment)==0) exit
+      pattern = name_pattern_of(name=segment, declarations=declarations, is_mapped=present(namespaces))
+      ids = children_named(tag=tag, nt=nt, parents=ids, pattern=pattern, is_first=.false.)
    enddo
-   allocate(is_match(nt), source=.false.)
-   do t=1, nt
-      if (is_parent(tag(t)%get_parent_id())) is_match(t) = is_matching(tag=tag, nt=nt, id=t, pattern=pattern)
+   endfunction find_tags
+
+   pure function children_named(tag, nt, parents, pattern, is_first) result(ids)
+   !< Return the IDs (in document order) of the tags matching *pattern* that are direct children of any of *parents* (only
+   !< the first one if *is_first*, for a single parent).
+   !<
+   !< @note The children lists of the parents are walked (the roots, for parent 0, by a sweep): the cost is the number of
+   !< children, not of tags. Children of different parents are sorted if needed (nested parents interleave them).
+   type(xml_tag), allocatable, intent(in) :: tag(:)     !< Tags.
+   integer(I4P),               intent(in) :: nt         !< Number of tags.
+   integer(I4P),               intent(in) :: parents(:) !< Parents IDs (in document order, distinct), 0 for the root.
+   type(name_pattern),         intent(in) :: pattern    !< Tag name to match.
+   logical,                    intent(in) :: is_first   !< Only the first match is needed.
+   integer(I4P), allocatable              :: ids(:)     !< Children IDs.
+   integer(I4P), allocatable              :: buffer(:)  !< Matching children IDs found.
+   integer(I4P)                           :: n          !< Number of matching children found.
+   integer(I4P)                           :: total      !< Number of children to check.
+   integer(I4P)                           :: p          !< Counter.
+   integer(I4P)                           :: c          !< Counter.
+   integer(I4P)                           :: t          !< Tag ID.
+
+   total = 0
+   do p=1, size(parents, dim=1)
+      if (parents(p)==0) then
+         total = total + nt
+      elseif (parents(p)>0.and.parents(p)<=nt) then
+         total = total + tag(parents(p))%children_number
+      endif
    enddo
-   ids = pack(tags_indexes(nt), is_match)
+   allocate(buffer(total))
+   n = 0
+   parents_loop: do p=1, size(parents, dim=1)
+      if (parents(p)==0) then
+         do t=1, nt
+            if (tag(t)%get_parent_id()/=0) cycle
+            if (is_matching(tag=tag, nt=nt, id=t, pattern=pattern)) then
+               n = n + 1
+               buffer(n) = t
+               if (is_first) exit parents_loop
+            endif
+         enddo
+      elseif (parents(p)>0.and.parents(p)<=nt) then
+         do c=1, tag(parents(p))%children_number
+            t = tag(parents(p))%child_id(c)
+            if (is_matching(tag=tag, nt=nt, id=t, pattern=pattern)) then
+               n = n + 1
+               buffer(n) = t
+               if (is_first) exit parents_loop
+            endif
+         enddo
+      endif
+   enddo parents_loop
+   ids = buffer(1:n)
+   if (size(parents, dim=1)>1) then
+      if (any(ids(2:n)<ids(1:n-1))) call merge_sort(ids)
+   endif
    endfunction children_named
+
+   pure recursive subroutine merge_sort(ids)
+   !< Sort IDs in increasing order (merge sort, O(n log n)).
+   integer(I4P), intent(inout) :: ids(:)   !< IDs.
+   integer(I4P), allocatable   :: merged(:) !< Merged halves.
+   integer(I4P)                :: n        !< Number of IDs.
+   integer(I4P)                :: h        !< Half size.
+   integer(I4P)                :: i        !< First half counter.
+   integer(I4P)                :: j        !< Second half counter.
+   integer(I4P)                :: k        !< Merged counter.
+
+   n = size(ids, dim=1)
+   if (n<2) return
+   h = n / 2
+   call merge_sort(ids(1:h))
+   call merge_sort(ids(h+1:n))
+   allocate(merged(n))
+   i = 1
+   j = h + 1
+   do k=1, n
+      if (j>n) then
+         merged(k) = ids(i) ; i = i + 1
+      elseif (i>h) then
+         merged(k) = ids(j) ; j = j + 1
+      elseif (ids(i)<=ids(j)) then
+         merged(k) = ids(i) ; i = i + 1
+      else
+         merged(k) = ids(j) ; j = j + 1
+      endif
+   enddo
+   ids = merged
+   endsubroutine merge_sort
 
    pure function declaration_name(prefix) result(name)
    !< Return the name of the attribute declaring the namespace of *prefix* (`xmlns` for no prefix).
@@ -351,7 +458,7 @@ contains
    if (.not.pattern%is_valid) then
       is_match = .false.
    elseif (.not.pattern%is_expanded) then
-      is_match = tag(id)%name()==pattern%name
+      is_match = tag(id)%is_named(pattern%name)
    else
       is_match = name_local(tag(id)%name())==pattern%name
       if (is_match) then
