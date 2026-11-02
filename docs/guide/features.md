@@ -26,7 +26,8 @@ title: Features
 - [x] Typed values: attributes and contents read as integers, reals, logicals or lists of numbers, errors reported
 - [x] Index of large files (`xml_index`): tags without content, content read on demand, scan stopped before raw data
 - [x] Malformed input and file errors reported through optional `iostat`/`iomsg` (first problem, with its line),
-  parsing stays tolerant: tags structure, invalid names, duplicate attributes, data outside the root, no root
+  parsing stays tolerant: tags structure, invalid names, duplicate attributes, data outside the root, no root or more
+  root tags
 - [x] Line ends (CR LF, CR) read as LF in contents
 
 ## Output (Emitting)
@@ -89,5 +90,5 @@ FoXy handles standard XML element syntax. Tags are case-sensitive and attributes
 - Entities defined by a DTD (e.g. `&nbsp;`) are not expanded, only the predefined and numeric references
 - Namespaces are not checked when parsing: an undeclared prefix is not reported (its namespace is `''`)
 - Malformed input is tolerated: an end tag closes up to its matching start tag, a stray one is ignored; only the first
-  problem is reported (`iostat`/`iomsg`); more root tags are accepted, not reported
+  problem is reported (`iostat`/`iomsg`)
 :::

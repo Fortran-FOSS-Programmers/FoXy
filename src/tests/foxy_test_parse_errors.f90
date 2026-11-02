@@ -18,7 +18,7 @@ test_passed = .false.
 test_passed(1) = is_valid('<a k="1>0" j=''2''>1<!-- c > d --><![CDATA[<x>]]><b/></a>')
 test_passed(2) = is_valid('<?xml version="1.0"?>'//NL//'<!DOCTYPE a [ <!ENTITY e "x>y"> ]>'//NL// &
                           '<a>'//NL//'  <b>1</b>'//NL//'</a>')
-test_passed(3) = is_valid('<a>1</a>'//NL//'<b>2</b>') ! more root tags are allowed
+test_passed(3) = is_valid('<!-- c -->'//NL//'<a>1</a>'//NL//'<!-- d --><?p x?>') ! markup around the root
 print "(A,L1)", 'Is valid input accepted? ', all(test_passed(1:3))
 
 ! malformed input: XML_MALFORMED, iomsg locates the first problem, the document is still built (tolerant parsing)
@@ -30,6 +30,9 @@ test_passed(13) = xfile%content('a')=='<!-- x</a>' ! an unterminated comment is 
 test_passed(8) = is_malformed('<a>1 < 2</a>', ['<           ', 'line 1      ', 'tag         '])
 test_passed(9) = is_malformed('<a k=1>2</a>', ['unquoted    ', '"k"         ', '<a>         '])
 test_passed(10) = xfile%content('a')=='2' ! still built
+if (test_passed(10)) test_passed(10) = is_malformed('<a>1</a>'//NL//'<b>2</b>', ['line 2      ', 'second root ', &
+                                                                                 '<b>         '])
+if (test_passed(10)) test_passed(10) = xfile%content('b')=='2'.and.size(xfile%children(0))==2 ! reported, still built
 print "(A,L1)", 'Is malformed input reported? ', all(test_passed(4:10)).and.test_passed(13)
 
 ! file errors: the runtime iostat/iomsg are passed through

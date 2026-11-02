@@ -14,8 +14,8 @@ module foxy_xml_tokenizer
 !< declarations whole. All positions are absolute (1 is the first character of the source).
 !<
 !< Besides the tags structure, the problems reported (parsing goes on) are: invalid tag and attribute names, duplicate
-!< attributes, character data outside the root tags (blanks and a leading UTF-8 byte order mark excepted) and a source
-!< without tags. More root tags are allowed.
+!< attributes, character data outside the root tag (blanks and a leading UTF-8 byte order mark excepted), a second root
+!< tag (XML 1.0 2.1: exactly one root element) and a source without tags.
 use foxy_xml_entities, only : is_name
 use penf
 
@@ -136,6 +136,8 @@ type :: xml_tokenizer
    integer(I8P)                :: open_start=0_I8P !< Position of the comment/CDATA/PI continuing in the next piece.
    logical                     :: is_done=.false.  !< The source is ended (or parsing is stopped).
    logical                     :: is_outside_reported=.false. !< Character data outside the root tags already reported.
+   logical                     :: is_root_seen=.false.        !< A root tag has been started.
+   logical                     :: is_second_root_reported=.false. !< A second root tag already reported.
    contains
       procedure, pass(self) :: feed  !< Feed a piece of the source.
       procedure, pass(self) :: reset !< Reset the tokenizer, ready for a new source.
@@ -332,6 +334,13 @@ contains
          enddo
          if ((.not.is_terminated).and.(.not.is_last)) exit ! the tag continues in the next piece
          ! report the tag
+         if (self%depth==0) then ! a root tag: only one is allowed
+            if (self%is_root_seen.and.(.not.self%is_second_root_reported)) then
+               call first_problem(problem, problem_pos, tag%start, 'second root tag <'//tag%name//'>')
+               self%is_second_root_reported = .true.
+            endif
+            self%is_root_seen = .true.
+         endif
          self%nt = self%nt + 1
          tag%id = self%nt
          l = 0 ; if (self%depth>0) l = self%stack(self%depth)%id
@@ -382,6 +391,8 @@ contains
    self%open_start = 0_I8P
    self%is_done = .false.
    self%is_outside_reported = .false.
+   self%is_root_seen = .false.
+   self%is_second_root_reported = .false.
    endsubroutine reset
 
    pure function located(source, pos, message) result(problem)

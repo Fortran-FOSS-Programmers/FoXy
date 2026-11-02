@@ -242,7 +242,8 @@ Without `iostat`/`iomsg`, errors are not reported.
 
 Besides the tags structure (end tags not matching, unclosed tags, unquoted values, ...), the first problem may be an
 invalid tag or attribute name, a duplicate attribute, character data outside the root tag (blanks and a leading UTF-8
-byte order mark are fine) or a source without tags (an empty one included). More root tags are allowed.
+byte order mark are fine), a source without tags (an empty one included) or a second root tag: XML allows exactly
+one root element, the others are still parsed (`children(0)` lists them).
 
 ### Line ends
 
@@ -439,7 +440,8 @@ call xfile%save(filename='config.xml', is_declared=.true., iostat=iostat, iomsg=
 
 `save` writes the prolog, the tags as `stringify()` and a final new line. With `is_declared=.true.` it writes
 `<?xml version="1.0"?>` first, unless the prolog already starts with a declaration. Without `iostat`, an I/O error
-stops the program.
+stops the program. A document with more root tags (e.g. tags added without `parent`) is written anyway, but `iostat`
+returns `XML_MALFORMED`: other XML readers reject it.
 
 ### Deleting a tag
 

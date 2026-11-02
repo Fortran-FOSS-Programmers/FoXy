@@ -2,8 +2,9 @@
 program foxy_test_save
 !< FoXy test.
 !<
-!< Save the document to a file: prolog plus stringify, optional XML declaration, errors through iostat/iomsg.
-use foxy, only: I4P, xml_file, xml_tag
+!< Save the document to a file: prolog plus stringify, optional XML declaration, errors through iostat/iomsg; a document
+!< with more root tags is written, reported as XML_MALFORMED.
+use foxy, only: I4P, XML_MALFORMED, xml_file, xml_tag
 
 implicit none
 character(len=1), parameter   :: NL = new_line('a')                       !< New line.
@@ -17,7 +18,7 @@ integer(I4P)                  :: iostat                                   !< IO 
 character(len=256)            :: iomsg                                    !< IO message.
 integer                       :: tmp_dir_len                              !< Length of the TMPDIR environment variable.
 integer                       :: tmp_dir_status                           !< Status of the TMPDIR environment variable query.
-logical                       :: test_passed(9)                           !< List of passed tests.
+logical                       :: test_passed(10)                          !< List of passed tests.
 
 test_passed = .false.
 
@@ -66,6 +67,15 @@ iomsg = 'unchanged'
 call xfile%save(filename=filename, iostat=iostat, iomsg=iomsg)
 test_passed(9) = iostat==0.and.iomsg=='unchanged'
 print "(A,L1)", 'Are file errors reported? ', all(test_passed(8:9))
+
+! more root tags (two tags added without parent): written as before, reported (not well-formed XML)
+call xfile%free
+call xfile%add_tag(xml_tag(name='config'))
+call xfile%add_tag(xml_tag(name='dt', content='0.01'))
+iomsg = ''
+call xfile%save(filename=filename, iostat=iostat, iomsg=iomsg)
+test_passed(10) = iostat==XML_MALFORMED.and.index(iomsg, 'root')>0.and.file_content(filename)==xfile%stringify()//NL
+print "(A,L1)", 'Is a document with more root tags written and reported? ', test_passed(10)
 
 print "(A,L1)", new_line('a')//'Are all tests passed? ', all(test_passed)
 if (.not.all(test_passed)) error stop 1

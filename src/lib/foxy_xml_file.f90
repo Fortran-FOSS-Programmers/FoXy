@@ -531,8 +531,9 @@ contains
    !<
    !< @note If *is_declared* is true and the prolog does not start with an XML declaration (e.g. a document built in
    !< code), the declaration `<?xml version="1.0"?>` is written first.
-   !< @note If *iostat* is passed, it returns 0 on success or the runtime I/O error code, and *iomsg* (unchanged on
-   !< success) describes the error; without *iostat* an I/O error stops the program, as Fortran I/O statements do.
+   !< @note If *iostat* is passed, it returns 0 on success, the runtime I/O error code, or *XML_MALFORMED* for a document
+   !< with more root tags (not well-formed XML, written anyway), and *iomsg* (unchanged on success) describes the error;
+   !< without *iostat* an I/O error stops the program, as Fortran I/O statements do (more root tags are not reported).
    class(xml_file),        intent(in)    :: self        !< XML file.
    character(*),           intent(in)    :: filename    !< File name.
    logical,      optional, intent(in)    :: is_declared !< Write the XML declaration, if missing.
@@ -542,6 +543,8 @@ contains
    integer(I4P)                          :: iostat_     !< IO status, local variable.
    character(len=500)                    :: iomsg_      !< IO message, local variable.
    integer(I4P)                          :: unit        !< File unit.
+   integer(I4P)                          :: roots       !< Number of root tags.
+   integer(I4P)                          :: t           !< Counter.
 
    is_declared_ = .false. ; if (present(is_declared)) is_declared_ = is_declared
    if (is_declared_.and.allocated(self%prolog)) is_declared_ = .not.starts_with_declaration(self%prolog)
@@ -552,8 +555,16 @@ contains
       close(unit)
    endif
    if (present(iostat)) then
+      roots = 0
+      do t=1, self%nt
+         if (self%tag(t)%get_parent_id()==0) roots = roots + 1
+      enddo
+      if (iostat_==0.and.roots>1) then
+         iostat_ = XML_MALFORMED
+         iomsg_ = 'the document has '//trim(str(roots, no_sign=.true.))//' root tags, XML allows one'
+      endif
       iostat = iostat_
-      if (present(iomsg).and.iostat_/=0) iomsg = iomsg_
+      if (present(iomsg).and.iostat_/=0) iomsg = trim(iomsg_)
    elseif (iostat_/=0) then
       error stop 'xml_file%save: '//trim(iomsg_)
    endif

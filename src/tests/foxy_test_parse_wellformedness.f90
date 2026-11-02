@@ -4,8 +4,8 @@ program foxy_test_parse_wellformedness
 !<
 !< Well-formedness problems beyond the tags structure, reported as the first problem (XML_MALFORMED, iomsg with the line)
 !< by the DOM (string, file in chunks) and the index: invalid tag or attribute names, duplicate attributes, character
-!< data outside the root tag, no root tag; parsing stays tolerant; a byte order mark and blanks around the root are
-!< fine, as more root tags.
+!< data outside the root tag, no root tag, more root tags; parsing stays tolerant; a byte order mark and blanks around
+!< the root are fine.
 use foxy, only: I4P, I8P, XML_MALFORMED, xml_file, xml_index
 
 implicit none
@@ -33,9 +33,9 @@ filename = tmp_dir//'/foxy_test_parse_wellformedness.xml'
 
 test_passed(1) = is_valid(BOM//NL//'<a x="1" y="2">t</a>'//NL)
 test_passed(2) = is_valid('<?xml version="1.0"?>'//NL//'<!-- c --><a/>'//NL//'<?pi x?>  '//NL)
-test_passed(3) = is_valid('<a/><b/>') ! more root tags are allowed
+test_passed(3) = is_malformed('<a/>'//NL//'<b/><c/>', ['line 2   ', 'second   ', '<b>      ']) ! one root only
 test_passed(4) = is_valid('<_:a-b.c é="1" x:y="2"/>')
-print "(A,L1)", 'Is well-formed input accepted? ', all(test_passed(1:4))
+print "(A,L1)", 'Is well-formed input accepted, more roots reported? ', all(test_passed(1:4))
 
 test_passed(5) = is_malformed('<a>'//NL//'<b x="1" y="2" x="3"/></a>', ['line 2   ', 'duplicate', '"x"      ', '<b>      '])
 test_passed(5) = test_passed(5).and.xfile%attribute(xfile%find(name='b'), 'y')=='2' ! still built
@@ -48,7 +48,7 @@ test_passed(9) = is_malformed('', ['no root  ']) .and. is_malformed('just text',
 print "(A,L1)", 'Is malformed input reported? ', all(test_passed(5:9))
 
 test_passed(10) = is_valid_index(BOM//'<a x="1"/>'//NL).and.is_malformed_index('<a x="1" x="2"/>', 'duplicate').and. &
-                  is_malformed_index('<a/>x', 'outside')
+                  is_malformed_index('<a/>x', 'outside').and.is_malformed_index('<a/><b/>', 'second root')
 print "(A,L1)", 'Does the index report the same problems? ', test_passed(10)
 
 print "(A,L1)", new_line('a')//'Are all tests passed? ', all(test_passed)

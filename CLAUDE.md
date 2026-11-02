@@ -151,8 +151,8 @@ Comments and PIs inside the document are raw text of their owner tag (after the 
 
 Well-formedness: the tokenizer reports (first problem, still tolerant) the tags structure, invalid names (`is_name` in
 `foxy_xml_entities`, a `select case` on bytes: an `index()` on a name set cost 30% of the parse), duplicate attributes,
-non-blank data outside the root (a leading BOM excepted, also split across chunks) and a source without tags; more root
-tags are allowed (tested). Contents are read with CR LF/CR as LF (`text_value`), the stored source keeps them.
+non-blank data outside the root (a leading BOM excepted, also split across chunks), a second root tag and a source
+without tags. `save` writes a document with more root tags but returns `XML_MALFORMED` (silent without `iostat`). Contents are read with CR LF/CR as LF (`text_value`), the stored source keeps them.
 `xml_writer` writes only well-formed XML (names, duplicate attributes, `]]>` escaped by `xml_escape`); `close` without
 `iostat` stops on an error never returned through an `iostat`.
 
