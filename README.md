@@ -9,7 +9,7 @@
 [![Coverage](https://img.shields.io/endpoint?url=https://Fortran-FOSS-Programmers.github.io/FoXy/coverage.json)](https://github.com/Fortran-FOSS-Programmers/FoXy/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-GPLv3%20%7C%20BSD%20%7C%20MIT-blue.svg)](#copyrights)
 
-| 📄 **Parse XML**<br>From string or file into a linearised DOM with full hierarchy tracking; nested and repeated same-name tags supported | 🏗️ **Programmatic creation**<br>Build tags with attributes, text content, and nesting; emit to string or write atomically to a file unit | ✏️ **Flexible emission**<br>Self-closing tags, indentation control, partial emission — start tag, content, and end tag separately | 🔧 **Manipulation**<br>Add and delete tags and attributes by name |
+| 📄 **Parse XML**<br>From string or file into a linearised DOM with full hierarchy tracking; nested and repeated same-name tags supported | 🏗️ **Programmatic creation**<br>Build tags with attributes, text content, and nesting; emit to string or write atomically to a file unit | ✏️ **Flexible emission**<br>Self-closing tags, indentation control, partial emission — start tag, content, and end tag separately | 🔧 **Manipulation**<br>Edit parsed documents by tag ID: content, attributes; add and delete tags at any level |
 |:---:|:---:|:---:|:---:|
 | 🎯 **OOP design**<br>Four types — `xml_tag`, `xml_file`, `xml_index` and `xml_writer` — all functionality as type-bound procedures | 🔒 **Pure Fortran**<br>No C bindings, no wrappers — pure Fortran 2008+ with `implicit none` throughout | 🔓 **Multi-licensed**<br>GPL v3 · BSD 2/3-Clause · MIT | 📦 **Multiple build systems**<br>fpm, FoBiS.py, CMake |
 

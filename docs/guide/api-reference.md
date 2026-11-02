@@ -80,6 +80,7 @@ tag = xml_tag(name, content=inner_tag, ...)
 | `tag%is_attribute_present(name)` | Logical: attribute exists? |
 | `tag%is_parsed()` | Logical: tag name is allocated? |
 | `tag%get_content(name, content)` | Retrieve the content (raw) of self or of the first nested tag `name` in its content string (tags in CDATA, comments and PIs ignored); unallocated if none |
+| `tag%get_attributes_number()` / `tag%get_attribute_name(a)` | Return the number of attributes / the name of the `a`-th one (source order, `''` if none) |
 | `tag%get_attribute(name)` | Return the value of attribute `name` (literal tabs, new lines and CRs as spaces, character references decoded), `''` if not defined |
 | `tag%get_level()` / `tag%get_indent()` / `tag%get_pos()` | Return the level (1 for a root tag), the indentation and the source positions (start `<`, start tag `>`, end tag `<`: `-1` if self-closing, `0` if unclosed) |
 | `tag%get_id()` / `tag%get_parent_id()` | Return the tag ID / its parent ID (`0` for a root tag) |
@@ -112,13 +113,18 @@ Defined in `src/lib/foxy_xml_file.f90`. Holds a flat `tag(:)` array with hierarc
 | `xfile%find([name=], [path=], [parent=], [namespaces=])` | Return the ID of the first matching tag, `0` if none |
 | `xfile%find_all([name=], [path=], [parent=], [namespaces=])` | Return the IDs of all matching tags, in document order. Names match literally, except `{uri}local` (Clark notation: local name in namespace `uri`, any prefix) and, with `namespaces=` (declarations as in XML, `'xmlns="uri1" xmlns:p="uri2"'`), every name, its prefix resolved by them. See [namespaces](#namespaces) |
 | `xfile%children(id)` | Return the IDs of the direct children of tag `id` (`0`: root tags) |
+| `xfile%tags_number()` | Return the number of tags: IDs are `1` to `tags_number()` |
+| `xfile%attributes_number(id)` / `xfile%attribute_name(id, a)` | Return the number of attributes of tag `id` (`0` if it does not exist) / the name of the `a`-th one, in source order (`''` if none): list the attributes without knowing their names |
 | `xfile%attribute(id, name)` | Return the value of attribute `name` of tag `id`, as `get_attribute`, `''` if not defined |
 | `xfile%get_attribute(id, name, value, [iostat=], [iomsg=])` | Get attribute `name` of tag `id` as a number or a logical: `value` integer (`I1P`…`I8P`), real (`R4P`, `R8P`) or logical (`true`/`false`/`1`/`0`), unchanged on error; or `values=`, an allocatable rank-1 integer or real array, the blank-separated list (`"0 10 0 10 0 0"`), empty on error. See [typed values](#typed-values) |
 | `xfile%get_content(id, value, [iostat=], [iomsg=])` | Get the content of tag `id` (as `content(id=)`) as a number, a logical or (`values=`) a list, as `get_attribute` |
 | `xfile%name(id)` / `xfile%parent(id)` / `xfile%level(id)` | Return the name (`''`), parent ID and level (1 for a root tag) of tag `id` (`0` if it does not exist) |
 | `xfile%prefix(id)` / `xfile%local_name(id)` / `xfile%namespace(id)` | Return the name prefix (`''` if none), the local name and the namespace of tag `id` (`''` if it does not exist). See [namespaces](#namespaces) |
 | `xfile%add_tag(tag, [parent=], [id=])` | Append a tag as a root tag or as the last child of tag `parent` (one level deeper, indented 2 more spaces); `id` returns its ID (its index; `0` if `parent` is not a tag). Built documents number tags in insertion order |
-| `xfile%delete_tag(name)` | Remove first tag named `name` with its whole subtree; remaining IDs are renumbered |
+| `xfile%set_attribute(id, name, value, [iostat=], [iomsg=])` | Add (last) or replace attribute `name` of tag `id`; `value` is escaped, `attribute()` returns it as passed. `iostat`: `XML_NOT_FOUND` (no tag `id`), `XML_MALFORMED` (`name` not an XML name) |
+| `xfile%delete_attribute(id, name, [iostat=], [iomsg=])` | Delete attribute `name` of tag `id`; `XML_NOT_FOUND` if the tag or the attribute does not exist |
+| `xfile%set_content(id, content, [iostat=], [iomsg=])` | Replace the whole content of tag `id`: its children (with their subtrees) are deleted, `content` is stored as it is (it may hold markup: escape user data with `xml_escape`), a self-closing tag gets an end tag; the following IDs are renumbered; `XML_NOT_FOUND` if no tag `id` |
+| `xfile%delete_tag([name=], [id=])` | Remove the first tag named `name`, or the tag with ID `id`, with its whole subtree; the following IDs are renumbered |
 | `xfile%free()` | Deallocate all data |
 
 `XML_MALFORMED` (`9001`) is a public constant of `foxy_xml_file`, re-exported by `foxy`.
@@ -171,7 +177,7 @@ file. Positions are 1-based byte offsets (`integer(I8P)`).
 | Method | Description |
 |--------|-------------|
 | `idx%scan(filename, [stop_at=], [chunk_size=], [iostat=], [iomsg=], [sanitize_attributes_value=])` | Index a file, read in chunks (default 64 KiB); with `stop_at` the scan stops after the start tag of the first tag with that name (e.g. `AppendedData`, before raw binary data); errors as `xfile%parse` |
-| `idx%find(...)`, `idx%find_all(...)`, `idx%children(id)`, `idx%attribute(id, name)`, `idx%name(id)`, `idx%parent(id)`, `idx%level(id)`, `idx%prefix(id)`, `idx%local_name(id)`, `idx%namespace(id)` | The `xml_file` queries, same arguments and results |
+| `idx%find(...)`, `idx%find_all(...)`, `idx%children(id)`, `idx%attribute(id, name)`, `idx%tags_number()`, `idx%attributes_number(id)`, `idx%attribute_name(id, a)`, `idx%name(id)`, `idx%parent(id)`, `idx%level(id)`, `idx%prefix(id)`, `idx%local_name(id)`, `idx%namespace(id)` | The `xml_file` queries, same arguments and results |
 | `idx%get_attribute(...)`, `idx%get_content(...)` | The `xml_file` [typed values](#typed-values); `get_content` reads the content from the file |
 | `idx%content(id, [iostat=], [iomsg=])` | Read the content of tag `id` from the file, as `xfile%content(id=)`; `''` for a self-closing or unclosed tag |
 | `idx%text_range(id, first, last)` | Byte range of the text of tag `id` (up to its first child); `last < first` if empty |
@@ -185,7 +191,9 @@ file. Positions are 1-based byte offsets (`integer(I8P)`).
 
 Defined in `src/lib/foxy_xml_writer.f90`. Writes a document sequentially, with bounded memory, to a file, a unit or
 memory. Every method takes optional `iostat`/`iomsg`: errors are sticky (the first one is kept, the following calls do
-nothing) and `close` always reports them; a misuse is `XML_MALFORMED`.
+nothing) and `close` always reports them; without `iostat`, `close` stops the program on an error never returned through
+an `iostat`. A misuse is `XML_MALFORMED`. Only well-formed XML is written: element and attribute names must be XML names,
+a duplicate attribute is a misuse, `]]>` in text and attribute values is written `]]&gt;`.
 
 | Method | Description |
 |--------|-------------|
@@ -198,7 +206,7 @@ nothing) and `close` always reports them; a misuse is `XML_MALFORMED`.
 | `w%cdata(string)`, `w%comment(string)`, `w%pi(target, [string])` | CDATA section (`]]>` split), comment (no `--`), processing instruction |
 | `w%end([name])` | Close the innermost element (self-closing if empty); `name` is checked against it |
 | `w%flush()` | Complete the pending start tag (a new line follows) to write directly to the unit, e.g. binary data; the end tag then goes on its own line |
-| `w%close([iostat=], [iomsg=])` | Close all the open elements and the writer |
+| `w%close([iostat=], [iomsg=])` | Close all the open elements and the writer; without `iostat`, an error not yet reported stops the program |
 | `w%string()` | Content of the memory target |
 
 ---
@@ -210,7 +218,7 @@ Defined in `src/lib/foxy_xml_entities.f90`, re-exported by `foxy`.
 | Function | Description |
 |----------|-------------|
 | `xml_unescape(string)` | Decode `&lt;` `&gt;` `&amp;` `&quot;` `&apos;`, `&#N;` and `&#xH;` (as UTF-8); unknown or invalid references are left verbatim |
-| `xml_escape(string)` | Replace `&`, `<` and `"` with their references, for use as content or attribute value |
+| `xml_escape(string)` | Replace `&`, `<`, `"` and the `>` of `]]>` with their references, for use as content or attribute value |
 
 Stored tags keep the source text: `stringify()` reproduces references as parsed, while `content()`, `attribute()` and
 `get_attribute()` return decoded values. Content set programmatically may contain markup (e.g. a nested tag), so it is

@@ -150,6 +150,10 @@ call w%close(iostat=iostat)                        ! closes Piece and VTKFile, r
 
 An element holding text (`w%text`) is written inline (`<a>text</a>`); `open(..., indent=0)` writes compact output.
 
+The writer writes only well-formed XML: an invalid element or attribute name (`1a`, `a b`) and a duplicate attribute
+are misuses (`XML_MALFORMED`), `]]>` in text is written `]]&gt;`. Pass `iostat` to the calls, or at least to `close`:
+called without `iostat`, `close` stops the program on an error that was never returned to the caller.
+
 ---
 
 ## Writing Tags to File
@@ -235,6 +239,15 @@ endif
 ```
 
 Without `iostat`/`iomsg`, errors are not reported.
+
+Besides the tags structure (end tags not matching, unclosed tags, unquoted values, ...), the first problem may be an
+invalid tag or attribute name, a duplicate attribute, character data outside the root tag (blanks and a leading UTF-8
+byte order mark are fine) or a source without tags (an empty one included). More root tags are allowed.
+
+### Line ends
+
+As XML requires, contents are read with each CR LF pair and each lone CR as a LF (CDATA sections included), whatever
+system wrote the file; the stored source keeps them (`stringify` writes them back), and a CR written as `&#13;` is data.
 
 ### Attribute values spaces
 
@@ -428,11 +441,39 @@ call xfile%save(filename='config.xml', is_declared=.true., iostat=iostat, iomsg=
 `<?xml version="1.0"?>` first, unless the prolog already starts with a declaration. Without `iostat`, an I/O error
 stops the program.
 
-### Deleting a tag by name
+### Deleting a tag
 
 ```fortran
-call xfile%delete_tag(name='nstep')
+call xfile%delete_tag(name='nstep')               ! the first tag named nstep
+call xfile%delete_tag(id=xfile%find(path='config/solver'))
 ```
+
+The subtree goes with the tag; the following IDs are renumbered (find them again after a deletion).
+
+## Editing a Parsed Document
+
+Tags are edited by ID: read a file, change it, save it.
+
+```fortran
+use foxy, only: I4P, xml_escape, xml_file
+type(xml_file) :: xfile
+integer(I4P)   :: dt, a, iostat
+
+call xfile%parse(filename='config.xml')
+dt = xfile%find(path='config/dt')
+call xfile%set_content(id=dt, content='0.02')                 ! raw: escape user data with xml_escape
+call xfile%set_attribute(id=dt, name='unit', value='s')       ! added or replaced, the value is escaped
+call xfile%delete_attribute(id=dt, name='note', iostat=iostat) ! XML_NOT_FOUND if there is none
+do a=1, xfile%attributes_number(dt)                            ! list the attributes
+  print *, xfile%attribute_name(dt, a), '=', xfile%attribute(dt, xfile%attribute_name(dt, a))
+enddo
+call xfile%save(filename='config.xml')
+```
+
+`set_content` replaces the whole content of the tag: its children are deleted (and the following IDs renumbered).
+`tags_number()` gives the number of tags (IDs `1` to `tags_number()`), also for `xml_index`. Errors are returned
+through the optional `iostat`/`iomsg` (`XML_NOT_FOUND` for a missing tag or attribute, `XML_MALFORMED` for an invalid
+attribute name), silent without them.
 
 ### Freeing memory
 

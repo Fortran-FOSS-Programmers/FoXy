@@ -93,7 +93,10 @@ source positions `pos(3)` (start, content, end), indentation, self-closing flag,
 `start_tag()`, `end_tag()`, `self_closing_tag()`.
 
 **`xml_file`** holds a flat `tag(:)` array (linearised DOM, not a tree of pointers) and a count `nt`. Key methods:
-`parse()`, `stringify()`, `save()`, `add_tag()`, `delete_tag()`, `content()`.
+`parse()`, `stringify()`, `save()`, `add_tag()`, `delete_tag(name=|id=)`, `content()`; edits by ID: `set_content`
+(children replaced, content raw), `set_attribute` (value escaped), `delete_attribute`, `tags_number`,
+`attributes_number`/`attribute_name` (the read ones also on `xml_index`). Deletions go through `delete_subtree`
+(renumbering, children after parents).
 
 There is **one parser**, used everywhere:
 - the document parser: `xml_tokenizer%feed` (`foxy_xml_tokenizer`), a single-pass, quotes-aware tokenizer with the
@@ -146,11 +149,20 @@ line, CR or CR LF becomes a space, XML 1.0 3.3.3) before decoding references.
 Comments and PIs inside the document are raw text of their owner tag (after the root: the root tail, written back by
 `stringify`); the `content(name)` fallback on nested tags set as content string ignores tags inside CDATA/comments/PIs.
 
+Well-formedness: the tokenizer reports (first problem, still tolerant) the tags structure, invalid names (`is_name` in
+`foxy_xml_entities`, a `select case` on bytes: an `index()` on a name set cost 30% of the parse), duplicate attributes,
+non-blank data outside the root (a leading BOM excepted, also split across chunks) and a source without tags; more root
+tags are allowed (tested). Contents are read with CR LF/CR as LF (`text_value`), the stored source keeps them.
+`xml_writer` writes only well-formed XML (names, duplicate attributes, `]]>` escaped by `xml_escape`); `close` without
+`iostat` stops on an error never returned through an `iostat`.
+
 Known parser limits: entities defined by a DTD are not expanded; attribute values are trimmed of leading/trailing spaces
 when parsed, by default (`parse(..., sanitize_attributes_value=.false.)` keeps them, as XML requires).
 
-Performance: parse and `stringify` are O(n) in the number of tags, lookups O(n) per path segment (tags array and stringify buffer grow
-geometrically, children lists are built once after parsing). Check any change on large inputs with the benchmark:
+Performance: parse and `stringify` are O(n) in the number of tags (tags array and stringify buffer grow geometrically,
+children lists are built once after parsing). Lookups: the first path segment (or a name) is a sweep, `find` stops at the
+first match; the following segments and `parent=` walk the children lists (`children_named`, merge sorted when nested
+parents interleave); names are compared without copies (`xml_tag%is_named`). Check any change on large inputs with the benchmark:
 `fobis build --mode benchmark-gnu && exe/benchmarks/foxy_benchmark_parse quakeml 100000` (also `flat`, `deep`;
 `benchmark-gnu-profile` builds it with `-pg` for gprof).
 

@@ -26,14 +26,16 @@ title: Features
 - [x] Typed values: attributes and contents read as integers, reals, logicals or lists of numbers, errors reported
 - [x] Index of large files (`xml_index`): tags without content, content read on demand, scan stopped before raw data
 - [x] Malformed input and file errors reported through optional `iostat`/`iomsg` (first problem, with its line),
-  parsing stays tolerant
+  parsing stays tolerant: tags structure, invalid names, duplicate attributes, data outside the root, no root
+- [x] Line ends (CR LF, CR) read as LF in contents
 
 ## Output (Emitting)
 
 - [x] Write a tag **atomically** to a file unit or string
 - [x] Formatted (`fmt='(A)'`) and unformatted (stream) output
 - [x] Save the whole document to a file (`xfile%save`), with an optional XML declaration
-- [x] Stream a document to a file, a unit or memory (`xml_writer`): bounded memory, escaping, layout, typed attributes
+- [x] Stream a document to a file, a unit or memory (`xml_writer`): bounded memory, escaping, layout, typed attributes,
+  well-formed output only (names checked, duplicate attributes rejected)
 
 ## Input / Output (Tag construction)
 
@@ -51,7 +53,8 @@ title: Features
 - [x] Configurable indentation
 - [x] Add / delete attributes by name
 - [x] Delete tag content
-- [x] Add / delete tags from the DOM, at any level (`add_tag(parent=)`)
+- [x] Add / delete tags from the DOM, at any level (`add_tag(parent=)`, `delete_tag(name=|id=)`)
+- [x] Edit parsed tags by ID: set the content, set / delete attributes, list tags and attributes
 
 ## Roadmap
 
@@ -86,5 +89,5 @@ FoXy handles standard XML element syntax. Tags are case-sensitive and attributes
 - Entities defined by a DTD (e.g. `&nbsp;`) are not expanded, only the predefined and numeric references
 - Namespaces are not checked when parsing: an undeclared prefix is not reported (its namespace is `''`)
 - Malformed input is tolerated: an end tag closes up to its matching start tag, a stray one is ignored; only the first
-  problem is reported (`iostat`/`iomsg`)
+  problem is reported (`iostat`/`iomsg`); more root tags are accepted, not reported
 :::
