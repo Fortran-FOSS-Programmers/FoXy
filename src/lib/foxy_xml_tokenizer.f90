@@ -12,6 +12,11 @@ module foxy_xml_tokenizer
 !< characters it consumed; the caller passes the rest again, followed by more characters. Character data, comments, CDATA
 !< sections and processing instructions are reported in pieces (a long one never has to fit in memory), tags and
 !< declarations whole. All positions are absolute (1 is the first character of the source).
+!<
+!< Besides the tags structure, the problems reported (parsing goes on) are: invalid tag and attribute names, duplicate
+!< attributes, character data outside the root tags (blanks and a leading UTF-8 byte order mark excepted) and a source
+!< without tags. More root tags are allowed.
+use foxy_xml_entities, only : is_name
 use penf
 
 implicit none
@@ -33,6 +38,7 @@ integer(I4P), parameter :: INITIAL_DEPTH = 64_I4P !< Initial capacity of the ope
 integer(I8P), parameter :: LOOKAHEAD     = 9_I8P  !< Characters needed to classify a markup (`<![CDATA[`).
 character(*), parameter :: BLANKS   = ' '//achar(9)//achar(10)//achar(13) !< XML blanks: space, tab, new line, CR.
 character(*), parameter :: NAME_END = BLANKS//'/>=' !< Characters ending a tag or attribute name.
+character(*), parameter :: BOM      = achar(239)//achar(187)//achar(191) !< UTF-8 byte order mark.
 
 type, abstract :: xml_builder
    !< Builder driven by the tokenizer: one call per token (character data and similar in pieces).
@@ -129,6 +135,7 @@ type :: xml_tokenizer
    integer(I4P)                :: open_kind=0_I4P  !< Kind of the comment/CDATA/PI continuing in the next piece, 0 if none.
    integer(I8P)                :: open_start=0_I8P !< Position of the comment/CDATA/PI continuing in the next piece.
    logical                     :: is_done=.false.  !< The source is ended (or parsing is stopped).
+   logical                     :: is_outside_reported=.false. !< Character data outside the root tags already reported.
    contains
       procedure, pass(self) :: feed  !< Feed a piece of the source.
       procedure, pass(self) :: reset !< Reset the tokenizer, ready for a new source.
@@ -183,6 +190,12 @@ contains
             k = n
          else
             k = pos + e - 2
+         endif
+         if (self%depth==0.and.(.not.self%is_outside_reported)) then
+            if (is_data_outside(chars=chars(pos:k), first=offset+pos)) then
+               call builder%problem(pos=offset+pos, message='character data outside the root tag')
+               self%is_outside_reported = .true.
+            endif
          endif
          call builder%data(kind=DATA_TEXT, chars=chars(pos:k), first=offset+pos)
          pos = k + 1
@@ -260,6 +273,7 @@ contains
          na = 0
          if (allocated(problem)) deallocate(problem)
          problem_pos = 0
+         if (.not.is_name(name)) call first_problem(problem, problem_pos, offset+pos, 'invalid tag name <'//name//'>')
          is_terminated = .false.
          is_self_closing = .false.
          do
@@ -306,6 +320,13 @@ contains
                k = n + 1
                exit
             endif
+            if (.not.is_name(name)) then
+               call first_problem(problem, problem_pos, offset+k, 'invalid attribute name "'//name//'" in tag <'// &
+                                  tag%name//'>')
+            elseif (is_attribute_present(attributes=attributes, na=na, name=name)) then
+               call first_problem(problem, problem_pos, offset+k, 'duplicate attribute "'//name//'" in tag <'// &
+                                  tag%name//'>')
+            endif
             call add_attribute(attributes=attributes, na=na, name=name, value=chars(k+1:k+e-1), quote=chars(k:k))
             k = k + e + 1
          enddo
@@ -342,6 +363,7 @@ contains
       consumed = n
       if (.not.self%is_done) then
          if (self%depth>0) call builder%problem(pos=self%stack(1)%start, message='unclosed tag <'//self%stack(1)%name//'>')
+         if (self%nt==0) call builder%problem(pos=1_I8P, message='no root tag')
          self%is_done = .true.
       endif
    else
@@ -359,6 +381,7 @@ contains
    self%open_kind = 0_I4P
    self%open_start = 0_I8P
    self%is_done = .false.
+   self%is_outside_reported = .false.
    endsubroutine reset
 
    pure function located(source, pos, message) result(problem)
@@ -494,6 +517,39 @@ contains
       attributes(na)%value = value
    endif
    endsubroutine add_attribute
+
+   pure function is_attribute_present(attributes, na, name) result(is_present)
+   !< Return true if the current start tag has already an attribute named *name*.
+   type(attribute_pair), allocatable, intent(in) :: attributes(:) !< Attributes.
+   integer(I4P),                      intent(in) :: na            !< Number of attributes.
+   character(*),                      intent(in) :: name          !< Attribute name.
+   logical                                       :: is_present    !< Check result.
+   integer(I4P)                                  :: a             !< Counter.
+
+   is_present = .false.
+   do a=1, na
+      if (attributes(a)%name==name) then
+         is_present = .true.
+         return
+      endif
+   enddo
+   endfunction is_attribute_present
+
+   pure function is_data_outside(chars, first) result(is_outside)
+   !< Return true if character data found outside the root tags is not only blanks (a byte order mark at the source start
+   !< excepted).
+   character(*), intent(in) :: chars      !< Characters.
+   integer(I8P), intent(in) :: first      !< Position of the first character.
+   logical                  :: is_outside !< Check result.
+   integer(I8P)             :: skip       !< Leading characters of the byte order mark in *chars*.
+
+   skip = 0 ! the characters in the first 3 positions matching the byte order mark (that may be split by pieces)
+   do while (skip<len(chars, kind=I8P).and.first+skip<=len(BOM, kind=I8P))
+      if (chars(skip+1:skip+1)/=BOM(first+skip:first+skip)) exit
+      skip = skip + 1
+   enddo
+   is_outside = verify(chars(skip+1:), BLANKS, kind=I8P)>0
+   endfunction is_data_outside
 
    pure function after_declaration(source, start) result(after)
    !< Return the position after a `<!...>` declaration (e.g. DOCTYPE) starting at *start*, 0 if it is unterminated.

@@ -28,9 +28,7 @@ character(*), parameter :: CR                = achar(13)   !< Carriage return.
 character(*), parameter :: LF                = achar(10)   !< Line feed.
 character(*), parameter :: CDATA_START       = '<![CDATA[' !< CDATA section start.
 character(*), parameter :: CDATA_END         = ']]>'       !< CDATA section end, escaped as `]]&gt;` in content.
-character(*), parameter :: NAME_START_CHARS  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_:' !< ASCII name start.
-character(*), parameter :: NAME_CHARS        = NAME_START_CHARS//'0123456789-.' !< ASCII name characters.
-integer(I4P), parameter :: FIRST_NON_ASCII   = 128_I4P     !< First non ASCII byte (UTF-8 multi-byte sequences).
+integer,      parameter :: FIRST_NON_ASCII   = 128         !< First non ASCII byte (UTF-8 multi-byte sequences).
 contains
    pure function is_name(string) result(is_valid)
    !< Return true if *string* is an XML name (XML 1.0 production *Name*): its first character a letter, `_` or `:`, the
@@ -41,9 +39,9 @@ contains
 
    is_valid = .false.
    if (len(string)==0) return
-   if (iachar(string(1:1))<FIRST_NON_ASCII.and.index(NAME_START_CHARS, string(1:1))==0) return
+   if (.not.is_name_start_char(iachar(string(1:1)))) return
    do c=2, len(string, kind=I8P)
-      if (iachar(string(c:c))<FIRST_NON_ASCII.and.index(NAME_CHARS, string(c:c))==0) return
+      if (.not.is_name_char(iachar(string(c:c)))) return
    enddo
    is_valid = .true.
    endfunction is_name
@@ -250,6 +248,33 @@ contains
    endfunction strip_blanks
 
    ! private procedures
+   elemental function is_name_start_char(code) result(is_valid)
+   !< Return true if the byte *code* can start an XML name: ASCII letter, `_`, `:` or a non ASCII byte.
+   integer, intent(in) :: code     !< Byte code.
+   logical             :: is_valid !< Check result.
+
+   select case(code)
+   case(iachar('A'):iachar('Z'), iachar('a'):iachar('z'), iachar('_'), iachar(':'), FIRST_NON_ASCII:)
+      is_valid = .true.
+   case default
+      is_valid = .false.
+   endselect
+   endfunction is_name_start_char
+
+   elemental function is_name_char(code) result(is_valid)
+   !< Return true if the byte *code* can be in an XML name: a name start byte, a digit, `-` or `.`.
+   integer, intent(in) :: code     !< Byte code.
+   logical             :: is_valid !< Check result.
+
+   select case(code)
+   case(iachar('A'):iachar('Z'), iachar('a'):iachar('z'), iachar('_'), iachar(':'), iachar('0'):iachar('9'), iachar('-'), &
+        iachar('.'), FIRST_NON_ASCII:)
+      is_valid = .true.
+   case default
+      is_valid = .false.
+   endselect
+   endfunction is_name_char
+
    pure function reference_of(string, c) result(reference)
    !< Return the predefined reference of the escaped character *c* of *string*, the character itself otherwise; `>` is
    !< escaped only when it ends `]]>` (not allowed in content).
