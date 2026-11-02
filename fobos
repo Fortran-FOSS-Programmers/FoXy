@@ -37,7 +37,7 @@ $DEBUG_NV    = -O0 -g -C -traceback -Minform=warn -Mstandard
 $OPTIMIZE    = -O2
 $PROFILE     = -pg
 $BENCHSRC    = ./src/lib/ ./src/third_party/ ./benchmarks/
-$EXDIRS      = BeFoR64/src/tests/ FACE/src/tests/ PENF/src/tests/ StringiFor/src/tests/ BeFoR64/docs/ FACE/docs/ PENF/docs/ PENF/scripts/ StringiFor/docs/
+$EXDIRS      = BeFoR64/src/tests/ FACE/src/tests/ PENF/src/tests/ StringiFor/src/tests/ BeFoR64/docs/ FACE/docs/ PENF/docs/ StringiFor/docs/ BeFoR64/scripts/ FACE/scripts/ PENF/scripts/ StringiFor/scripts/
 
 # main modes
 # GNU
