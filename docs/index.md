@@ -3,86 +3,75 @@ layout: home
 
 hero:
   name: FoXy
-  text: Fortran XML Parser
-  tagline: A KISS pure Fortran library for parsing and emitting XML files and tags.
+  text: Fortran XML for poor people
+  image:
+    src: /logo.svg
+    alt: the FoXy logo, a fox face whose eyes are the angle brackets of a tag
+  tagline: "Read, edit and write XML from modern Fortran: a DOM for documents, an index for huge files, a streaming writer for any size. Pure Fortran 2008, one module."
   actions:
     - theme: brand
-      text: Guide
-      link: /guide/
+      text: Tutorial
+      link: /manual/tutorial/01-first-document
     - theme: alt
-      text: API Reference
+      text: Cookbook
+      link: /manual/cookbook
+    - theme: alt
+      text: Reference
+      link: /guide/features
+    - theme: alt
+      text: API
       link: /api/
     - theme: alt
-      text: GitHub
+      text: View on GitHub
       link: https://github.com/Fortran-FOSS-Programmers/FoXy
 
 features:
-  - icon: 📂
-    title: Pure Fortran
-    details: No C bindings, no wrappers. Pure Fortran 2008+ with object-oriented design.
-  - icon: 🌲
-    title: Linearised DOM
-    details: Parses XML into a flat array-based DOM with full hierarchy tracking — nested and repeated tags supported.
+  - icon: 📄
+    title: Parse strings and files
+    details: "One single-pass tokenizer, files read in chunks (over 2 GiB too); tolerant parsing, the first problem reported with its line."
+    link: /guide/parsing
+    linkText: Parsing
+  - icon: 🔎
+    title: Query by name, path, parent
+    details: "Tags by name, path or parent, children, attributes listed or by name; text with references decoded and CDATA literal."
+    link: /guide/querying
+    linkText: Querying
+  - icon: 🔢
+    title: Numbers, not strings
+    details: "Contents and attributes read as integers, reals, logicals or lists, with an error status for missing or bad values."
+    link: /guide/values
+    linkText: Typed values
   - icon: ✏️
-    title: Emit & Parse
-    details: Create tags programmatically, serialise to string or file, or parse from string or file.
-  - icon: 🛠️
-    title: Multi Build System
-    details: Build with fpm (recommended), FoBiS.py, or CMake. Integrate into your fpm project with a single dependency entry.
-  - icon: 🧪
-    title: OOP / TDD Designed
-    details: Four types — xml_tag, xml_file, xml_index and xml_writer — expose all functionality as type-bound procedures, backed by focused automated tests.
+    title: Edit and save
+    details: "Build documents in code, change contents and attributes by ID, delete tags, save with the prolog kept."
+    link: /guide/editing
+    linkText: Editing
+  - icon: 🖋️
+    title: Stream any size
+    details: "xml_writer writes element by element to a file, a unit or memory: layout, escaping, binary blocks, only well-formed XML."
+    link: /guide/writing
+    linkText: Writing
+  - icon: 🗂️
+    title: Huge files, little memory
+    details: "xml_index keeps the tags without their content, reads contents on demand, stops before raw data."
+    link: /guide/index-files
+    linkText: The index
+  - icon: 🌐
+    title: Namespaces
+    details: "Prefix, local name and namespace of every tag; queries by {uri}local or with your own prefixes."
+    link: /guide/namespaces
+    linkText: Namespaces
   - icon: 🆓
-    title: Free & Open Source
-    details: Multi-licensed — GPLv3 for FOSS projects, BSD 2/3-Clause or MIT for commercial use. Fortran 2008+ standard compliant.
+    title: Free and portable
+    details: "Pure Fortran 2008, no C; gfortran, ifx, nvfortran; fpm, FoBiS, CMake; GPLv3, BSD or MIT."
+    link: /guide/installation
+    linkText: Installation
 ---
 
-## Quick start
+## In a nutshell
 
-Parse an XML string and query a tag's content:
+<<< @/examples/snippets/read_number.f90
 
-```fortran
-use foxy, only: xml_file
-type(xml_file)                :: xfile
-character(len=:), allocatable :: val
+<<< @/examples/output/read_number.ansi{ansi}
 
-call xfile%parse(string= &
-  '<config>'//new_line('A')// &
-  '  <dt unit="s">0.01</dt>'//new_line('A')// &
-  '  <nstep>1000</nstep>'//new_line('A')// &
-  '</config>')
-
-val = xfile%content('dt')
-print *, val   ! 0.01
-```
-
-Create and emit a tag programmatically:
-
-```fortran
-use foxy, only: xml_tag
-type(xml_tag) :: tag
-
-tag = xml_tag(name='point', &
-              attributes=reshape([['x','1'],['y','2'],['z','3']], [2,3]))
-print *, tag%stringify()   ! <point x="1" y="2" z="3"/>
-```
-
-## Authors
-
-- Stefano Zaghi — [@szaghi](https://github.com/szaghi)
-- Fortran FOSS Programmers - [https://github.com/Fortran-FOSS-Programmers](https://github.com/Fortran-FOSS-Programmers)
-
-Contributions are welcome — see the [Contributing](/guide/contributing) page.
-
-## Copyrights
-
-FoXy is distributed under a multi-licensing system:
-
-| Use case | License |
-|----------|---------|
-| FOSS projects | [GPL v3](http://www.gnu.org/licenses/gpl-3.0.html) |
-| Closed source / commercial | [BSD 2-Clause](http://opensource.org/licenses/BSD-2-Clause) |
-| Closed source / commercial | [BSD 3-Clause](http://opensource.org/licenses/BSD-3-Clause) |
-| Closed source / commercial | [MIT](http://opensource.org/licenses/MIT) |
-
-> Anyone interested in using, developing, or contributing to FoXy is welcome — pick the license that best fits your needs.
+Start with the [tutorial](/manual/tutorial/01-first-document), or look up a task in the [cookbook](/manual/cookbook).

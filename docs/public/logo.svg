@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="FoXy">
+  <defs>
+    <linearGradient id="fur" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff8a3d"/>
+      <stop offset="1" stop-color="#e8590c"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#1e2a38"/>
+  <!-- the head: two ears and a muzzle pointing down, the shape of a fox and of the brackets of a tag -->
+  <path d="M9 12 L24 22 L40 22 L55 12 L52 34 L32 54 L12 34 Z" fill="url(#fur)"/>
+  <path d="M13 17 L21 22.5 L15 28 Z M51 17 L43 22.5 L49 28 Z" fill="#1e2a38" opacity="0.55"/>
+  <!-- the white cheeks, a V meeting at the nose -->
+  <path d="M12 34 L24 33 L32 42 L40 33 L52 34 L32 54 Z" fill="#fff4ea"/>
+  <!-- the eyes, < and >: the markup in the face -->
+  <path d="M26 26 L20.5 29 L26 32" fill="none" stroke="#1e2a38" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M38 26 L43.5 29 L38 32" fill="none" stroke="#1e2a38" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="32" cy="50" r="2.6" fill="#1e2a38"/>
+</svg>

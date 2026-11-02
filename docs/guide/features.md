@@ -4,91 +4,81 @@ title: Features
 
 # Features
 
-## Input (Parsing)
+## One module
 
-- [x] Parse XML from a **string** or a **file**, also larger than 2 GiB (64-bit positions); files are read in chunks
-- [x] Build a linearised DOM with full hierarchy tracking
-  - [x] Nested tags supported
-  - [x] Repeated tags with the same name supported
-- [x] Single-pass, quotes-aware tokenizer, linear in the document size
-  - [x] Any blank (space, tab, new line) inside tags, single or double quoted attribute values
-  - [x] `<`, `>` and the other quote kind allowed inside attribute values
-  - [x] Prolog (XML declaration, DOCTYPE, comments and PIs before the root tag) kept and written back
-  - [x] Comments and processing instructions inside the document kept and written back, skipped by the accessors
-  - [x] CDATA sections read literally
-  - [x] Mixed content: text before, between and after child tags
-- [x] Character references decoded on read (`&lt;` `&gt;` `&amp;` `&quot;` `&apos;`, `&#N;`, `&#xH;`)
-- [x] Attribute values normalized on read: literal tabs and new lines become spaces
-  - [x] Leading/trailing spaces trimmed when parsed (default), or kept with `parse(..., sanitize_attributes_value=.false.)`
-- [x] DOM queries by name, `/`-separated path or parent, tags and attributes read by ID
-- [x] Namespaces: prefix, local name and namespace of each tag, queries by namespace (`{uri}local` or a prefixes map),
-  resolved on demand
-- [x] Typed values: attributes and contents read as integers, reals, logicals or lists of numbers, errors reported
-- [x] Index of large files (`xml_index`): tags without content, content read on demand, scan stopped before raw data
-- [x] Malformed input and file errors reported through optional `iostat`/`iomsg` (first problem, with its line),
-  parsing stays tolerant: tags structure, invalid names, duplicate attributes, data outside the root, no root or more
-  root tags
-- [x] Line ends (CR LF, CR) read as LF in contents
+Everything comes from the `foxy` module: the four types, the kinds and the error codes.
 
-## Output (Emitting)
+```fortran
+use foxy                       ! xml_file, xml_index, xml_writer, xml_tag; I1P...I8P, R4P, R8P;
+                               ! XML_MALFORMED, XML_NOT_FOUND, XML_BAD_VALUE; xml_escape, xml_unescape
+type(xml_file) :: doc
 
-- [x] Write a tag **atomically** to a file unit or string
-- [x] Formatted (`fmt='(A)'`) and unformatted (stream) output
-- [x] Save the whole document to a file (`xfile%save`), with an optional XML declaration
-- [x] Stream a document to a file, a unit or memory (`xml_writer`): bounded memory, escaping, layout, typed attributes,
-  well-formed output only (names checked, duplicate attributes rejected)
-
-## Input / Output (Tag construction)
-
-- [x] Create tags programmatically:
-  - [x] Start tag with name and attributes: `<tag_name att="val">`
-  - [x] Self-closing tag: `<tag_name att="val"/>`
-  - [x] Nested tag as content
-  - [x] Text content
-  - [x] End tag: `</tag_name>`
-- [x] DOM hierarchy tracking per tag:
-  - [x] Unique tag ID
-  - [x] Parent tag ID
-  - [x] Children tag IDs
-  - [x] Nesting level
-- [x] Configurable indentation
-- [x] Add / delete attributes by name
-- [x] Delete tag content
-- [x] Add / delete tags from the DOM, at any level (`add_tag(parent=)`, `delete_tag(name=|id=)`)
-- [x] Edit parsed tags by ID: set the content, set / delete attributes, list tags and attributes
-
-## Roadmap
-
-- [x] Parser performance profiling (`benchmarks/`, `fobis build --mode benchmark-gnu`)
-- [x] Keep the prolog (XML declaration, DOCTYPE, comments and PIs before the root tag) when writing
-- [x] Keep comments and processing instructions inside the document when writing
-- [x] Report malformed input to the caller
-- [x] One tokenizer for documents, single tags (`xml_tag%parse`) and attributes streams
-- [x] Namespaces (queries by namespace, resolved on demand)
-
-## XML Syntax Supported
-
-FoXy handles standard XML element syntax. Tags are case-sensitive and attributes are optional:
-
-```xml
-<!-- Self-closing tag -->
-<Tag att1="val1" att2="val2"/>
-
-<!-- Tag with content -->
-<Tag att1="val1" att2="val2">content text</Tag>
-
-<!-- Nested tags -->
-<parent>
-  <child level="1">text</child>
-  <child level="1">
-    <grandchild level="2">deep</grandchild>
-  </child>
-</parent>
+call doc%parse(filename='case.xml')
+print '(A)', doc%content('dt')
 ```
 
-::: warning Limitations
-- Entities defined by a DTD (e.g. `&nbsp;`) are not expanded, only the predefined and numeric references
-- Namespaces are not checked when parsing: an undeclared prefix is not reported (its namespace is `''`)
-- Malformed input is tolerated: an end tag closes up to its matching start tag, a stray one is ignored; only the first
-  problem is reported (`iostat`/`iomsg`)
-:::
+## Feature map
+
+| Area | Features | Where |
+|---|---|---|
+| **Parsing** | strings and files (read in chunks, larger than 2 GiB); one tokenizer for everything; tolerant: the first problem reported with its line (`XML_MALFORMED`), the document built anyway; prolog, comments, PIs and CDATA kept | [Parsing](./parsing) |
+| **Querying** | tags by name, path or parent; children, parent, level; attributes by name or listed; text with references decoded, CDATA literal, mixed content | [Querying](./querying) |
+| **Typed values** | contents and attributes as integers (`I1P`…`I8P`), reals (`R4P`, `R8P`), logicals or lists; `XML_NOT_FOUND`, `XML_BAD_VALUE` | [Typed values](./values) |
+| **Editing** | build in code (`add_tag`); edit by ID: content, attributes, deletion; `stringify`, `save` | [Editing](./editing) |
+| **Writing** | `xml_writer`: streaming to a file, a unit or memory; layout, escaping, typed attributes, binary blocks; only well-formed output | [Writing](./writing) |
+| **Large files** | `xml_index`: tags without content, contents on demand, byte ranges, scan stopped before raw data | [The index](./index-files) |
+| **Namespaces** | prefix, local name, namespace of each tag; queries by `{uri}local` or with your own prefixes | [Namespaces](./namespaces) |
+| **Single tags** | `xml_tag`: create, parse, add and delete attributes, write a start tag, content or end tag | [Single tags](./tags) |
+| **Every method** | the arguments of each type-bound procedure, in tables | [Methods summary](./api-reference) |
+
+## Design
+
+- **Pure Fortran 2008**, no C bindings: the tokenizer and the queries are `pure` procedures.
+- **One parser**: documents, files in chunks, the index, single tags and attribute streams go through the same
+  single-pass tokenizer, so they all accept, and report, the same things.
+- **A flat DOM**: an `xml_file` is an array of tags in document order, linked by IDs; no pointers, nothing to free by
+  hand.
+- **Faithful**: the stored text is the source text, so `stringify` writes back what was read; the accessors decode it.
+- **Linear**: parsing and writing are O(n); lookups walk the children lists; sources over 2 GiB are fine (64-bit
+  positions).
+
+## Modules
+
+```mermaid
+graph LR
+  foxy --> foxy_xml_file & foxy_xml_index & foxy_xml_writer & foxy_xml_tag & foxy_xml_entities & foxy_xml_values
+  foxy_xml_index --> foxy_xml_file
+  foxy_xml_file & foxy_xml_index --> foxy_xml_tokenizer & foxy_xml_tree
+  foxy_xml_tree --> foxy_xml_tag
+  foxy_xml_tag --> stringifor
+  foxy_xml_tokenizer & foxy_xml_writer & foxy_xml_values --> foxy_xml_entities
+```
+
+| Module | Holds |
+|---|---|
+| `foxy` | the public names (use only this one) |
+| `foxy_xml_file` | `xml_file`, the DOM |
+| `foxy_xml_index` | `xml_index`, the index of a file |
+| `foxy_xml_writer` | `xml_writer`, the streaming writer |
+| `foxy_xml_tag` | `xml_tag`, a single element |
+| `foxy_xml_tokenizer` | the tokenizer, fed in pieces, driving a builder |
+| `foxy_xml_tree` | the queries shared by the DOM and the index |
+| `foxy_xml_values` | the conversion of text to numbers and logicals |
+| `foxy_xml_entities` | character references, escaping, XML names |
+
+## Compiler support
+
+| Compiler | Status |
+|---|---|
+| GNU gfortran 14, 16 | tested (CI: gfortran 14) |
+| Intel ifx 2025.3 | tested (build with `-heap-arrays`) |
+| NVIDIA nvfortran 26.5, 26.9 | tested (build with `-D_NVF`) |
+
+## Limits
+
+- Entities defined by a DTD (e.g. `&nbsp;`) are not expanded: only the predefined and the numeric references are.
+- Undeclared namespace prefixes are not reported (their namespace is `''`).
+- Only UTF-8 (and ASCII) sources: other encodings are not converted.
+- No XPath: paths are `/`-separated names, without predicates.
+
+Next: [Parsing](./parsing).

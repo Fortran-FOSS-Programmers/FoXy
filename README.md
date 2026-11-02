@@ -38,80 +38,42 @@ This project is distributed under a multi-licensing system:
 
 ## Quick start
 
-Parse an XML string and query a tag's content:
+Read the settings of a case file as numbers:
 
 ```fortran
-use foxy, only: xml_file
-implicit none
-type(xml_file)                :: xfile
-character(len=:), allocatable :: val
+use foxy
+type(xml_file) :: doc
+real(R8P)      :: dt
+integer(I4P)   :: steps
 
-call xfile%parse(string= &
-  '<config>'//new_line('A')// &
-  '  <dt unit="s">0.01</dt>'//new_line('A')// &
-  '  <nstep>1000</nstep>'//new_line('A')// &
-  '</config>')
-
-val = xfile%content('dt')
-print *, val   ! 0.01
+call doc%parse(filename='case.xml')
+call doc%get_content(id=doc%find(path='case/time/dt'), value=dt)
+call doc%get_content(id=doc%find(path='case/time/steps'), value=steps)
 ```
 
-Create and emit a tag programmatically:
-
-```fortran
-use foxy, only: xml_tag
-implicit none
-type(xml_tag) :: tag
-
-tag = xml_tag(name='point', &
-              attributes=reshape([['x','1'],['y','2'],['z','3']], [2,3]))
-print *, tag%stringify()   ! <point x="1" y="2" z="3"/>
-```
+Learn the rest in the [tutorial](https://Fortran-FOSS-Programmers.github.io/FoXy/manual/tutorial/01-first-document),
+or find a task in the [cookbook](https://Fortran-FOSS-Programmers.github.io/FoXy/manual/cookbook).
 
 ---
 
 ## Install
 
-### FoBiS
-
-**Standalone** — clone, fetch dependencies, and build:
-
-```bash
-git clone https://github.com/Fortran-FOSS-Programmers/FoXy && cd FoXy
-FoBiS.py fetch                        # fetch PENF, StringiFor, BeFoR64, FACE
-FoBiS.py build -mode tests-gnu && bash scripts/run_tests.sh
-```
-
-**As a project dependency** — declare FoXy in your `fobos` and run `fetch`:
-
-```ini
-[dependencies]
-deps_dir = src/third_party
-FoXy = https://github.com/Fortran-FOSS-Programmers/FoXy
-```
-
-```bash
-FoBiS.py fetch           # fetch and build
-FoBiS.py fetch --update  # re-fetch and rebuild
-```
-
-### fpm
-
-Add to your `fpm.toml`:
+**fpm**: add FoXy to your `fpm.toml`.
 
 ```toml
 [dependencies]
 FoXy = { git = "https://github.com/Fortran-FOSS-Programmers/FoXy" }
 ```
 
-```bash
-fpm build
-fpm test
-```
-
-### CMake
+**FoBiS**: clone, fetch the dependencies, build the library (`lib/libfoxy.a`, modules in `lib/mod`) or the tests.
 
 ```bash
 git clone https://github.com/Fortran-FOSS-Programmers/FoXy && cd FoXy
-cmake -B build && cmake --build build
+fobis fetch
+fobis build --mode foxy-static-gnu
+fobis build --mode tests-gnu && bash scripts/run_tests.sh
 ```
+
+**CMake**: fetch the dependencies first (`fobis fetch`), then `cmake -S . -B build && cmake --build build`.
+
+See [Installation](https://Fortran-FOSS-Programmers.github.io/FoXy/guide/installation) for compilers and options.

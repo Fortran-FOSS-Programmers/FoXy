@@ -4,51 +4,43 @@ title: About FoXy
 
 # About FoXy
 
-FoXy is a KISS (Keep It Simple and Stupid) pure Fortran library for parsing and emitting [XML](https://en.wikipedia.org/wiki/XML) files and tags.
+FoXy (Fortran XML for poor people) is a pure Fortran library to read, edit and write XML. Four types cover every use:
 
-## What is FoXy?
+| Type | For |
+|---|---|
+| `xml_file` | a whole document in memory (a DOM): parse a string or a file, query it, edit it, save it |
+| `xml_index` | a file too large to hold: its tags and attributes, the contents read on demand |
+| `xml_writer` | a document of any size, written element by element to a file, a unit or memory |
+| `xml_tag` | a single element: build it, parse it, write it |
 
-Modern Fortran standards (2003+) introduced better support for string manipulation. Exploiting these capabilities, FoXy provides an easy-to-use module library to parse and emit XML, suitable for use in scientific and engineering codes written in modern Fortran.
+The library targets scientific codes: case files, results metadata (VTK, XDMF), catalogues (QuakeML). It is standard
+Fortran 2008, with no C bindings; it depends on small libraries by the same author (PENF for the kinds, StringiFor for
+strings, BeFoR64 and FACE), which every build system fetches.
 
-- **Pure Fortran** — no C bindings, no `ISO_C_BINDING`, no wrappers
-- **Fortran 2008+ standard compliant**
-- **OOP designed** — four classes: `xml_tag`, `xml_file` (DOM), `xml_index` (large files, content on demand) and `xml_writer` (streaming output)
-- **FOSS** — multi-licensed (GPL v3 for open-source, BSD 2/3-Clause and MIT for commercial use)
+This documentation reads in order, and each page links to the next one:
 
-## Why FoXy?
+1. [Installation](./installation): get FoXy into your project.
+2. The [tutorial](/manual/): eight short chapters that build the input and output of a solver, step by step.
+3. The [cookbook](/manual/cookbook): short recipes, one for each "how do I ...?".
+4. The reference, from the [feature map](./features#feature-map) on: every method, every argument.
 
-Other Fortran XML libraries exist — [xml-fortran](http://xml-fortran.sourceforge.net/), [xmlf90](https://github.com/rscircus/xmlf90), [fox](https://github.com/andreww/fox), [tixi](https://github.com/DLR-SC/tixi) — but FoXy was created to fill gaps in:
-
-- Active maintenance
-- Modern Fortran design (OOP, deferred-length allocatable characters)
-- Pure Fortran implementation (no C binding layer)
-- Parallel architecture safety (thread/process safe)
-- Comprehensive testing
-
-## Compiler Support
-
-| Compiler | Status |
-|----------|--------|
-| GNU gfortran ≥ 14.2.0 | Supported |
-| Intel ifort ≥ 16.x | Supported |
-| IBM XL Fortran | Not tested |
-| g95 | Not tested |
-| NAG Fortran | Not tested |
-| PGI / NVIDIA | Not tested |
+The [API](/api/) documents the source itself. Every code sample of the tutorial, of the cookbook and of the reference is
+part of a program that is compiled and run to produce the outputs shown (see
+[`docs/examples`](https://github.com/Fortran-FOSS-Programmers/FoXy/tree/master/docs/examples)).
 
 ## Authors
 
 - Stefano Zaghi — [@szaghi](https://github.com/szaghi)
-- Fortran FOSS Programmers - [https://github.com/Fortran-FOSS-Programmers](https://github.com/Fortran-FOSS-Programmers)
+- Fortran FOSS Programmers — [github.com/Fortran-FOSS-Programmers](https://github.com/Fortran-FOSS-Programmers)
 
-Contributions are welcome — see the [Contributing](/guide/contributing) page.
+Contributions are welcome — see the [Contributing](./contributing) page.
 
 ## Copyrights
 
 FoXy is distributed under a multi-licensing system:
 
-- For FOSS projects: [GPL v3](http://www.gnu.org/licenses/gpl-3.0.html)
-- For closed-source / commercial projects:
-  - [BSD 2-Clause](http://opensource.org/licenses/BSD-2-Clause)
-  - [BSD 3-Clause](http://opensource.org/licenses/BSD-3-Clause)
-  - [MIT](http://opensource.org/licenses/MIT)
+- for FOSS projects: [GPL v3](http://www.gnu.org/licenses/gpl-3.0.html);
+- for closed-source or commercial projects: [BSD 2-Clause](http://opensource.org/licenses/BSD-2-Clause),
+  [BSD 3-Clause](http://opensource.org/licenses/BSD-3-Clause) or [MIT](http://opensource.org/licenses/MIT).
+
+Next: [Installation](./installation).

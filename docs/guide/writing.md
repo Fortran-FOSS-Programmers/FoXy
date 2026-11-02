@@ -1,0 +1,51 @@
+---
+title: Writing
+---
+
+# Writing
+
+`xml_writer` writes a document sequentially, element by element, to a file, a unit or memory: it keeps only the stack
+of the open elements, so a document may be any size.
+
+<<< @/examples/snippets/solver_5-writer.f90
+
+| Method | Does |
+|---|---|
+| `open([filename=], [unit=], [indent=])` | a file (created or replaced, closed by `close`), a unit open for stream unformatted access (left open), or memory if neither; `indent` spaces per level (default 2, `0`: no layout) |
+| `declaration([version=], [encoding=])` | `<?xml version="1.0"?>`, only as the first thing |
+| `start(name)` | opens an element; its start tag stays pending for attributes until its first content |
+| `attribute(name, value, [fmt=])` | character (escaped), integer (`I1P`…`I8P`), real (`R4P`, `R8P`) or logical (`true`/`false`) value; `fmt` formats numbers |
+| `text(string)` | escaped character data; the element is written inline (`<a>text</a>`) |
+| `raw(string, [is_block=])` | characters as they are (numbers, base64), in pieces with many calls; `is_block=.true.` on their own indented line |
+| `cdata(string)`, `comment(string)`, `pi(target, [string])` | the other markup (`]]>` split across CDATA sections; no `--` in a comment) |
+| `end([name])` | closes the innermost element (self-closing if empty); `name` is checked |
+| `flush()` | completes the pending start tag, to write to the unit yourself (e.g. binary data) |
+| `close()` | closes the open elements and the writer |
+| `string()` | the content of a memory target |
+
+Every method takes optional `iostat` and `iomsg`.
+
+## Errors
+
+Errors are sticky: the first one (an I/O error, or a misuse as `XML_MALFORMED`) is kept, every following call does
+nothing, and `close` returns it. Called without `iostat`, `close` stops the program on an error never returned through
+an `iostat`, so no error is lost.
+
+<<< @/examples/snippets/writer_errors.f90
+
+<<< @/examples/output/writer_errors.ansi{ansi}
+
+Only well-formed XML is written: names must be XML names, a duplicate attribute is a misuse, `]]>` in text and
+attribute values is written `]]&gt;`.
+
+## Binary data
+
+<<< @/examples/snippets/binary_appended.f90
+
+## Writing a single tag
+
+An `xml_tag` writes itself: `stringify()` returns the whole tag, `start_tag()`, `end_tag()` and `self_closing_tag()`
+its parts, and `write(unit, ...)` writes it to a unit (with `only_start=`, `only_content=`, `only_end=` to write a large
+element in parts). See [Single tags](./tags).
+
+Next: [The index](./index-files).

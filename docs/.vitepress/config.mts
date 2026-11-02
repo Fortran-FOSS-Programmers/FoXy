@@ -1,9 +1,65 @@
 import { withMermaid } from 'vitepress-plugin-mermaid'
 import apiSidebar from '../api/_sidebar.json'
 
+// one sidebar for every page but the API, in reading order: the "previous" and "next" links at the bottom of a page
+// follow it, so the documentation reads from the first page to the last
+const docs = [
+  {
+    text: 'Start here',
+    items: [
+      { text: 'Introduction', link: '/guide/' },
+      { text: 'Installation', link: '/guide/installation' },
+    ],
+  },
+  {
+    text: 'Tutorial',
+    items: [
+      { text: 'Overview',                     link: '/manual/' },
+      { text: '1. A first document',          link: '/manual/tutorial/01-first-document' },
+      { text: '2. Reading the case file',     link: '/manual/tutorial/02-reading' },
+      { text: '3. Walking the tree',          link: '/manual/tutorial/03-walking' },
+      { text: '4. Editing and saving',        link: '/manual/tutorial/04-editing' },
+      { text: '5. Writing the results',       link: '/manual/tutorial/05-writing' },
+      { text: '6. Large outputs: the index',  link: '/manual/tutorial/06-index' },
+      { text: '7. Namespaces',                link: '/manual/tutorial/07-namespaces' },
+      { text: '8. Robust input and text',     link: '/manual/tutorial/08-robust' },
+    ],
+  },
+  {
+    text: 'Recipes',
+    items: [
+      { text: 'Cookbook', link: '/manual/cookbook' },
+    ],
+  },
+  {
+    text: 'Reference',
+    items: [
+      { text: 'Feature map',     link: '/guide/features' },
+      { text: 'Parsing',         link: '/guide/parsing' },
+      { text: 'Querying',        link: '/guide/querying' },
+      { text: 'Typed values',    link: '/guide/values' },
+      { text: 'Editing',         link: '/guide/editing' },
+      { text: 'Writing',         link: '/guide/writing' },
+      { text: 'The index',       link: '/guide/index-files' },
+      { text: 'Namespaces',      link: '/guide/namespaces' },
+      { text: 'Single tags',     link: '/guide/tags' },
+      { text: 'Methods summary', link: '/guide/api-reference' },
+    ],
+  },
+  {
+    text: 'Project',
+    items: [
+      { text: 'Changelog',         link: '/guide/changelog' },
+      { text: 'Contributing',      link: '/guide/contributing' },
+      { text: 'Coverage analysis', link: '/guide/coverage-analysis' },
+    ],
+  },
+]
+
 export default withMermaid({
   title: 'FoXy Documentation',
   base: '/FoXy/',
+  head: [['link', { rel: 'icon', type: 'image/svg+xml', href: '/FoXy/logo.svg' }]],
   markdown: {
     math: true,
     languages: ['fortran-free-form', 'fortran-fixed-form'],
@@ -17,50 +73,32 @@ export default withMermaid({
     },
   },
   themeConfig: {
+    logo: '/logo.svg',
+    siteTitle: 'FoXy',
+    socialLinks: [{ icon: 'github', link: 'https://github.com/Fortran-FOSS-Programmers/FoXy' }],
     nav: [
       { text: 'Home', link: '/' },
+      { text: 'Start here', link: '/guide/', activeMatch: '^/guide/(index|installation)' },
+      { text: 'Tutorial', link: '/manual/tutorial/01-first-document', activeMatch: '^/manual/(index|tutorial/)' },
+      { text: 'Cookbook', link: '/manual/cookbook', activeMatch: '^/manual/cookbook' },
       {
-        text: 'Guide',
-        items: [
-          { text: 'About',         link: '/guide/' },
-          { text: 'Features',      link: '/guide/features' },
-          { text: 'Installation',  link: '/guide/installation' },
-          { text: 'Usage',         link: '/guide/usage' },
-          { text: 'API Reference', link: '/guide/api-reference' },
-          { text: 'Contributing',      link: '/guide/contributing' },
-          { text: 'Coverage Analysis', link: '/guide/coverage-analysis' },
-          { text: 'Changelog',         link: '/guide/changelog' },
-        ],
+        text: 'Reference',
+        link: '/guide/features',
+        activeMatch: '^/guide/(features|parsing|querying|values|editing|writing|index-files|namespaces|tags|api-reference)',
       },
       { text: 'API', link: '/api/' },
-      { text: 'GitHub', link: 'https://github.com/Fortran-FOSS-Programmers/FoXy' },
+      {
+        text: 'Project',
+        items: [
+          { text: 'Changelog',         link: '/guide/changelog' },
+          { text: 'Contributing',      link: '/guide/contributing' },
+          { text: 'Coverage analysis', link: '/guide/coverage-analysis' },
+        ],
+      },
     ],
     sidebar: {
-      '/guide/': [
-        {
-          text: 'Introduction',
-          items: [
-            { text: 'About',    link: '/guide/' },
-            { text: 'Features', link: '/guide/features' },
-          ],
-        },
-        {
-          text: 'Getting Started',
-          items: [
-            { text: 'Installation',  link: '/guide/installation' },
-            { text: 'Usage',         link: '/guide/usage' },
-            { text: 'API Reference', link: '/guide/api-reference' },
-          ],
-        },
-        {
-          text: 'Project',
-          items: [
-            { text: 'Contributing',      link: '/guide/contributing' },
-            { text: 'Coverage Analysis', link: '/guide/coverage-analysis' },
-            { text: 'Changelog',         link: '/guide/changelog' },
-          ],
-        },
-      ],
+      '/guide/': docs,
+      '/manual/': docs,
       '/api/': [
         {
           text: 'API Reference',

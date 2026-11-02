@@ -182,6 +182,19 @@ The suite passes with gfortran 14/16, ifx 2025.3 and nvfortran 26.5/26.9. Compil
 - StringiFor keys its nvfortran workarounds on `_NVF`: the fobos nvidia modes define it (`$CSTATIC_NV`); without it
   nvfortran 26.5/26.9 builds empty strings (33 of 36 tests fail, since StringiFor cc63426, 2026-10-30).
 
+## Documentation
+
+VitePress site in `docs/`, shaped as StringiFor/FLAP: `guide/` (Start here: `index`, `installation`; Reference: `features`
+feature map, `parsing`, `querying`, `values`, `editing`, `writing`, `index-files`, `namespaces`, `tags`, `api-reference`
+methods summary; Project), `manual/` (tutorial `tutorial/0N-*.md` building one program `solver`, `cookbook.md`), one
+sidebar in reading order (`docs/.vitepress/config.mts`), palette in `.vitepress/theme/custom.css`, `public/logo.svg`.
+Every sample is a program in `docs/examples/src` (markers `!run ID CMD`, `!region NAME`/`!endregion NAME`, `!as NAME`),
+input files in `docs/examples/files`; `bash scripts/docs_examples.sh` rebuilds the library (`fobis build --mode
+foxy-static-gnu`), builds and runs them in one scratch dir (alphabetical file order: a run may read what an earlier one
+wrote), and regenerates `docs/examples/snippets` and `docs/examples/output`, included by the pages (`<<< @/examples/...`).
+Commit the regenerated files: `docs-examples.yml` reruns the script with gfortran 14 and fails on any diff. Outputs
+must not depend on the compiler: explicit formats.
+
 ## CI/CD
 
 GitHub Actions, built on two local composite actions (`.github/actions/setup-build-env`,
@@ -192,6 +205,7 @@ GitHub Actions, built on two local composite actions (`.github/actions/setup-bui
   overwrites `docs/public/coverage.json` with the coverage badge
 - `release.yml` — on a `vX.Y.Z` tag: tarball + GitHub release with notes extracted from `CHANGELOG.md`
 - `install.yml` — install smoke test (`scripts/install.sh`)
+- `docs-examples.yml` — `scripts/docs_examples.sh` must reproduce the committed `docs/examples` snippets and outputs
 
 Running `fobis rule --ex makecoverage` locally also rewrites `docs/public/coverage.json`: do not commit that change.
 

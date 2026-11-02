@@ -1,47 +1,17 @@
 ---
-title: API Reference Overview
+title: Methods summary
 ---
 
-# API Reference Overview
+# Methods summary
 
-FoXy exposes four public types and the PENF kind parameters through the `foxy` wrapper module.
+Every type-bound procedure, with its arguments. The `foxy` module exports the four types, the PENF kinds, the error
+codes and the escaping functions:
 
 ```fortran
 use foxy, only: xml_tag, xml_file, xml_index, xml_writer
 use foxy, only: I1P, I2P, I4P, I8P, R4P, R8P  ! PENF kinds
 use foxy, only: XML_MALFORMED, XML_NOT_FOUND, XML_BAD_VALUE  ! iostat values
 ```
-
-## Module dependency graph
-
-```mermaid
-graph LR
-  foxy["foxy"] --> foxy_xml_file["foxy_xml_file"]
-  foxy["foxy"] --> foxy_xml_index["foxy_xml_index"]
-  foxy["foxy"] --> foxy_xml_writer["foxy_xml_writer"]
-  foxy_xml_writer["foxy_xml_writer"] --> foxy_xml_entities["foxy_xml_entities"]
-  foxy["foxy"] --> foxy_xml_tag["foxy_xml_tag"]
-  foxy["foxy"] --> foxy_xml_entities["foxy_xml_entities"]
-  foxy_xml_index["foxy_xml_index"] --> foxy_xml_file["foxy_xml_file"]
-  foxy_xml_index["foxy_xml_index"] --> foxy_xml_tokenizer["foxy_xml_tokenizer"]
-  foxy_xml_index["foxy_xml_index"] --> foxy_xml_tree["foxy_xml_tree"]
-  foxy_xml_file["foxy_xml_file"] --> foxy_xml_tokenizer["foxy_xml_tokenizer"]
-  foxy_xml_file["foxy_xml_file"] --> foxy_xml_tree["foxy_xml_tree"]
-  foxy_xml_file["foxy_xml_file"] --> foxy_xml_tag["foxy_xml_tag"]
-  foxy_xml_file["foxy_xml_file"] --> foxy_xml_entities["foxy_xml_entities"]
-  foxy_xml_tree["foxy_xml_tree"] --> foxy_xml_tag["foxy_xml_tag"]
-  foxy_xml_tree["foxy_xml_tree"] --> foxy_xml_values["foxy_xml_values"]
-  foxy_xml_file["foxy_xml_file"] --> foxy_xml_values["foxy_xml_values"]
-  foxy_xml_index["foxy_xml_index"] --> foxy_xml_values["foxy_xml_values"]
-  foxy_xml_values["foxy_xml_values"] --> foxy_xml_entities["foxy_xml_entities"]
-  foxy_xml_tokenizer["foxy_xml_tokenizer"] --> penf["penf"]
-  foxy_xml_tag["foxy_xml_tag"] --> foxy_xml_entities["foxy_xml_entities"]
-  foxy_xml_entities["foxy_xml_entities"] --> penf["penf"]
-  foxy_xml_tag["foxy_xml_tag"] --> penf["penf"]
-  foxy_xml_tag["foxy_xml_tag"] --> stringifor["stringifor"]
-```
-
----
 
 ## `xml_tag` — single XML element
 

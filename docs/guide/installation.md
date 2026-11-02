@@ -4,86 +4,82 @@ title: Installation
 
 # Installation
 
-FoXy supports three build systems. **fpm** is the recommended approach for new projects.
+FoXy builds with fpm, FoBiS or CMake. All you need is a Fortran 2008 compiler: gfortran 14 or newer, ifx 2025 or
+nvfortran 26 are tested.
 
-## Fortran Package Manager (fpm) — Recommended
+## fpm
 
-Add FoXy as a dependency in your `fpm.toml`:
+Add FoXy to the dependencies of your `fpm.toml`; fpm fetches it, and its dependencies, when you build:
 
 ```toml
 [dependencies]
 FoXy = { git = "https://github.com/Fortran-FOSS-Programmers/FoXy" }
 ```
 
-Then build and test:
+## FoBiS
+
+[FoBiS](https://github.com/szaghi/FoBiS) is the build tool of FoXy's development. Clone the repository and fetch the
+dependencies (declared in `fobos`, cloned into `src/third_party/`):
 
 ```bash
-fpm build
-fpm test
-```
-
-## FoBiS (for development / contributing)
-
-[FoBiS.py](https://github.com/szaghi/FoBiS) is the primary build tool used for development and CI.
-
-Clone the repository and fetch the dependencies (declared in `fobos`, fetched into `src/third_party/`):
-
-```bash
-git clone https://github.com/Fortran-FOSS-Programmers/FoXy.git
+git clone https://github.com/Fortran-FOSS-Programmers/FoXy
 cd FoXy
 fobis fetch
 ```
 
-Build and run tests:
+Build the library, `lib/libfoxy.a` with its modules in `lib/mod`, and link your program to it:
 
 ```bash
-# GNU, optimised
-fobis build --mode tests-gnu && bash scripts/run_tests.sh
-
-# GNU, debug (-std=f2018, runtime checks, backtraces)
-fobis build --mode tests-gnu-debug && bash scripts/run_tests.sh
-
-# Intel ifx (also tests-intel-debug)
-fobis build --mode tests-intel && bash scripts/run_tests.sh
-
-# NVIDIA nvfortran (also tests-nvidia-debug)
-fobis build --mode tests-nvidia && bash scripts/run_tests.sh
+fobis build --mode foxy-static-gnu
+gfortran -I lib/mod my_program.f90 lib/libfoxy.a -o my_program
 ```
 
-Build artefacts go to `./exe/` (binaries, `exe/obj/`, `exe/mod/`). `fobis build --lmodes` lists all modes.
+The library holds the dependencies too: one archive, one module directory.
 
-### Compilers
+To run the tests (each test is a program in `src/tests`, built in `exe/`):
 
-The test suite passes with gfortran 14+, ifx 2025.3 and nvfortran 26.5. Building FoXy with your own flags:
+```bash
+fobis build --mode tests-gnu && bash scripts/run_tests.sh          # also tests-gnu-debug
+fobis build --mode tests-intel && bash scripts/run_tests.sh        # ifx, also tests-intel-debug
+fobis build --mode tests-nvidia && bash scripts/run_tests.sh       # nvfortran, also tests-nvidia-debug
+```
 
-- **ifx** — compile with `-heap-arrays`: ifx puts large temporaries (function results, e.g. the content of a big
-  tag) on the stack, which overflows on large documents.
-- **nvfortran** — preprocess the `.F90` sources with `-Mpreprocess`.
+`fobis build --lmodes` lists every mode.
 
 ## CMake
 
-The CMake build uses the dependencies in `src/third_party/`: fetch them first.
+CMake uses the dependencies in `src/third_party/`: fetch them first.
 
 ```bash
-git clone https://github.com/Fortran-FOSS-Programmers/FoXy.git
+git clone https://github.com/Fortran-FOSS-Programmers/FoXy
 cd FoXy
 fobis fetch
-mkdir build && cd build
-cmake ..
-make
-make install
+cmake -S . -B build
+cmake --build build
+cmake --install build
 ```
 
-CMake generates package config files for use with `find_package(FoXy)` in downstream projects.
+CMake installs package config files: `find_package(FoXy)` finds it in your project.
+
+## Compilers
+
+With your own flags:
+
+- **ifx**: compile with `-heap-arrays`; ifx puts large temporaries (e.g. the content of a big tag) on the stack, which
+  overflows on large documents.
+- **nvfortran**: preprocess with `-Mpreprocess` and define `_NVF` (`-D_NVF`), which turns on StringiFor's nvfortran
+  workarounds.
 
 ## Dependencies
 
-`fobis fetch` clones the dependencies into `src/third_party/` (tracking their default branches) and records the
-fetched revisions in `src/third_party/fobos.lock`; `fobis fetch --update` updates them.
-
 | Library | Purpose |
-|---------|---------|
-| PENF | Fortran precision/kind parameters (`I4P`, `R8P`, …) |
-| StringiFor | String type used throughout parsing |
-| BeFoR64 | Base64 encoding (used by StringiFor) |
-| FACE | File-handle utilities |
+|---|---|
+| [PENF](https://github.com/szaghi/PENF) | portable kinds (`I1P`…`I8P`, `R4P`, `R8P`), number to string |
+| [StringiFor](https://github.com/szaghi/StringiFor) | the string type used by the parser |
+| [BeFoR64](https://github.com/szaghi/BeFoR64) | base64, used by StringiFor |
+| [FACE](https://github.com/szaghi/FACE) | ANSI colours, used by StringiFor |
+
+`fobis fetch` clones them at their default branches and records the revisions in `src/third_party/fobos.lock`;
+`fobis fetch --update` updates them.
+
+Next: [the tutorial](/manual/).
