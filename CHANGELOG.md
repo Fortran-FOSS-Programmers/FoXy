@@ -4,6 +4,33 @@ All notable changes to this project are documented here.
 Versions follow [Semantic Versioning](https://semver.org/).
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.6.0] — 2026-11-02
+### Added
+- **parser**: Report invalid names, duplicate attributes and data outside the root
+
+- **dom**: Edit parsed documents by tag ID
+
+
+### Documentation
+- **guide**: Document DOM editing, well-formedness checks and line ends
+
+- Refactor the site as a tutorial, a cookbook and a reference
+
+- **theme**: Use the low-poly fox as logo, with a slate palette
+
+
+### Fixed
+- **writer**: Write only well-formed XML and never lose an error
+
+- **parser**: Read CR LF and lone CR as LF in contents
+
+- **parser**: Report more root tags, in parse and in save ⚠ BREAKING CHANGE
+
+
+### Performance
+- **tree**: Walk the children lists and stop find at the first match
+
+
 ## [0.5.0] — 2026-10-15
 ### Added
 - **dom**: Keep mixed content and read CDATA sections literally ⚠ BREAKING CHANGE
