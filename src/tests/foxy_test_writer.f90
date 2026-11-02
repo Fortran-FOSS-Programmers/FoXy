@@ -3,8 +3,9 @@ program foxy_test_writer
 !< FoXy test.
 !<
 !< The streaming writer: the same bytes to a file, a unit and memory; layout (indented or compact), escaping, typed
-!< attributes, self closing and inline elements, block payloads, CDATA, comments, PIs; misuse and I/O errors reported.
-use foxy, only: I1P, I2P, I4P, I8P, R4P, R8P, xml_file, xml_writer, XML_MALFORMED
+!< attributes, self closing and inline elements, block payloads, CDATA, comments, PIs; misuse and I/O errors reported;
+!< only well-formed output: names checked, duplicate attributes rejected, `]]>` escaped in text.
+use foxy, only: I1P, I2P, I4P, I8P, R4P, R8P, xml_escape, xml_file, xml_writer, XML_MALFORMED
 
 implicit none
 character(len=1), parameter   :: NL = new_line('a') !< New line.
@@ -36,7 +37,7 @@ integer                       :: unit               !< File unit.
 integer                       :: tmp_dir_len        !< Length of the TMPDIR environment variable.
 integer                       :: status             !< Status of the environment variable query.
 integer                       :: p                  !< Counter.
-logical                       :: test_passed(15)    !< List of passed tests.
+logical                       :: test_passed(19)    !< List of passed tests.
 
 test_passed = .false.
 
@@ -161,6 +162,45 @@ close(unit)
 test_passed(15) = iostat==0.and.file_content(filename)=='<V>'//NL//'  <AppendedData encoding="raw">'//NL// &
                   '_'//achar(0)//achar(255)//NL//'  </AppendedData>'//NL//'</V>'//NL
 print "(A,L1)", 'Is the pending start tag flushed for direct writes? ', test_passed(15)
+
+! well-formed output only: invalid names and duplicate attributes are misuse, `]]>` is escaped in text
+call writer%open()
+call writer%start('1a', iostat=iostat)
+test_passed(16) = iostat==XML_MALFORMED
+call writer%close(iostat=iostat)
+call writer%open()
+call writer%start('a b', iostat=iostat)
+test_passed(16) = test_passed(16).and.iostat==XML_MALFORMED
+call writer%close(iostat=iostat)
+call writer%open()
+call writer%start('x:a-b.c_1')
+call writer%attribute('é', 'v', iostat=iostat) ! UTF-8 bytes are name characters
+test_passed(16) = test_passed(16).and.iostat==0
+call writer%close(iostat=iostat)
+test_passed(16) = test_passed(16).and.iostat==0.and.writer%string()=='<x:a-b.c_1 é="v"/>'//NL
+call writer%open()
+call writer%start('a')
+call writer%attribute('k v', 'v', iostat=iostat)
+test_passed(17) = iostat==XML_MALFORMED
+call writer%close(iostat=iostat)
+call writer%open()
+call writer%start('a')
+call writer%attribute('k', '1')
+call writer%attribute('kk', '2', iostat=iostat)
+test_passed(18) = iostat==0
+call writer%attribute('k', '3', iostat=iostat)
+test_passed(18) = test_passed(18).and.iostat==XML_MALFORMED
+call writer%close(iostat=iostat, iomsg=iomsg)
+test_passed(18) = test_passed(18).and.iostat==XML_MALFORMED.and.index(iomsg, 'k')>0
+call writer%open(indent=0_I4P)
+call writer%start('a')
+call writer%text('x]]>y')
+call writer%close(iostat=iostat)
+output = writer%string()
+call xfile%parse(string=output, iostat=iostat)
+test_passed(19) = output=='<a>x]]&gt;y</a>'.and.iostat==0.and.xfile%content('a')=='x]]>y'.and. &
+                  xml_escape(']]>a]]>')==']]&gt;a]]&gt;'.and.xml_escape('a>b')=='a>b'
+print "(A,L1)", 'Is the output well-formed (names, duplicate attributes, ]]>)? ', all(test_passed(16:19))
 
 open(newunit=unit, file=filename, status='OLD')
 close(unit, status='DELETE')

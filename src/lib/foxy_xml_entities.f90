@@ -2,8 +2,8 @@
 module foxy_xml_entities
 !< FoXy XML character references handling and character data values.
 !<
-!< *text_value*, *without_markup* and *strip_blanks* (values of raw character data) are public for the other FoXy modules,
-!< not re-exported by *foxy*.
+!< *text_value*, *without_markup* and *strip_blanks* (values of raw character data) and *is_name* are public for the other
+!< FoXy modules, not re-exported by *foxy*.
 !<
 !< Character references are the predefined entities `&lt;`, `&gt;`, `&amp;`, `&quot;`, `&apos;` and the numeric
 !< references `&#N;` (decimal) and `&#xH;` (hexadecimal) of a Unicode code point, decoded as UTF-8 bytes.
@@ -11,6 +11,7 @@ use penf, only : I4P, I8P
 
 implicit none
 private
+public :: is_name
 public :: strip_blanks
 public :: text_value
 public :: without_markup
@@ -24,29 +25,48 @@ integer(I4P), parameter :: SURROGATE_LAST    = 57343_I4P   !< Last UTF-16 surrog
 character(*), parameter :: ESCAPED_CHARS     = '&<"'       !< Characters escaped by *xml_escape*.
 character(*), parameter :: BLANKS            = ' '//achar(9)//achar(10)//achar(13) !< XML blanks: space, tab, new line, CR.
 character(*), parameter :: CDATA_START       = '<![CDATA[' !< CDATA section start.
-character(*), parameter :: CDATA_END         = ']]>'       !< CDATA section end.
+character(*), parameter :: CDATA_END         = ']]>'       !< CDATA section end, escaped as `]]&gt;` in content.
+character(*), parameter :: NAME_START_CHARS  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_:' !< ASCII name start.
+character(*), parameter :: NAME_CHARS        = NAME_START_CHARS//'0123456789-.' !< ASCII name characters.
+integer(I4P), parameter :: FIRST_NON_ASCII   = 128_I4P     !< First non ASCII byte (UTF-8 multi-byte sequences).
 contains
+   pure function is_name(string) result(is_valid)
+   !< Return true if *string* is an XML name (XML 1.0 production *Name*): its first character a letter, `_` or `:`, the
+   !< others also digits, `-` or `.`; every non ASCII byte (UTF-8 encoded character) is accepted as a name character.
+   character(*), intent(in) :: string   !< String.
+   logical                  :: is_valid !< Check result.
+   integer(I8P)             :: c        !< Counter.
+
+   is_valid = .false.
+   if (len(string)==0) return
+   if (iachar(string(1:1))<FIRST_NON_ASCII.and.index(NAME_START_CHARS, string(1:1))==0) return
+   do c=2, len(string, kind=I8P)
+      if (iachar(string(c:c))<FIRST_NON_ASCII.and.index(NAME_CHARS, string(c:c))==0) return
+   enddo
+   is_valid = .true.
+   endfunction is_name
+
    pure function xml_escape(string) result(escaped)
-   !< Return *string* with `&`, `<` and `"` replaced by their predefined references, ready to be used as XML content or
-   !< (double quoted) attribute value.
+   !< Return *string* with `&`, `<`, `"` and the `>` of `]]>` replaced by their predefined references, ready to be used as
+   !< XML content or (double quoted) attribute value.
    character(*), intent(in)      :: string    !< String to escape.
    character(len=:), allocatable :: escaped   !< Escaped string.
    character(len=:), allocatable :: reference !< Reference of current character.
    integer(I8P)                  :: n         !< Length of escaped string.
    integer(I8P)                  :: c         !< Counter.
 
-   if (scan(string, ESCAPED_CHARS, kind=I8P)==0) then
+   if (scan(string, ESCAPED_CHARS, kind=I8P)==0.and.index(string, CDATA_END, kind=I8P)==0) then
       escaped = string
       return
    endif
    n = 0
    do c=1, len(string, kind=I8P)
-      n = n + len(reference_of(string(c:c)), kind=I8P)
+      n = n + len(reference_of(string=string, c=c), kind=I8P)
    enddo
    allocate(character(len=n) :: escaped)
    n = 0
    do c=1, len(string, kind=I8P)
-      reference = reference_of(string(c:c))
+      reference = reference_of(string=string, c=c)
       escaped(n+1:n+len(reference, kind=I8P)) = reference
       n = n + len(reference, kind=I8P)
    enddo
@@ -197,12 +217,19 @@ contains
    endfunction strip_blanks
 
    ! private procedures
-   pure function reference_of(char) result(reference)
-   !< Return the predefined reference of an escaped character, the character itself otherwise.
-   character(len=1), intent(in)  :: char      !< Character.
+   pure function reference_of(string, c) result(reference)
+   !< Return the predefined reference of the escaped character *c* of *string*, the character itself otherwise; `>` is
+   !< escaped only when it ends `]]>` (not allowed in content).
+   character(*),     intent(in)  :: string    !< String.
+   integer(I8P),     intent(in)  :: c         !< Character position.
    character(len=:), allocatable :: reference !< Reference.
 
-   select case(char)
+   select case(string(c:c))
+   case('>')
+      reference = '>'
+      if (c>2) then
+         if (string(c-2:c-1)==']]') reference = '&gt;'
+      endif
    case('&')
       reference = '&amp;'
    case('<')
@@ -210,7 +237,7 @@ contains
    case('"')
       reference = '&quot;'
    case default
-      reference = char
+      reference = string(c:c)
    endselect
    endfunction reference_of
 

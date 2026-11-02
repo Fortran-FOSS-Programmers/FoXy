@@ -12,8 +12,12 @@ module foxy_xml_writer
 !< (`raw(..., is_block=.true.)`) is written on its own line. With *indent*=0 no blank is added.
 !<
 !< Errors are sticky: the first one (an I/O error, or a misuse reported as *XML_MALFORMED*) is kept, every following call
-!< does nothing; each call can return it (*iostat*, *iomsg*), *close* always does.
-use foxy_xml_entities, only : xml_escape
+!< does nothing; each call can return it (*iostat*, *iomsg*), *close* always does: called without *iostat*, *close* stops
+!< the program on an error never returned to the caller, so that no error is lost.
+!<
+!< Only well-formed XML is written: element and attribute names are checked (XML names), a duplicate attribute is an
+!< error, `]]>` is escaped in text and attribute values.
+use foxy_xml_entities, only : is_name, xml_escape
 use foxy_xml_file, only : XML_MALFORMED
 use penf
 
@@ -44,9 +48,11 @@ type :: xml_writer
    type(open_element), allocatable :: stack(:)              !< Open elements.
    integer(I4P)                    :: depth=0_I4P           !< Number of open elements.
    character(len=:), allocatable   :: pending               !< Pending start tag (`<name attributes`), unallocated if none.
+   character(len=:), allocatable   :: pending_names         !< Attributes names of the pending start tag, ` a b `.
    logical                         :: is_empty=.true.       !< Nothing written yet.
    integer(I4P)                    :: error=0_I4P           !< First error status, 0 if none.
    character(len=:), allocatable   :: error_message         !< First error message.
+   logical                         :: is_reported=.false.   !< The error has been returned to the caller.
    contains
       ! public methods
       generic               :: attribute =>         &
@@ -115,7 +121,8 @@ contains
 
    subroutine close(self, iostat, iomsg)
    !< Close all the open elements and the writer (a file opened by the writer is closed, a unit passed is left open; the
-   !< memory target content stays available to *string*).
+   !< memory target content stays available to *string*); without *iostat*, an error not yet returned to the caller stops
+   !< the program.
    class(xml_writer),      intent(inout) :: self    !< XML writer.
    integer(I4P), optional, intent(out)   :: iostat  !< IO status: 0, the runtime I/O error code or *XML_MALFORMED*.
    character(*), optional, intent(inout) :: iomsg   !< IO message, unchanged if no error.
@@ -130,6 +137,8 @@ contains
    endif
    self%is_open = .false.
    self%is_unit_owned = .false.
+   if (self%error/=0.and..not.self%is_reported.and..not.present(iostat)) &
+      error stop 'xml_writer%close: '//self%error_message
    call self%report(iostat=iostat, iomsg=iomsg)
    endsubroutine close
 
@@ -242,6 +251,7 @@ contains
    if (allocated(self%pending)) deallocate(self%pending)
    self%is_empty = .true.
    self%error = 0
+   self%is_reported = .false.
    if (allocated(self%error_message)) deallocate(self%error_message)
    self%indent = 2 ; if (present(indent)) self%indent = max(0_I4P, indent)
    if (.not.allocated(self%stack)) allocate(self%stack(INITIAL_DEPTH))
@@ -321,6 +331,8 @@ contains
    if (self%is_writable()) then
       if (len_trim(name)==0) then
          call self%fail(XML_MALFORMED, 'element without name')
+      elseif (.not.is_name(trim(name))) then
+         call self%fail(XML_MALFORMED, 'element name "'//trim(name)//'" is not an XML name')
       else
          element%name = trim(name)
          if (self%depth>0) then
@@ -332,6 +344,7 @@ contains
          self%depth = self%depth + 1
          self%stack(self%depth) = element
          self%pending = '<'//element%name
+         self%pending_names = ' '
          self%is_empty = .false.
       endif
    endif
@@ -374,8 +387,13 @@ contains
          else
             call self%fail(XML_MALFORMED, 'attribute "'//name//'" without an open element')
          endif
+      elseif (.not.is_name(name)) then
+         call self%fail(XML_MALFORMED, 'attribute name "'//name//'" is not an XML name')
+      elseif (index(self%pending_names, ' '//name//' ')>0) then
+         call self%fail(XML_MALFORMED, 'duplicate attribute "'//name//'" in <'//self%stack(self%depth)%name//'>')
       else
          self%pending = self%pending//' '//name//'="'//xml_escape(value)//'"'
+         self%pending_names = self%pending_names//name//' '
       endif
    endif
    call self%report(iostat=iostat, iomsg=iomsg)
@@ -581,12 +599,15 @@ contains
    endsubroutine put
 
    subroutine report(self, iostat, iomsg)
-   !< Return the error status (*iomsg* only if there is an error).
-   class(xml_writer),      intent(in)    :: self   !< XML writer.
+   !< Return the error status (*iomsg* only if there is an error), through *iostat* if passed.
+   class(xml_writer),      intent(inout) :: self   !< XML writer.
    integer(I4P), optional, intent(out)   :: iostat !< IO status.
    character(*), optional, intent(inout) :: iomsg  !< IO message.
 
-   if (present(iostat)) iostat = self%error
+   if (present(iostat)) then
+      iostat = self%error
+      if (self%error/=0) self%is_reported = .true.
+   endif
    if (present(iomsg).and.self%error/=0) iomsg = self%error_message
    endsubroutine report
 
