@@ -24,6 +24,8 @@ integer(I4P), parameter :: SURROGATE_FIRST   = 55296_I4P   !< First UTF-16 surro
 integer(I4P), parameter :: SURROGATE_LAST    = 57343_I4P   !< Last UTF-16 surrogate, U+DFFF, not a character.
 character(*), parameter :: ESCAPED_CHARS     = '&<"'       !< Characters escaped by *xml_escape*.
 character(*), parameter :: BLANKS            = ' '//achar(9)//achar(10)//achar(13) !< XML blanks: space, tab, new line, CR.
+character(*), parameter :: CR                = achar(13)   !< Carriage return.
+character(*), parameter :: LF                = achar(10)   !< Line feed.
 character(*), parameter :: CDATA_START       = '<![CDATA[' !< CDATA section start.
 character(*), parameter :: CDATA_END         = ']]>'       !< CDATA section end, escaped as `]]&gt;` in content.
 character(*), parameter :: NAME_START_CHARS  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_:' !< ASCII name start.
@@ -115,8 +117,8 @@ contains
    endfunction xml_unescape
 
    pure function text_value(raw) result(value)
-   !< Return the value of raw character data: comments and PIs removed, layout blanks stripped, character references
-   !< decoded, CDATA sections literal.
+   !< Return the value of raw character data: line ends normalized (CR LF and CR read as LF, XML 1.0 2.11, CDATA sections
+   !< included), comments and PIs removed, layout blanks stripped, character references decoded, CDATA sections literal.
    character(*), intent(in)      :: raw      !< Raw character data.
    character(len=:), allocatable :: value    !< Value.
    character(len=:), allocatable :: stripped !< Raw data without leading and trailing blanks.
@@ -125,7 +127,7 @@ contains
    integer(I8P)                  :: q        !< CDATA content start.
    integer(I8P)                  :: e        !< Relative position of CDATA end.
 
-   stripped = strip_blanks(without_markup(raw)) ! blanks first: encoded blanks and CDATA blanks are data
+   stripped = strip_blanks(without_markup(line_ends_normalized(raw))) ! blanks first: encoded and CDATA blanks are data
    if (index(stripped, CDATA_START, kind=I8P)==0) then
       value = xml_unescape(stripped)
       return
@@ -149,6 +151,37 @@ contains
       p = q + e - 1 + len(CDATA_END)
    enddo
    endfunction text_value
+
+   pure function line_ends_normalized(raw) result(text)
+   !< Return raw character data with each CR LF pair and each lone CR replaced by LF (XML 1.0 2.11).
+   character(*), intent(in)      :: raw    !< Raw character data.
+   character(len=:), allocatable :: text   !< Normalized data.
+   character(len=:), allocatable :: buffer !< Kept characters (allocatable: no stack object as large as raw).
+   integer(I8P)                  :: n      !< Number of kept characters.
+   integer(I8P)                  :: c      !< Counter.
+
+   if (index(raw, CR, kind=I8P)==0) then
+      text = raw
+      return
+   endif
+   allocate(character(len=len(raw, kind=I8P)) :: buffer)
+   n = 0
+   do c=1, len(raw, kind=I8P)
+      if (raw(c:c)==CR) then
+         n = n + 1
+         buffer(n:n) = LF
+      elseif (raw(c:c)==LF.and.c>1) then
+         if (raw(c-1:c-1)/=CR) then ! the LF of CR LF is already written
+            n = n + 1
+            buffer(n:n) = LF
+         endif
+      else
+         n = n + 1
+         buffer(n:n) = raw(c:c)
+      endif
+   enddo
+   text = buffer(1:n)
+   endfunction line_ends_normalized
 
    pure function without_markup(raw, is_cdata_removed) result(text)
    !< Return raw character data without comments and processing instructions (and CDATA sections, if asked); markup inside
