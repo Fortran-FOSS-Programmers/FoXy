@@ -20,8 +20,9 @@ so the IDs of a built document follow the insertion order. See [Single tags](./t
 
 | Method | Does |
 |---|---|
-| `set_content(id, content, [iostat=], [iomsg=])` | replaces the whole content of a tag: its children (with their subtrees) are deleted; a self-closing tag gets an end tag |
-| `set_attribute(id, name, value, [iostat=], [iomsg=])` | adds the attribute (last) or replaces its value |
+| `set_content(id, content, [iostat=], [iomsg=])` | replaces the whole content of a tag with text: its children (with their subtrees) are deleted; a self-closing tag gets an end tag |
+| `set_content(id, value \| values, [fmt=], [iostat=], [iomsg=])` | the same with a number (`I1P`…`I8P`, `R4P`, `R8P`), a logical (`true`/`false`) or a rank-1 list (values separated by a space); reals are written with the shortest text that reads back exactly (StringiFor `shortest`), unless `fmt` formats them |
+| `set_attribute(id, name, value \| values, [fmt=], [iostat=], [iomsg=])` | adds the attribute (last) or replaces its value: text, a number, a logical or a list, as `set_content` |
 | `delete_attribute(id, name, [iostat=], [iomsg=])` | deletes an attribute |
 | `delete_tag([name=], [id=])` | deletes the first tag named `name`, or tag `id`, with its subtree |
 | `free()` | empties the document |

@@ -94,7 +94,8 @@ source positions `pos(3)` (start, content, end), indentation, self-closing flag,
 
 **`xml_file`** holds a flat `tag(:)` array (linearised DOM, not a tree of pointers) and a count `nt`. Key methods:
 `parse()`, `stringify()`, `save()`, `add_tag()`, `delete_tag(name=|id=)`, `content()`; edits by ID: `set_content`
-(children replaced, content raw), `set_attribute` (value escaped), `delete_attribute`, `tags_number`,
+(children replaced; text raw, or typed `value=`/`values=` through `to_text` of `foxy_xml_values`: integers their
+digits, reals StringiFor `shortest`, `fmt=` optional), `set_attribute` (text escaped, or typed as `set_content`), `delete_attribute`, `tags_number`,
 `attributes_number`/`attribute_name` (the read ones also on `xml_index`). Deletions go through `delete_subtree`
 (renumbering, children after parents).
 

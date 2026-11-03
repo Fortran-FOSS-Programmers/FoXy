@@ -9,11 +9,12 @@ module foxy_xml_values
 !< Logical values are the XML Schema ones: `true`, `false`, `1`, `0`.
 use foxy_xml_entities, only : strip_blanks
 use penf
-use stringifor, only : string
+use stringifor, only : shortest, string
 
 implicit none
 private
 public :: report
+public :: to_text
 public :: to_value
 public :: to_values
 public :: XML_BAD_VALUE
@@ -23,6 +24,7 @@ integer(I4P), parameter :: XML_NOT_FOUND = 9002_I4P   !< *iostat* of a missing t
 integer(I4P), parameter :: XML_BAD_VALUE = 9003_I4P   !< *iostat* of a value that is not of the requested type.
 integer(I8P), parameter :: EXCERPT_LEN   = 32_I8P     !< Max length of a token quoted in a message.
 character(*), parameter :: BLANKS        = ' '//achar(9)//achar(10)//achar(13) !< XML blanks: space, tab, new line, CR.
+integer,      parameter :: FORMATTED_LEN = 128      !< Length of the buffer of a value formatted by *fmt*.
 character(*), parameter :: INTEGER_CHARS = '+-0123456789' !< Characters of integer tokens (XML integers).
 
 interface to_value
@@ -34,6 +36,12 @@ interface to_values
    !< Convert a text holding a list of values.
    module procedure to_values_I1P, to_values_I2P, to_values_I4P, to_values_I8P, to_values_R4P, to_values_R8P
 endinterface to_values
+
+interface to_text
+   !< Convert a value, or a list of values, into text.
+   module procedure to_text_I1P, to_text_I2P, to_text_I4P, to_text_I8P, to_text_R4P, to_text_R8P, to_text_logical, &
+                    to_text_I1P_1, to_text_I2P_1, to_text_I4P_1, to_text_I8P_1, to_text_R4P_1, to_text_R8P_1
+endinterface to_text
 
 contains
    pure subroutine report(iostat_, iomsg_, iostat, iomsg, context)
@@ -403,6 +411,364 @@ contains
       endif
    enddo
    endsubroutine to_values_R8P
+
+   pure subroutine to_text_I1P(value, text, fmt, iostat, iomsg)
+   !< Convert an integer(I1P) value into text: its digits, with a sign only if negative, or as formatted by *fmt*.
+   integer(I1P),         intent(in)  :: value     !< Value.
+   character(len=:), allocatable, intent(out) :: text      !< Text.
+   character(*), optional,        intent(in)  :: fmt       !< Format, e.g. `(F6.3)`.
+   integer(I4P),                  intent(out) :: iostat    !< IO status.
+   character(len=:), allocatable, intent(out) :: iomsg     !< IO message.
+   character(len=FORMATTED_LEN)               :: buffer    !< Formatted value.
+   integer                                    :: ios       !< Status of the formatted write.
+
+   iostat = 0
+   iomsg = ''
+   if (present(fmt)) then
+      write(buffer, fmt, iostat=ios) value
+      if (ios/=0) then
+         iostat = XML_BAD_VALUE
+         iomsg = 'cannot write a integer with the format "'//fmt//'"'
+         text = ''
+         return
+      endif
+      text = trim(adjustl(buffer))
+   else
+      text = trim(adjustl(str(value, no_sign=value>=0_I1P)))
+   endif
+   endsubroutine to_text_I1P
+
+   pure subroutine to_text_I2P(value, text, fmt, iostat, iomsg)
+   !< Convert an integer(I2P) value into text: its digits, with a sign only if negative, or as formatted by *fmt*.
+   integer(I2P),         intent(in)  :: value     !< Value.
+   character(len=:), allocatable, intent(out) :: text      !< Text.
+   character(*), optional,        intent(in)  :: fmt       !< Format, e.g. `(F6.3)`.
+   integer(I4P),                  intent(out) :: iostat    !< IO status.
+   character(len=:), allocatable, intent(out) :: iomsg     !< IO message.
+   character(len=FORMATTED_LEN)               :: buffer    !< Formatted value.
+   integer                                    :: ios       !< Status of the formatted write.
+
+   iostat = 0
+   iomsg = ''
+   if (present(fmt)) then
+      write(buffer, fmt, iostat=ios) value
+      if (ios/=0) then
+         iostat = XML_BAD_VALUE
+         iomsg = 'cannot write a integer with the format "'//fmt//'"'
+         text = ''
+         return
+      endif
+      text = trim(adjustl(buffer))
+   else
+      text = trim(adjustl(str(value, no_sign=value>=0_I2P)))
+   endif
+   endsubroutine to_text_I2P
+
+   pure subroutine to_text_I4P(value, text, fmt, iostat, iomsg)
+   !< Convert an integer(I4P) value into text: its digits, with a sign only if negative, or as formatted by *fmt*.
+   integer(I4P),         intent(in)  :: value     !< Value.
+   character(len=:), allocatable, intent(out) :: text      !< Text.
+   character(*), optional,        intent(in)  :: fmt       !< Format, e.g. `(F6.3)`.
+   integer(I4P),                  intent(out) :: iostat    !< IO status.
+   character(len=:), allocatable, intent(out) :: iomsg     !< IO message.
+   character(len=FORMATTED_LEN)               :: buffer    !< Formatted value.
+   integer                                    :: ios       !< Status of the formatted write.
+
+   iostat = 0
+   iomsg = ''
+   if (present(fmt)) then
+      write(buffer, fmt, iostat=ios) value
+      if (ios/=0) then
+         iostat = XML_BAD_VALUE
+         iomsg = 'cannot write a integer with the format "'//fmt//'"'
+         text = ''
+         return
+      endif
+      text = trim(adjustl(buffer))
+   else
+      text = trim(adjustl(str(value, no_sign=value>=0_I4P)))
+   endif
+   endsubroutine to_text_I4P
+
+   pure subroutine to_text_I8P(value, text, fmt, iostat, iomsg)
+   !< Convert an integer(I8P) value into text: its digits, with a sign only if negative, or as formatted by *fmt*.
+   integer(I8P),         intent(in)  :: value     !< Value.
+   character(len=:), allocatable, intent(out) :: text      !< Text.
+   character(*), optional,        intent(in)  :: fmt       !< Format, e.g. `(F6.3)`.
+   integer(I4P),                  intent(out) :: iostat    !< IO status.
+   character(len=:), allocatable, intent(out) :: iomsg     !< IO message.
+   character(len=FORMATTED_LEN)               :: buffer    !< Formatted value.
+   integer                                    :: ios       !< Status of the formatted write.
+
+   iostat = 0
+   iomsg = ''
+   if (present(fmt)) then
+      write(buffer, fmt, iostat=ios) value
+      if (ios/=0) then
+         iostat = XML_BAD_VALUE
+         iomsg = 'cannot write a integer with the format "'//fmt//'"'
+         text = ''
+         return
+      endif
+      text = trim(adjustl(buffer))
+   else
+      text = trim(adjustl(str(value, no_sign=value>=0_I8P)))
+   endif
+   endsubroutine to_text_I8P
+
+   pure subroutine to_text_R4P(value, text, fmt, iostat, iomsg)
+   !< Convert a real(R4P) value into text: the shortest one that reads back exactly (StringiFor `shortest`), or as
+   !< formatted by *fmt*.
+   real(R4P),            intent(in)  :: value     !< Value.
+   character(len=:), allocatable, intent(out) :: text      !< Text.
+   character(*), optional,        intent(in)  :: fmt       !< Format, e.g. `(F6.3)`.
+   integer(I4P),                  intent(out) :: iostat    !< IO status.
+   character(len=:), allocatable, intent(out) :: iomsg     !< IO message.
+   character(len=FORMATTED_LEN)               :: buffer    !< Formatted value.
+   type(string)                               :: as_string !< Shortest text, as a string.
+   integer                                    :: ios       !< Status of the formatted write.
+
+   iostat = 0
+   iomsg = ''
+   if (present(fmt)) then
+      write(buffer, fmt, iostat=ios) value
+      if (ios/=0) then
+         iostat = XML_BAD_VALUE
+         iomsg = 'cannot write a real with the format "'//fmt//'"'
+         text = ''
+         return
+      endif
+      text = trim(adjustl(buffer))
+   else
+      as_string = shortest(value)
+      text = as_string%chars()
+   endif
+   endsubroutine to_text_R4P
+
+   pure subroutine to_text_R8P(value, text, fmt, iostat, iomsg)
+   !< Convert a real(R8P) value into text: the shortest one that reads back exactly (StringiFor `shortest`), or as
+   !< formatted by *fmt*.
+   real(R8P),            intent(in)  :: value     !< Value.
+   character(len=:), allocatable, intent(out) :: text      !< Text.
+   character(*), optional,        intent(in)  :: fmt       !< Format, e.g. `(F6.3)`.
+   integer(I4P),                  intent(out) :: iostat    !< IO status.
+   character(len=:), allocatable, intent(out) :: iomsg     !< IO message.
+   character(len=FORMATTED_LEN)               :: buffer    !< Formatted value.
+   type(string)                               :: as_string !< Shortest text, as a string.
+   integer                                    :: ios       !< Status of the formatted write.
+
+   iostat = 0
+   iomsg = ''
+   if (present(fmt)) then
+      write(buffer, fmt, iostat=ios) value
+      if (ios/=0) then
+         iostat = XML_BAD_VALUE
+         iomsg = 'cannot write a real with the format "'//fmt//'"'
+         text = ''
+         return
+      endif
+      text = trim(adjustl(buffer))
+   else
+      as_string = shortest(value)
+      text = as_string%chars()
+   endif
+   endsubroutine to_text_R8P
+
+   pure subroutine to_text_logical(value, text, iostat, iomsg)
+   !< Convert a logical value into text: `true` or `false`.
+   logical,                       intent(in)  :: value  !< Value.
+   character(len=:), allocatable, intent(out) :: text   !< Text.
+   integer(I4P),                  intent(out) :: iostat !< IO status.
+   character(len=:), allocatable, intent(out) :: iomsg  !< IO message.
+
+   iostat = 0
+   iomsg = ''
+   if (value) then
+      text = 'true'
+   else
+      text = 'false'
+   endif
+   endsubroutine to_text_logical
+
+   pure subroutine to_text_I1P_1(value, text, fmt, iostat, iomsg)
+   !< Convert a list of integer(I1P) values into text, separated by one space (each as *to_text* of a scalar).
+   integer(I1P),         intent(in)  :: value(:) !< Values.
+   character(len=:), allocatable, intent(out) :: text     !< Text.
+   character(*), optional,        intent(in)  :: fmt      !< Format of each value, e.g. `(F6.3)`.
+   integer(I4P),                  intent(out) :: iostat   !< IO status.
+   character(len=:), allocatable, intent(out) :: iomsg    !< IO message.
+   character(len=:), allocatable              :: item     !< Text of one value.
+   character(len=:), allocatable              :: buffer   !< Text being built, grown geometrically.
+   integer(I8P)                               :: n        !< Used length of the buffer.
+   integer(I8P)                               :: v        !< Counter.
+
+   iostat = 0
+   iomsg = ''
+   allocate(character(len=max(1_I8P, 8_I8P*size(value, kind=I8P))) :: buffer)
+   n = 0
+   do v=1, size(value, kind=I8P)
+      call to_text(value=value(v), text=item, fmt=fmt, iostat=iostat, iomsg=iomsg)
+      if (iostat/=0) then
+         text = ''
+         return
+      endif
+      if (v>1) item = ' '//item
+      if (n+len(item, kind=I8P)>len(buffer, kind=I8P)) buffer = buffer//repeat(' ', max(len(buffer, kind=I8P), len(item, kind=I8P)))
+      buffer(n+1:n+len(item, kind=I8P)) = item
+      n = n + len(item, kind=I8P)
+   enddo
+   text = buffer(1:n)
+   endsubroutine to_text_I1P_1
+
+   pure subroutine to_text_I2P_1(value, text, fmt, iostat, iomsg)
+   !< Convert a list of integer(I2P) values into text, separated by one space (each as *to_text* of a scalar).
+   integer(I2P),         intent(in)  :: value(:) !< Values.
+   character(len=:), allocatable, intent(out) :: text     !< Text.
+   character(*), optional,        intent(in)  :: fmt      !< Format of each value, e.g. `(F6.3)`.
+   integer(I4P),                  intent(out) :: iostat   !< IO status.
+   character(len=:), allocatable, intent(out) :: iomsg    !< IO message.
+   character(len=:), allocatable              :: item     !< Text of one value.
+   character(len=:), allocatable              :: buffer   !< Text being built, grown geometrically.
+   integer(I8P)                               :: n        !< Used length of the buffer.
+   integer(I8P)                               :: v        !< Counter.
+
+   iostat = 0
+   iomsg = ''
+   allocate(character(len=max(1_I8P, 8_I8P*size(value, kind=I8P))) :: buffer)
+   n = 0
+   do v=1, size(value, kind=I8P)
+      call to_text(value=value(v), text=item, fmt=fmt, iostat=iostat, iomsg=iomsg)
+      if (iostat/=0) then
+         text = ''
+         return
+      endif
+      if (v>1) item = ' '//item
+      if (n+len(item, kind=I8P)>len(buffer, kind=I8P)) buffer = buffer//repeat(' ', max(len(buffer, kind=I8P), len(item, kind=I8P)))
+      buffer(n+1:n+len(item, kind=I8P)) = item
+      n = n + len(item, kind=I8P)
+   enddo
+   text = buffer(1:n)
+   endsubroutine to_text_I2P_1
+
+   pure subroutine to_text_I4P_1(value, text, fmt, iostat, iomsg)
+   !< Convert a list of integer(I4P) values into text, separated by one space (each as *to_text* of a scalar).
+   integer(I4P),         intent(in)  :: value(:) !< Values.
+   character(len=:), allocatable, intent(out) :: text     !< Text.
+   character(*), optional,        intent(in)  :: fmt      !< Format of each value, e.g. `(F6.3)`.
+   integer(I4P),                  intent(out) :: iostat   !< IO status.
+   character(len=:), allocatable, intent(out) :: iomsg    !< IO message.
+   character(len=:), allocatable              :: item     !< Text of one value.
+   character(len=:), allocatable              :: buffer   !< Text being built, grown geometrically.
+   integer(I8P)                               :: n        !< Used length of the buffer.
+   integer(I8P)                               :: v        !< Counter.
+
+   iostat = 0
+   iomsg = ''
+   allocate(character(len=max(1_I8P, 8_I8P*size(value, kind=I8P))) :: buffer)
+   n = 0
+   do v=1, size(value, kind=I8P)
+      call to_text(value=value(v), text=item, fmt=fmt, iostat=iostat, iomsg=iomsg)
+      if (iostat/=0) then
+         text = ''
+         return
+      endif
+      if (v>1) item = ' '//item
+      if (n+len(item, kind=I8P)>len(buffer, kind=I8P)) buffer = buffer//repeat(' ', max(len(buffer, kind=I8P), len(item, kind=I8P)))
+      buffer(n+1:n+len(item, kind=I8P)) = item
+      n = n + len(item, kind=I8P)
+   enddo
+   text = buffer(1:n)
+   endsubroutine to_text_I4P_1
+
+   pure subroutine to_text_I8P_1(value, text, fmt, iostat, iomsg)
+   !< Convert a list of integer(I8P) values into text, separated by one space (each as *to_text* of a scalar).
+   integer(I8P),         intent(in)  :: value(:) !< Values.
+   character(len=:), allocatable, intent(out) :: text     !< Text.
+   character(*), optional,        intent(in)  :: fmt      !< Format of each value, e.g. `(F6.3)`.
+   integer(I4P),                  intent(out) :: iostat   !< IO status.
+   character(len=:), allocatable, intent(out) :: iomsg    !< IO message.
+   character(len=:), allocatable              :: item     !< Text of one value.
+   character(len=:), allocatable              :: buffer   !< Text being built, grown geometrically.
+   integer(I8P)                               :: n        !< Used length of the buffer.
+   integer(I8P)                               :: v        !< Counter.
+
+   iostat = 0
+   iomsg = ''
+   allocate(character(len=max(1_I8P, 8_I8P*size(value, kind=I8P))) :: buffer)
+   n = 0
+   do v=1, size(value, kind=I8P)
+      call to_text(value=value(v), text=item, fmt=fmt, iostat=iostat, iomsg=iomsg)
+      if (iostat/=0) then
+         text = ''
+         return
+      endif
+      if (v>1) item = ' '//item
+      if (n+len(item, kind=I8P)>len(buffer, kind=I8P)) buffer = buffer//repeat(' ', max(len(buffer, kind=I8P), len(item, kind=I8P)))
+      buffer(n+1:n+len(item, kind=I8P)) = item
+      n = n + len(item, kind=I8P)
+   enddo
+   text = buffer(1:n)
+   endsubroutine to_text_I8P_1
+
+   pure subroutine to_text_R4P_1(value, text, fmt, iostat, iomsg)
+   !< Convert a list of real(R4P) values into text, separated by one space (each as *to_text* of a scalar).
+   real(R4P),            intent(in)  :: value(:) !< Values.
+   character(len=:), allocatable, intent(out) :: text     !< Text.
+   character(*), optional,        intent(in)  :: fmt      !< Format of each value, e.g. `(F6.3)`.
+   integer(I4P),                  intent(out) :: iostat   !< IO status.
+   character(len=:), allocatable, intent(out) :: iomsg    !< IO message.
+   character(len=:), allocatable              :: item     !< Text of one value.
+   character(len=:), allocatable              :: buffer   !< Text being built, grown geometrically.
+   integer(I8P)                               :: n        !< Used length of the buffer.
+   integer(I8P)                               :: v        !< Counter.
+
+   iostat = 0
+   iomsg = ''
+   allocate(character(len=max(1_I8P, 8_I8P*size(value, kind=I8P))) :: buffer)
+   n = 0
+   do v=1, size(value, kind=I8P)
+      call to_text(value=value(v), text=item, fmt=fmt, iostat=iostat, iomsg=iomsg)
+      if (iostat/=0) then
+         text = ''
+         return
+      endif
+      if (v>1) item = ' '//item
+      if (n+len(item, kind=I8P)>len(buffer, kind=I8P)) buffer = buffer//repeat(' ', max(len(buffer, kind=I8P), len(item, kind=I8P)))
+      buffer(n+1:n+len(item, kind=I8P)) = item
+      n = n + len(item, kind=I8P)
+   enddo
+   text = buffer(1:n)
+   endsubroutine to_text_R4P_1
+
+   pure subroutine to_text_R8P_1(value, text, fmt, iostat, iomsg)
+   !< Convert a list of real(R8P) values into text, separated by one space (each as *to_text* of a scalar).
+   real(R8P),            intent(in)  :: value(:) !< Values.
+   character(len=:), allocatable, intent(out) :: text     !< Text.
+   character(*), optional,        intent(in)  :: fmt      !< Format of each value, e.g. `(F6.3)`.
+   integer(I4P),                  intent(out) :: iostat   !< IO status.
+   character(len=:), allocatable, intent(out) :: iomsg    !< IO message.
+   character(len=:), allocatable              :: item     !< Text of one value.
+   character(len=:), allocatable              :: buffer   !< Text being built, grown geometrically.
+   integer(I8P)                               :: n        !< Used length of the buffer.
+   integer(I8P)                               :: v        !< Counter.
+
+   iostat = 0
+   iomsg = ''
+   allocate(character(len=max(1_I8P, 8_I8P*size(value, kind=I8P))) :: buffer)
+   n = 0
+   do v=1, size(value, kind=I8P)
+      call to_text(value=value(v), text=item, fmt=fmt, iostat=iostat, iomsg=iomsg)
+      if (iostat/=0) then
+         text = ''
+         return
+      endif
+      if (v>1) item = ' '//item
+      if (n+len(item, kind=I8P)>len(buffer, kind=I8P)) buffer = buffer//repeat(' ', max(len(buffer, kind=I8P), len(item, kind=I8P)))
+      buffer(n+1:n+len(item, kind=I8P)) = item
+      n = n + len(item, kind=I8P)
+   enddo
+   text = buffer(1:n)
+   endsubroutine to_text_R8P_1
 
    ! private procedures
    pure function excerpt(token) result(quoted)

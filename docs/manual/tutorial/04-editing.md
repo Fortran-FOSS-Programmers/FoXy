@@ -5,8 +5,10 @@ For a restart, `solver` changes its case: a longer run with a finer time step, n
 
 <<< @/examples/snippets/solver_4.f90
 
-- Every edit takes a tag ID. `set_content(id, content)` replaces the whole content of a tag (its children included);
-  the content is stored as it is, so escape text that comes from users with `xml_escape` (see [chapter 8](./08-robust)).
+- Every edit takes a tag ID. `set_content(id, value=)` replaces the whole content of a tag (its children included)
+  with a number, a logical or a list (`values=`): integers with their digits, reals with the shortest text that reads
+  back exactly (`0.5`, not `5.000000000000000E-001`), or as `fmt=` formats them. `set_content(id, content=)` takes
+  text, stored as it is: escape text that comes from users with `xml_escape` (see [chapter 8](./08-robust)).
 - `set_attribute(id, name, value)` adds or replaces an attribute (its value escaped for you); `delete_attribute`
   removes one.
 - `delete_tag(name=)` or `delete_tag(id=)` removes a tag with its subtree. The following tags are renumbered: find IDs
