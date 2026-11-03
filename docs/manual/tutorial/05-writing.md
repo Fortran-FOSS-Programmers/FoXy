@@ -9,8 +9,9 @@ element by element.
   `string()`).
 - `start(name)` opens an element; its start tag stays open for `attribute` calls until its first content. Attributes
   take characters (escaped), integers, reals (with an optional `fmt`) and logicals.
-- `text` writes escaped character data, `raw` writes characters as they are (numbers, base64) and can be called many
-  times for one element; `comment`, `cdata` and `pi` write the other markup.
+- `text` writes escaped character data, or a number, a logical or a list of numbers (here with `fmt=`; without it, reals
+  get the shortest text that reads back exactly); `raw` writes characters as they are (base64, pre-formatted data) and
+  can be called many times for one element; `comment`, `cdata` and `pi` write the other markup.
 - `end(name)` closes the innermost element (the name is checked), `close` closes all of them and the file.
 - Errors are sticky: the first one is kept, the following calls do nothing, `close` returns it. A misuse (an invalid
   name, a duplicate attribute, `end` with nothing open) is `XML_MALFORMED`; without `iostat`, `close` stops the program

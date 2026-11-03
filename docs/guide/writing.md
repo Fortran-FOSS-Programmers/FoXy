@@ -14,8 +14,9 @@ of the open elements, so a document may be any size.
 | `open([filename=], [unit=], [indent=])` | a file (created or replaced, closed by `close`), a unit open for stream unformatted access (left open), or memory if neither; `indent` spaces per level (default 2, `0`: no layout) |
 | `declaration([version=], [encoding=])` | `<?xml version="1.0"?>`, only as the first thing |
 | `start(name)` | opens an element; its start tag stays pending for attributes until its first content |
-| `attribute(name, value, [fmt=])` | character (escaped, tab, new line and CR as references, so it reads back exactly), integer (`I1P`…`I8P`), real (`R4P`, `R8P`) or logical (`true`/`false`) value; `fmt` formats numbers |
+| `attribute(name, value \| values, [fmt=])` | character (escaped, tab, new line and CR as references, so it reads back exactly), integer (`I1P`…`I8P`), real (`R4P`, `R8P`), logical (`true`/`false`) value, or a rank-1 list of numbers (separated by a space); reals are written with the shortest text that reads back exactly (`0.1`), unless `fmt` formats them |
 | `text(string)` | escaped character data; the element is written inline (`<a>text</a>`) |
+| `text(value \| values, [fmt=])` | a number, a logical or a rank-1 list of numbers, as `attribute` |
 | `raw(string, [is_block=])` | characters as they are (numbers, base64), in pieces with many calls; `is_block=.true.` on their own indented line |
 | `cdata(string)`, `comment(string)`, `pi(target, [string])` | the other markup (`]]>` split across CDATA sections; no `--` in a comment) |
 | `end([name])` | closes the innermost element (self-closing if empty); `name` is checked |

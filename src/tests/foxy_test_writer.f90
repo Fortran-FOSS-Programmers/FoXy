@@ -37,7 +37,7 @@ integer                       :: unit               !< File unit.
 integer                       :: tmp_dir_len        !< Length of the TMPDIR environment variable.
 integer                       :: status             !< Status of the environment variable query.
 integer                       :: p                  !< Counter.
-logical                       :: test_passed(19)    !< List of passed tests.
+logical                       :: test_passed(20)    !< List of passed tests.
 
 test_passed = .false.
 
@@ -205,6 +205,35 @@ call xfile%parse(string=output, iostat=iostat)
 test_passed(19) = output=='<a>x]]&gt;y</a>'.and.iostat==0.and.xfile%content('a')=='x]]>y'.and. &
                   xml_escape(']]>a]]>')==']]&gt;a]]&gt;'.and.xml_escape('a>b')=='a&gt;b'
 print "(A,L1)", 'Is the output well-formed (names, duplicate attributes, ]]>)? ', all(test_passed(16:19))
+
+! typed writing: numbers, logicals and lists, reals as the shortest text that reads back, fmt= honoured
+call writer%open(indent=0_I4P)
+call writer%start('r')
+call writer%attribute('dt', 0.1_R8P)
+call writer%attribute('ext', [0_I4P, 10_I4P, -3_I4P])
+call writer%attribute('box', [0.5_R4P, 1._R4P], fmt='(F4.2)')
+call writer%start('a')
+call writer%text(1._R8P/3._R8P)
+call writer%end('a')
+call writer%start('b')
+call writer%text([1.5_R8P, -0._R8P, 2.e-7_R8P])
+call writer%end('b')
+call writer%start('c')
+call writer%text(.true.)
+call writer%end('c')
+call writer%start('d')
+call writer%text(42_I8P, fmt='(I5.5)')
+call writer%end('d')
+call writer%close(iostat=iostat)
+test_passed(20) = iostat==0.and.writer%string()=='<r dt="0.1" ext="0 10 -3" box="0.50 1.00"><a>0.3333333333333333</a>'// &
+                  '<b>1.5 -0.0 2e-07</b><c>true</c><d>00042</d></r>'
+call writer%open()
+call writer%start('r')
+call writer%text(1._R8P, fmt='(I3)', iostat=iostat)
+test_passed(20) = test_passed(20).and.iostat/=0
+call writer%close(iostat=iostat)
+if (.not.test_passed(20)) print "(A)", writer%string()
+print "(A,L1)", 'Are numbers, logicals and lists written? ', test_passed(20)
 
 open(newunit=unit, file=filename, status='OLD')
 close(unit, status='DELETE')

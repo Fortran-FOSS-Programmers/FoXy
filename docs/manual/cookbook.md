@@ -191,6 +191,16 @@ Contents are stored as given (they may hold markup): escape text that is not mar
 
 `fmt=` formats a number attribute; without it, integers have no sign when positive and reals full precision.
 
+### Write numbers, logicals and lists
+
+<<< @/examples/snippets/writer_numbers.f90
+
+<<< @/examples/output/writer_numbers.ansi{ansi}
+
+Without `fmt=`, integers are written with their digits and reals with the shortest text that reads back exactly
+(`0.1`, `0.3333333333333333`); lists are separated by one space. The DOM does the same: `set_content(id, value=)`,
+`set_attribute(id, name, values=)`.
+
 ### Write a document to memory
 
 <<< @/examples/snippets/writer_memory.f90

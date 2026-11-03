@@ -83,7 +83,7 @@ foxy_xml_tag.F90  ← xml_tag type: single element (note .F90 = preprocessed)
 foxy_xml_entities.f90 ← xml_escape/xml_unescape (StringiFor escape_xml/unescape_xml, sliced > 1 GiB); text_value/without_markup/strip_blanks
 foxy_xml_tree.f90 ← tree queries (find, find_all, children, attribute, namespace, build_children) over a tags array
 foxy_xml_tokenizer.f90 ← resumable tokenizer (xml_tokenizer%feed) driving an abstract xml_builder
-foxy_xml_writer.f90 ← xml_writer type: streaming writer to a file, a unit or memory (sticky errors)
+foxy_xml_writer.f90 ← xml_writer type: streaming writer to a file, a unit or memory (sticky errors; typed text/attributes via to_text)
 foxy_xml_values.f90 ← typed values: text to numbers/logicals (get_attribute/get_content), XML_NOT_FOUND, XML_BAD_VALUE
 ```
 

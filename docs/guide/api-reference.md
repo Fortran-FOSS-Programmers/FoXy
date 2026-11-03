@@ -169,7 +169,8 @@ a duplicate attribute is a misuse, `]]>` in text and attribute values is written
 | `w%open([filename=], [unit=], [indent=], [iostat=], [iomsg=])` | Open on a file (created/replaced, closed by `close`), on a unit open for stream unformatted access (left open), or on memory if neither is passed; `indent` spaces per level (default 2, `0` for compact output) |
 | `w%declaration([version=], [encoding=])` | Write `<?xml version="1.0"?>`; only as the first thing |
 | `w%start(name)` | Open an element; its start tag stays pending for attributes until its first content |
-| `w%attribute(name, value, [fmt=])` | Add an attribute: `value` character (escaped, tab, new line and CR as references), integer (`I1P`…`I8P`), real (`R4P`, `R8P`) or logical (`true`/`false`); `fmt` formats numbers |
+| `w%attribute(name, value, [fmt=])` | Add an attribute: `value` character (escaped, tab, new line and CR as references), integer (`I1P`…`I8P`), real (`R4P`, `R8P`), logical (`true`/`false`) or a rank-1 list of numbers; reals are written with the shortest text that reads back exactly unless `fmt` formats them |
+| `w%text(value \| values, [fmt=])` | A number, a logical or a rank-1 list of numbers (separated by a space), as `attribute` |
 | `w%text(string)` | Escaped character data; the element is written inline |
 | `w%raw(string, [is_block=])` | Characters as they are (data, base64); in pieces with many calls; `is_block=.true.` on its own indented line |
 | `w%cdata(string)`, `w%comment(string)`, `w%pi(target, [string])` | CDATA section (`]]>` split), comment (no `--`), processing instruction |

@@ -18,6 +18,7 @@ module foxy_xml_writer
 !< Only well-formed XML is written: element and attribute names are checked (XML names), a duplicate attribute is an
 !< error, `]]>` is escaped in text and attribute values.
 use foxy_xml_entities, only : is_name, xml_escape
+use foxy_xml_values, only : to_text
 use foxy_xml_file, only : XML_MALFORMED
 use penf
 
@@ -63,7 +64,13 @@ type :: xml_writer
                                attribute_i8p,       &
                                attribute_r4p,       &
                                attribute_r8p,       &
-                               attribute_logical      !< Add an attribute to the pending start tag.
+                               attribute_logical,   &
+                               attribute_i1p_1,     &
+                               attribute_i2p_1,     &
+                               attribute_i4p_1,     &
+                               attribute_i8p_1,     &
+                               attribute_r4p_1,     &
+                               attribute_r8p_1      !< Add an attribute to the pending start tag.
       procedure, pass(self) :: cdata                  !< Write a CDATA section.
       procedure, pass(self) :: close                  !< Close all the open elements and the writer.
       procedure, pass(self) :: comment                !< Write a comment.
@@ -75,7 +82,21 @@ type :: xml_writer
       procedure, pass(self) :: raw                    !< Write characters as they are.
       procedure, pass(self) :: start                  !< Open an element.
       procedure, pass(self) :: string                 !< Return the memory target content.
-      procedure, pass(self) :: text                   !< Write escaped character data.
+      generic               :: text =>         &
+                               text_character, &
+                               text_i1p,       &
+                               text_i2p,       &
+                               text_i4p,       &
+                               text_i8p,       &
+                               text_r4p,       &
+                               text_r8p,       &
+                               text_logical,   &
+                               text_i1p_1,     &
+                               text_i2p_1,     &
+                               text_i4p_1,     &
+                               text_i8p_1,     &
+                               text_r4p_1,     &
+                               text_r8p_1 !< Write character data (escaped), a number, a logical or a list.
       ! private methods
       procedure, pass(self), private :: attribute_character !< Add a character attribute.
       procedure, pass(self), private :: attribute_i1p       !< Add an integer attribute.
@@ -85,6 +106,26 @@ type :: xml_writer
       procedure, pass(self), private :: attribute_r4p       !< Add a real attribute.
       procedure, pass(self), private :: attribute_r8p       !< Add a real attribute.
       procedure, pass(self), private :: attribute_logical   !< Add a logical attribute.
+      procedure, pass(self), private :: attribute_i1p_1     !< Add a list attribute.
+      procedure, pass(self), private :: attribute_i2p_1     !< Add a list attribute.
+      procedure, pass(self), private :: attribute_i4p_1     !< Add a list attribute.
+      procedure, pass(self), private :: attribute_i8p_1     !< Add a list attribute.
+      procedure, pass(self), private :: attribute_r4p_1     !< Add a list attribute.
+      procedure, pass(self), private :: attribute_r8p_1     !< Add a list attribute.
+      procedure, pass(self), private :: text_character      !< Write escaped character data.
+      procedure, pass(self), private :: text_i1p            !< Write a number.
+      procedure, pass(self), private :: text_i2p            !< Write a number.
+      procedure, pass(self), private :: text_i4p            !< Write a number.
+      procedure, pass(self), private :: text_i8p            !< Write a number.
+      procedure, pass(self), private :: text_r4p            !< Write a number.
+      procedure, pass(self), private :: text_r8p            !< Write a number.
+      procedure, pass(self), private :: text_logical        !< Write a logical.
+      procedure, pass(self), private :: text_i1p_1          !< Write a list of numbers.
+      procedure, pass(self), private :: text_i2p_1          !< Write a list of numbers.
+      procedure, pass(self), private :: text_i4p_1          !< Write a list of numbers.
+      procedure, pass(self), private :: text_i8p_1          !< Write a list of numbers.
+      procedure, pass(self), private :: text_r4p_1          !< Write a list of numbers.
+      procedure, pass(self), private :: text_r8p_1          !< Write a list of numbers.
       procedure, pass(self), private :: fail                !< Record the first error.
       procedure, pass(self), private :: flush_pending       !< Complete the pending start tag.
       procedure, pass(self), private :: is_writable         !< Check that the writer is open and without errors.
@@ -360,7 +401,7 @@ contains
    if (self%is_memory.and.allocated(self%buffer)) content = self%buffer(1:self%n)
    endfunction string
 
-   subroutine text(self, string, iostat, iomsg)
+   subroutine text_character(self, string, iostat, iomsg)
    !< Write character data, escaped (`&`, `<`, `>`, `"`, `'`); the element is written inline.
    class(xml_writer),      intent(inout) :: self   !< XML writer.
    character(*),           intent(in)    :: string !< Character data.
@@ -369,7 +410,7 @@ contains
 
    if (self%start_content(what='text')) call self%put(xml_escape(string))
    call self%report(iostat=iostat, iomsg=iomsg)
-   endsubroutine text
+   endsubroutine text_character
 
    ! private methods
    subroutine attribute_character(self, name, value, iostat, iomsg)
@@ -401,111 +442,105 @@ contains
    endsubroutine attribute_character
 
    subroutine attribute_i1p(self, name, value, fmt, iostat, iomsg)
-   !< Add an integer attribute (no sign for positive values, or as formatted by *fmt*).
+   !< Add a integer attribute: integers with their digits (a sign only if negative), or as formatted by *fmt*.
    class(xml_writer),      intent(inout) :: self   !< XML writer.
    character(*),           intent(in)    :: name   !< Attribute name.
-   integer(I1P),           intent(in)    :: value  !< Attribute value.
-   character(*), optional, intent(in)    :: fmt    !< Format, e.g. `(I3.3)`.
+   integer(I1P),   intent(in)    :: value  !< Attribute value.
+   character(*), optional, intent(in)    :: fmt    !< Format, e.g. `(F6.3)`.
    integer(I4P), optional, intent(out)   :: iostat !< IO status.
    character(*), optional, intent(inout) :: iomsg  !< IO message.
-   character(len=64)                     :: chars  !< Formatted value.
+   character(len=:), allocatable         :: text   !< Value as text.
+   integer(I4P)                          :: status !< Status of the conversion.
+   character(len=:), allocatable         :: msg    !< Message of the conversion.
 
-   if (present(fmt)) then
-      write(chars, fmt) value
-   else
-      chars = str(value, no_sign=value>=0) ! no_sign drops the minus too
-   endif
-   call self%attribute_character(name=name, value=trim(adjustl(chars)), iostat=iostat, iomsg=iomsg)
+   call to_text(value=value, text=text, fmt=fmt, iostat=status, iomsg=msg)
+   if (status/=0) call self%fail(status, msg)
+   call self%attribute_character(name=name, value=text, iostat=iostat, iomsg=iomsg)
    endsubroutine attribute_i1p
 
    subroutine attribute_i2p(self, name, value, fmt, iostat, iomsg)
-   !< Add an integer attribute (no sign for positive values, or as formatted by *fmt*).
+   !< Add a integer attribute: integers with their digits (a sign only if negative), or as formatted by *fmt*.
    class(xml_writer),      intent(inout) :: self   !< XML writer.
    character(*),           intent(in)    :: name   !< Attribute name.
-   integer(I2P),           intent(in)    :: value  !< Attribute value.
-   character(*), optional, intent(in)    :: fmt    !< Format, e.g. `(I3.3)`.
+   integer(I2P),   intent(in)    :: value  !< Attribute value.
+   character(*), optional, intent(in)    :: fmt    !< Format, e.g. `(F6.3)`.
    integer(I4P), optional, intent(out)   :: iostat !< IO status.
    character(*), optional, intent(inout) :: iomsg  !< IO message.
-   character(len=64)                     :: chars  !< Formatted value.
+   character(len=:), allocatable         :: text   !< Value as text.
+   integer(I4P)                          :: status !< Status of the conversion.
+   character(len=:), allocatable         :: msg    !< Message of the conversion.
 
-   if (present(fmt)) then
-      write(chars, fmt) value
-   else
-      chars = str(value, no_sign=value>=0) ! no_sign drops the minus too
-   endif
-   call self%attribute_character(name=name, value=trim(adjustl(chars)), iostat=iostat, iomsg=iomsg)
+   call to_text(value=value, text=text, fmt=fmt, iostat=status, iomsg=msg)
+   if (status/=0) call self%fail(status, msg)
+   call self%attribute_character(name=name, value=text, iostat=iostat, iomsg=iomsg)
    endsubroutine attribute_i2p
 
    subroutine attribute_i4p(self, name, value, fmt, iostat, iomsg)
-   !< Add an integer attribute (no sign for positive values, or as formatted by *fmt*).
+   !< Add a integer attribute: integers with their digits (a sign only if negative), or as formatted by *fmt*.
    class(xml_writer),      intent(inout) :: self   !< XML writer.
    character(*),           intent(in)    :: name   !< Attribute name.
-   integer(I4P),           intent(in)    :: value  !< Attribute value.
-   character(*), optional, intent(in)    :: fmt    !< Format, e.g. `(I3.3)`.
+   integer(I4P),   intent(in)    :: value  !< Attribute value.
+   character(*), optional, intent(in)    :: fmt    !< Format, e.g. `(F6.3)`.
    integer(I4P), optional, intent(out)   :: iostat !< IO status.
    character(*), optional, intent(inout) :: iomsg  !< IO message.
-   character(len=64)                     :: chars  !< Formatted value.
+   character(len=:), allocatable         :: text   !< Value as text.
+   integer(I4P)                          :: status !< Status of the conversion.
+   character(len=:), allocatable         :: msg    !< Message of the conversion.
 
-   if (present(fmt)) then
-      write(chars, fmt) value
-   else
-      chars = str(value, no_sign=value>=0) ! no_sign drops the minus too
-   endif
-   call self%attribute_character(name=name, value=trim(adjustl(chars)), iostat=iostat, iomsg=iomsg)
+   call to_text(value=value, text=text, fmt=fmt, iostat=status, iomsg=msg)
+   if (status/=0) call self%fail(status, msg)
+   call self%attribute_character(name=name, value=text, iostat=iostat, iomsg=iomsg)
    endsubroutine attribute_i4p
 
    subroutine attribute_i8p(self, name, value, fmt, iostat, iomsg)
-   !< Add an integer attribute (no sign for positive values, or as formatted by *fmt*).
+   !< Add a integer attribute: integers with their digits (a sign only if negative), or as formatted by *fmt*.
    class(xml_writer),      intent(inout) :: self   !< XML writer.
    character(*),           intent(in)    :: name   !< Attribute name.
-   integer(I8P),           intent(in)    :: value  !< Attribute value.
-   character(*), optional, intent(in)    :: fmt    !< Format, e.g. `(I3.3)`.
+   integer(I8P),   intent(in)    :: value  !< Attribute value.
+   character(*), optional, intent(in)    :: fmt    !< Format, e.g. `(F6.3)`.
    integer(I4P), optional, intent(out)   :: iostat !< IO status.
    character(*), optional, intent(inout) :: iomsg  !< IO message.
-   character(len=64)                     :: chars  !< Formatted value.
+   character(len=:), allocatable         :: text   !< Value as text.
+   integer(I4P)                          :: status !< Status of the conversion.
+   character(len=:), allocatable         :: msg    !< Message of the conversion.
 
-   if (present(fmt)) then
-      write(chars, fmt) value
-   else
-      chars = str(value, no_sign=value>=0) ! no_sign drops the minus too
-   endif
-   call self%attribute_character(name=name, value=trim(adjustl(chars)), iostat=iostat, iomsg=iomsg)
+   call to_text(value=value, text=text, fmt=fmt, iostat=status, iomsg=msg)
+   if (status/=0) call self%fail(status, msg)
+   call self%attribute_character(name=name, value=text, iostat=iostat, iomsg=iomsg)
    endsubroutine attribute_i8p
 
    subroutine attribute_r4p(self, name, value, fmt, iostat, iomsg)
-   !< Add a real attribute (full precision, exponent form, or as formatted by *fmt*).
+   !< Add a real attribute: the shortest text that reads back exactly (StringiFor `shortest`), or as formatted by *fmt*.
    class(xml_writer),      intent(inout) :: self   !< XML writer.
    character(*),           intent(in)    :: name   !< Attribute name.
-   real(R4P),              intent(in)    :: value  !< Attribute value.
+   real(R4P),      intent(in)    :: value  !< Attribute value.
    character(*), optional, intent(in)    :: fmt    !< Format, e.g. `(F6.3)`.
    integer(I4P), optional, intent(out)   :: iostat !< IO status.
    character(*), optional, intent(inout) :: iomsg  !< IO message.
-   character(len=64)                     :: chars  !< Formatted value.
+   character(len=:), allocatable         :: text   !< Value as text.
+   integer(I4P)                          :: status !< Status of the conversion.
+   character(len=:), allocatable         :: msg    !< Message of the conversion.
 
-   if (present(fmt)) then
-      write(chars, fmt) value
-   else
-      chars = str(value, no_sign=value>=0) ! no_sign drops the minus too
-   endif
-   call self%attribute_character(name=name, value=trim(adjustl(chars)), iostat=iostat, iomsg=iomsg)
+   call to_text(value=value, text=text, fmt=fmt, iostat=status, iomsg=msg)
+   if (status/=0) call self%fail(status, msg)
+   call self%attribute_character(name=name, value=text, iostat=iostat, iomsg=iomsg)
    endsubroutine attribute_r4p
 
    subroutine attribute_r8p(self, name, value, fmt, iostat, iomsg)
-   !< Add a real attribute (full precision, exponent form, or as formatted by *fmt*).
+   !< Add a real attribute: the shortest text that reads back exactly (StringiFor `shortest`), or as formatted by *fmt*.
    class(xml_writer),      intent(inout) :: self   !< XML writer.
    character(*),           intent(in)    :: name   !< Attribute name.
-   real(R8P),              intent(in)    :: value  !< Attribute value.
+   real(R8P),      intent(in)    :: value  !< Attribute value.
    character(*), optional, intent(in)    :: fmt    !< Format, e.g. `(F6.3)`.
    integer(I4P), optional, intent(out)   :: iostat !< IO status.
    character(*), optional, intent(inout) :: iomsg  !< IO message.
-   character(len=64)                     :: chars  !< Formatted value.
+   character(len=:), allocatable         :: text   !< Value as text.
+   integer(I4P)                          :: status !< Status of the conversion.
+   character(len=:), allocatable         :: msg    !< Message of the conversion.
 
-   if (present(fmt)) then
-      write(chars, fmt) value
-   else
-      chars = str(value, no_sign=value>=0) ! no_sign drops the minus too
-   endif
-   call self%attribute_character(name=name, value=trim(adjustl(chars)), iostat=iostat, iomsg=iomsg)
+   call to_text(value=value, text=text, fmt=fmt, iostat=status, iomsg=msg)
+   if (status/=0) call self%fail(status, msg)
+   call self%attribute_character(name=name, value=text, iostat=iostat, iomsg=iomsg)
    endsubroutine attribute_r8p
 
    subroutine attribute_logical(self, name, value, iostat, iomsg)
@@ -515,13 +550,321 @@ contains
    logical,                intent(in)    :: value  !< Attribute value.
    integer(I4P), optional, intent(out)   :: iostat !< IO status.
    character(*), optional, intent(inout) :: iomsg  !< IO message.
+   character(len=:), allocatable         :: text   !< Value as text.
+   integer(I4P)                          :: status !< Status of the conversion.
+   character(len=:), allocatable         :: msg    !< Message of the conversion.
 
-   if (value) then
-      call self%attribute_character(name=name, value='true', iostat=iostat, iomsg=iomsg)
-   else
-      call self%attribute_character(name=name, value='false', iostat=iostat, iomsg=iomsg)
-   endif
+   call to_text(value=value, text=text, iostat=status, iomsg=msg)
+   call self%attribute_character(name=name, value=text, iostat=iostat, iomsg=iomsg)
    endsubroutine attribute_logical
+
+   subroutine attribute_i1p_1(self, name, values, fmt, iostat, iomsg)
+   !< Add an attribute holding a list of integer values, separated by one space (each as the scalar *attribute*).
+   class(xml_writer),      intent(inout) :: self      !< XML writer.
+   character(*),           intent(in)    :: name      !< Attribute name.
+   integer(I1P),   intent(in)    :: values(:) !< Attribute values.
+   character(*), optional, intent(in)    :: fmt       !< Format of each value, e.g. `(F6.3)`.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Values as text.
+   integer(I4P)                          :: status    !< Status of the conversion.
+   character(len=:), allocatable         :: msg       !< Message of the conversion.
+
+   call to_text(value=values, text=text, fmt=fmt, iostat=status, iomsg=msg)
+   if (status/=0) call self%fail(status, msg)
+   call self%attribute_character(name=name, value=text, iostat=iostat, iomsg=iomsg)
+   endsubroutine attribute_i1p_1
+
+   subroutine attribute_i2p_1(self, name, values, fmt, iostat, iomsg)
+   !< Add an attribute holding a list of integer values, separated by one space (each as the scalar *attribute*).
+   class(xml_writer),      intent(inout) :: self      !< XML writer.
+   character(*),           intent(in)    :: name      !< Attribute name.
+   integer(I2P),   intent(in)    :: values(:) !< Attribute values.
+   character(*), optional, intent(in)    :: fmt       !< Format of each value, e.g. `(F6.3)`.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Values as text.
+   integer(I4P)                          :: status    !< Status of the conversion.
+   character(len=:), allocatable         :: msg       !< Message of the conversion.
+
+   call to_text(value=values, text=text, fmt=fmt, iostat=status, iomsg=msg)
+   if (status/=0) call self%fail(status, msg)
+   call self%attribute_character(name=name, value=text, iostat=iostat, iomsg=iomsg)
+   endsubroutine attribute_i2p_1
+
+   subroutine attribute_i4p_1(self, name, values, fmt, iostat, iomsg)
+   !< Add an attribute holding a list of integer values, separated by one space (each as the scalar *attribute*).
+   class(xml_writer),      intent(inout) :: self      !< XML writer.
+   character(*),           intent(in)    :: name      !< Attribute name.
+   integer(I4P),   intent(in)    :: values(:) !< Attribute values.
+   character(*), optional, intent(in)    :: fmt       !< Format of each value, e.g. `(F6.3)`.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Values as text.
+   integer(I4P)                          :: status    !< Status of the conversion.
+   character(len=:), allocatable         :: msg       !< Message of the conversion.
+
+   call to_text(value=values, text=text, fmt=fmt, iostat=status, iomsg=msg)
+   if (status/=0) call self%fail(status, msg)
+   call self%attribute_character(name=name, value=text, iostat=iostat, iomsg=iomsg)
+   endsubroutine attribute_i4p_1
+
+   subroutine attribute_i8p_1(self, name, values, fmt, iostat, iomsg)
+   !< Add an attribute holding a list of integer values, separated by one space (each as the scalar *attribute*).
+   class(xml_writer),      intent(inout) :: self      !< XML writer.
+   character(*),           intent(in)    :: name      !< Attribute name.
+   integer(I8P),   intent(in)    :: values(:) !< Attribute values.
+   character(*), optional, intent(in)    :: fmt       !< Format of each value, e.g. `(F6.3)`.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Values as text.
+   integer(I4P)                          :: status    !< Status of the conversion.
+   character(len=:), allocatable         :: msg       !< Message of the conversion.
+
+   call to_text(value=values, text=text, fmt=fmt, iostat=status, iomsg=msg)
+   if (status/=0) call self%fail(status, msg)
+   call self%attribute_character(name=name, value=text, iostat=iostat, iomsg=iomsg)
+   endsubroutine attribute_i8p_1
+
+   subroutine attribute_r4p_1(self, name, values, fmt, iostat, iomsg)
+   !< Add an attribute holding a list of real values, separated by one space (each as the scalar *attribute*).
+   class(xml_writer),      intent(inout) :: self      !< XML writer.
+   character(*),           intent(in)    :: name      !< Attribute name.
+   real(R4P),      intent(in)    :: values(:) !< Attribute values.
+   character(*), optional, intent(in)    :: fmt       !< Format of each value, e.g. `(F6.3)`.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Values as text.
+   integer(I4P)                          :: status    !< Status of the conversion.
+   character(len=:), allocatable         :: msg       !< Message of the conversion.
+
+   call to_text(value=values, text=text, fmt=fmt, iostat=status, iomsg=msg)
+   if (status/=0) call self%fail(status, msg)
+   call self%attribute_character(name=name, value=text, iostat=iostat, iomsg=iomsg)
+   endsubroutine attribute_r4p_1
+
+   subroutine attribute_r8p_1(self, name, values, fmt, iostat, iomsg)
+   !< Add an attribute holding a list of real values, separated by one space (each as the scalar *attribute*).
+   class(xml_writer),      intent(inout) :: self      !< XML writer.
+   character(*),           intent(in)    :: name      !< Attribute name.
+   real(R8P),      intent(in)    :: values(:) !< Attribute values.
+   character(*), optional, intent(in)    :: fmt       !< Format of each value, e.g. `(F6.3)`.
+   integer(I4P), optional, intent(out)   :: iostat    !< IO status.
+   character(*), optional, intent(inout) :: iomsg     !< IO message.
+   character(len=:), allocatable         :: text      !< Values as text.
+   integer(I4P)                          :: status    !< Status of the conversion.
+   character(len=:), allocatable         :: msg       !< Message of the conversion.
+
+   call to_text(value=values, text=text, fmt=fmt, iostat=status, iomsg=msg)
+   if (status/=0) call self%fail(status, msg)
+   call self%attribute_character(name=name, value=text, iostat=iostat, iomsg=iomsg)
+   endsubroutine attribute_r8p_1
+
+   subroutine text_i1p(self, value, fmt, iostat, iomsg)
+   !< Write a integer value as character data (as *attribute*); the element is written inline.
+   class(xml_writer),      intent(inout) :: self   !< XML writer.
+   integer(I1P),   intent(in)    :: value !< Value.
+   character(*), optional, intent(in)    :: fmt    !< Format, e.g. `(F6.3)`.
+   integer(I4P), optional, intent(out)   :: iostat !< IO status.
+   character(*), optional, intent(inout) :: iomsg  !< IO message.
+   character(len=:), allocatable         :: text   !< Value as text.
+   integer(I4P)                          :: status !< Status of the conversion.
+   character(len=:), allocatable         :: msg    !< Message of the conversion.
+
+   call to_text(value=value, text=text, fmt=fmt, iostat=status, iomsg=msg)
+   if (status/=0) call self%fail(status, msg)
+   call self%text_character(string=text, iostat=iostat, iomsg=iomsg)
+   endsubroutine text_i1p
+
+   subroutine text_i1p_1(self, values, fmt, iostat, iomsg)
+   !< Write a list of integer values, separated by one space, as character data (as *attribute*); the element is written inline.
+   class(xml_writer),      intent(inout) :: self   !< XML writer.
+   integer(I1P),   intent(in)    :: values(:)!< Values.
+   character(*), optional, intent(in)    :: fmt    !< Format of each value, e.g. `(F6.3)`.
+   integer(I4P), optional, intent(out)   :: iostat !< IO status.
+   character(*), optional, intent(inout) :: iomsg  !< IO message.
+   character(len=:), allocatable         :: text   !< Value as text.
+   integer(I4P)                          :: status !< Status of the conversion.
+   character(len=:), allocatable         :: msg    !< Message of the conversion.
+
+   call to_text(value=values, text=text, fmt=fmt, iostat=status, iomsg=msg)
+   if (status/=0) call self%fail(status, msg)
+   call self%text_character(string=text, iostat=iostat, iomsg=iomsg)
+   endsubroutine text_i1p_1
+
+   subroutine text_i2p(self, value, fmt, iostat, iomsg)
+   !< Write a integer value as character data (as *attribute*); the element is written inline.
+   class(xml_writer),      intent(inout) :: self   !< XML writer.
+   integer(I2P),   intent(in)    :: value !< Value.
+   character(*), optional, intent(in)    :: fmt    !< Format, e.g. `(F6.3)`.
+   integer(I4P), optional, intent(out)   :: iostat !< IO status.
+   character(*), optional, intent(inout) :: iomsg  !< IO message.
+   character(len=:), allocatable         :: text   !< Value as text.
+   integer(I4P)                          :: status !< Status of the conversion.
+   character(len=:), allocatable         :: msg    !< Message of the conversion.
+
+   call to_text(value=value, text=text, fmt=fmt, iostat=status, iomsg=msg)
+   if (status/=0) call self%fail(status, msg)
+   call self%text_character(string=text, iostat=iostat, iomsg=iomsg)
+   endsubroutine text_i2p
+
+   subroutine text_i2p_1(self, values, fmt, iostat, iomsg)
+   !< Write a list of integer values, separated by one space, as character data (as *attribute*); the element is written inline.
+   class(xml_writer),      intent(inout) :: self   !< XML writer.
+   integer(I2P),   intent(in)    :: values(:)!< Values.
+   character(*), optional, intent(in)    :: fmt    !< Format of each value, e.g. `(F6.3)`.
+   integer(I4P), optional, intent(out)   :: iostat !< IO status.
+   character(*), optional, intent(inout) :: iomsg  !< IO message.
+   character(len=:), allocatable         :: text   !< Value as text.
+   integer(I4P)                          :: status !< Status of the conversion.
+   character(len=:), allocatable         :: msg    !< Message of the conversion.
+
+   call to_text(value=values, text=text, fmt=fmt, iostat=status, iomsg=msg)
+   if (status/=0) call self%fail(status, msg)
+   call self%text_character(string=text, iostat=iostat, iomsg=iomsg)
+   endsubroutine text_i2p_1
+
+   subroutine text_i4p(self, value, fmt, iostat, iomsg)
+   !< Write a integer value as character data (as *attribute*); the element is written inline.
+   class(xml_writer),      intent(inout) :: self   !< XML writer.
+   integer(I4P),   intent(in)    :: value !< Value.
+   character(*), optional, intent(in)    :: fmt    !< Format, e.g. `(F6.3)`.
+   integer(I4P), optional, intent(out)   :: iostat !< IO status.
+   character(*), optional, intent(inout) :: iomsg  !< IO message.
+   character(len=:), allocatable         :: text   !< Value as text.
+   integer(I4P)                          :: status !< Status of the conversion.
+   character(len=:), allocatable         :: msg    !< Message of the conversion.
+
+   call to_text(value=value, text=text, fmt=fmt, iostat=status, iomsg=msg)
+   if (status/=0) call self%fail(status, msg)
+   call self%text_character(string=text, iostat=iostat, iomsg=iomsg)
+   endsubroutine text_i4p
+
+   subroutine text_i4p_1(self, values, fmt, iostat, iomsg)
+   !< Write a list of integer values, separated by one space, as character data (as *attribute*); the element is written inline.
+   class(xml_writer),      intent(inout) :: self   !< XML writer.
+   integer(I4P),   intent(in)    :: values(:)!< Values.
+   character(*), optional, intent(in)    :: fmt    !< Format of each value, e.g. `(F6.3)`.
+   integer(I4P), optional, intent(out)   :: iostat !< IO status.
+   character(*), optional, intent(inout) :: iomsg  !< IO message.
+   character(len=:), allocatable         :: text   !< Value as text.
+   integer(I4P)                          :: status !< Status of the conversion.
+   character(len=:), allocatable         :: msg    !< Message of the conversion.
+
+   call to_text(value=values, text=text, fmt=fmt, iostat=status, iomsg=msg)
+   if (status/=0) call self%fail(status, msg)
+   call self%text_character(string=text, iostat=iostat, iomsg=iomsg)
+   endsubroutine text_i4p_1
+
+   subroutine text_i8p(self, value, fmt, iostat, iomsg)
+   !< Write a integer value as character data (as *attribute*); the element is written inline.
+   class(xml_writer),      intent(inout) :: self   !< XML writer.
+   integer(I8P),   intent(in)    :: value !< Value.
+   character(*), optional, intent(in)    :: fmt    !< Format, e.g. `(F6.3)`.
+   integer(I4P), optional, intent(out)   :: iostat !< IO status.
+   character(*), optional, intent(inout) :: iomsg  !< IO message.
+   character(len=:), allocatable         :: text   !< Value as text.
+   integer(I4P)                          :: status !< Status of the conversion.
+   character(len=:), allocatable         :: msg    !< Message of the conversion.
+
+   call to_text(value=value, text=text, fmt=fmt, iostat=status, iomsg=msg)
+   if (status/=0) call self%fail(status, msg)
+   call self%text_character(string=text, iostat=iostat, iomsg=iomsg)
+   endsubroutine text_i8p
+
+   subroutine text_i8p_1(self, values, fmt, iostat, iomsg)
+   !< Write a list of integer values, separated by one space, as character data (as *attribute*); the element is written inline.
+   class(xml_writer),      intent(inout) :: self   !< XML writer.
+   integer(I8P),   intent(in)    :: values(:)!< Values.
+   character(*), optional, intent(in)    :: fmt    !< Format of each value, e.g. `(F6.3)`.
+   integer(I4P), optional, intent(out)   :: iostat !< IO status.
+   character(*), optional, intent(inout) :: iomsg  !< IO message.
+   character(len=:), allocatable         :: text   !< Value as text.
+   integer(I4P)                          :: status !< Status of the conversion.
+   character(len=:), allocatable         :: msg    !< Message of the conversion.
+
+   call to_text(value=values, text=text, fmt=fmt, iostat=status, iomsg=msg)
+   if (status/=0) call self%fail(status, msg)
+   call self%text_character(string=text, iostat=iostat, iomsg=iomsg)
+   endsubroutine text_i8p_1
+
+   subroutine text_r4p(self, value, fmt, iostat, iomsg)
+   !< Write a real value as character data (as *attribute*); the element is written inline.
+   class(xml_writer),      intent(inout) :: self   !< XML writer.
+   real(R4P),      intent(in)    :: value !< Value.
+   character(*), optional, intent(in)    :: fmt    !< Format, e.g. `(F6.3)`.
+   integer(I4P), optional, intent(out)   :: iostat !< IO status.
+   character(*), optional, intent(inout) :: iomsg  !< IO message.
+   character(len=:), allocatable         :: text   !< Value as text.
+   integer(I4P)                          :: status !< Status of the conversion.
+   character(len=:), allocatable         :: msg    !< Message of the conversion.
+
+   call to_text(value=value, text=text, fmt=fmt, iostat=status, iomsg=msg)
+   if (status/=0) call self%fail(status, msg)
+   call self%text_character(string=text, iostat=iostat, iomsg=iomsg)
+   endsubroutine text_r4p
+
+   subroutine text_r4p_1(self, values, fmt, iostat, iomsg)
+   !< Write a list of real values, separated by one space, as character data (as *attribute*); the element is written inline.
+   class(xml_writer),      intent(inout) :: self   !< XML writer.
+   real(R4P),      intent(in)    :: values(:)!< Values.
+   character(*), optional, intent(in)    :: fmt    !< Format of each value, e.g. `(F6.3)`.
+   integer(I4P), optional, intent(out)   :: iostat !< IO status.
+   character(*), optional, intent(inout) :: iomsg  !< IO message.
+   character(len=:), allocatable         :: text   !< Value as text.
+   integer(I4P)                          :: status !< Status of the conversion.
+   character(len=:), allocatable         :: msg    !< Message of the conversion.
+
+   call to_text(value=values, text=text, fmt=fmt, iostat=status, iomsg=msg)
+   if (status/=0) call self%fail(status, msg)
+   call self%text_character(string=text, iostat=iostat, iomsg=iomsg)
+   endsubroutine text_r4p_1
+
+   subroutine text_r8p(self, value, fmt, iostat, iomsg)
+   !< Write a real value as character data (as *attribute*); the element is written inline.
+   class(xml_writer),      intent(inout) :: self   !< XML writer.
+   real(R8P),      intent(in)    :: value !< Value.
+   character(*), optional, intent(in)    :: fmt    !< Format, e.g. `(F6.3)`.
+   integer(I4P), optional, intent(out)   :: iostat !< IO status.
+   character(*), optional, intent(inout) :: iomsg  !< IO message.
+   character(len=:), allocatable         :: text   !< Value as text.
+   integer(I4P)                          :: status !< Status of the conversion.
+   character(len=:), allocatable         :: msg    !< Message of the conversion.
+
+   call to_text(value=value, text=text, fmt=fmt, iostat=status, iomsg=msg)
+   if (status/=0) call self%fail(status, msg)
+   call self%text_character(string=text, iostat=iostat, iomsg=iomsg)
+   endsubroutine text_r8p
+
+   subroutine text_r8p_1(self, values, fmt, iostat, iomsg)
+   !< Write a list of real values, separated by one space, as character data (as *attribute*); the element is written inline.
+   class(xml_writer),      intent(inout) :: self   !< XML writer.
+   real(R8P),      intent(in)    :: values(:)!< Values.
+   character(*), optional, intent(in)    :: fmt    !< Format of each value, e.g. `(F6.3)`.
+   integer(I4P), optional, intent(out)   :: iostat !< IO status.
+   character(*), optional, intent(inout) :: iomsg  !< IO message.
+   character(len=:), allocatable         :: text   !< Value as text.
+   integer(I4P)                          :: status !< Status of the conversion.
+   character(len=:), allocatable         :: msg    !< Message of the conversion.
+
+   call to_text(value=values, text=text, fmt=fmt, iostat=status, iomsg=msg)
+   if (status/=0) call self%fail(status, msg)
+   call self%text_character(string=text, iostat=iostat, iomsg=iomsg)
+   endsubroutine text_r8p_1
+
+   subroutine text_logical(self, value, iostat, iomsg)
+   !< Write a logical value as character data, `true` or `false`; the element is written inline.
+   class(xml_writer),      intent(inout) :: self   !< XML writer.
+   logical,                intent(in)    :: value  !< Value.
+   integer(I4P), optional, intent(out)   :: iostat !< IO status.
+   character(*), optional, intent(inout) :: iomsg  !< IO message.
+   character(len=:), allocatable         :: text   !< Value as text.
+   integer(I4P)                          :: status !< Status of the conversion.
+   character(len=:), allocatable         :: msg    !< Message of the conversion.
+
+   call to_text(value=value, text=text, iostat=status, iomsg=msg)
+   call self%text_character(string=text, iostat=iostat, iomsg=iomsg)
+   endsubroutine text_logical
 
    subroutine fail(self, error, message)
    !< Record an error, if it is the first one.

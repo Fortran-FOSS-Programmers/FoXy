@@ -12,11 +12,7 @@ do step=100, 500, 200
    call results%end('residual')
    call results%start('pressure')
    call results%attribute('format', 'ascii')
-   do i=1, 3                                              ! data written in pieces, as they are
-      write(value, '(F6.3)') 1.0_R8P/real(i*step, R8P)*100.0_R8P
-      if (i>1) call results%raw(' ')
-      call results%raw(trim(adjustl(value)))
-   enddo
+   call results%text([(100.0_R8P/real(i*step, R8P), i=1, 3)], fmt='(F6.3)')   ! a list of numbers
    call results%end('pressure')
    call results%end('snapshot')
 enddo
