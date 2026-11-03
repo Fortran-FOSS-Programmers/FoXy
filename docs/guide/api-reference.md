@@ -82,6 +82,7 @@ Defined in `src/lib/foxy_xml_file.f90`. Holds a flat `tag(:)` array with hierarc
 | `xfile%content(id=)` | Return the direct text of the tag with ID `id`, as `content(name)` |
 | `xfile%find([name=], [path=], [parent=], [namespaces=])` | Return the ID of the first matching tag, `0` if none |
 | `xfile%find_all([name=], [path=], [parent=], [namespaces=])` | Return the IDs of all matching tags, in document order. Names match literally, except `{uri}local` (Clark notation: local name in namespace `uri`, any prefix) and, with `namespaces=` (declarations as in XML, `'xmlns="uri1" xmlns:p="uri2"'`), every name, its prefix resolved by them. See [namespaces](#namespaces) |
+| `xfile%matching(re, [ids=], [on=], [attribute=], [whole=])` | Return the IDs (of `ids`, or all) whose name (`on='name'`, default), content (`on='content'`) or attribute value (`attribute=`) matches the compiled StringiFor `regex` `re`, a part or the whole (`whole=.true.`); also `idx%matching` (names, attributes) |
 | `xfile%children(id)` | Return the IDs of the direct children of tag `id` (`0`: root tags) |
 | `xfile%tags_number()` | Return the number of tags: IDs are `1` to `tags_number()` |
 | `xfile%attributes_number(id)` / `xfile%attribute_name(id, a)` | Return the number of attributes of tag `id` (`0` if it does not exist) / the name of the `a`-th one, in source order (`''` if none): list the attributes without knowing their names |

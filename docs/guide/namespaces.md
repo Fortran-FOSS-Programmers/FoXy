@@ -33,4 +33,4 @@ reported by `parse`).
 
 A `/` inside braces is not a path separator, so `{uri}` may hold a URL. Attribute names are always matched literally.
 
-Next: [Single tags](./tags).
+Next: [Regular expressions](./regex).

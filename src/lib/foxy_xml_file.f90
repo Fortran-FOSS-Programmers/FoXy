@@ -5,10 +5,12 @@ use foxy_xml_entities, only : is_name, text_value, without_markup, xml_escape
 use foxy_xml_tag, only : xml_tag
 use foxy_xml_tokenizer, only : xml_builder, xml_tokenizer, located, located_in_file, DATA_TEXT, DATA_PI
 use foxy_xml_tree, only : tree_attribute, tree_attribute_name, tree_attribute_text, tree_attributes_number, &
-                          tree_build_children, tree_children, tree_find, tree_find_all, tree_level, tree_local_name, tree_name, &
+                          tree_build_children, tree_children, tree_find, tree_find_all, tree_level, tree_local_name, &
+                          tree_matching, regex_matches, tags_indexes, tree_name, &
                           tree_namespace, tree_parent, tree_prefix
 use foxy_xml_values, only : report, to_text, to_value, to_values, XML_NOT_FOUND
 use penf
+use stringifor, only : regex
 
 implicit none
 private
@@ -54,6 +56,7 @@ type, public:: xml_file
                                get_content_R8P_1 !< Get the content of a tag as number(s) or logical.
       procedure, pass(self) :: level      !< Return the level of the tag with a given ID.
       procedure, pass(self) :: local_name !< Return the local name of the tag with a given ID.
+      procedure, pass(self) :: matching   !< Filter tags by a regular expression (name, content, attribute).
       procedure, pass(self) :: name       !< Return the name of the tag with a given ID.
       procedure, pass(self) :: namespace  !< Return the namespace of the tag with a given ID.
       procedure, pass(self) :: parent     !< Return the parent ID of the tag with a given ID.
@@ -1157,6 +1160,58 @@ contains
 
    local_name_ = tree_local_name(tag=self%tag, nt=self%nt, id=id)
    endfunction local_name
+
+   pure function matching(self, re, ids, on, attribute, whole) result(matched)
+   !< Return the IDs of the tags (of *ids*, in their order, or all of them) whose name, content or attribute value matches
+   !< the compiled regular expression *re* (StringiFor `regex`): a part of the text, or the whole of it with *whole*.
+   !<
+   !< @note *on* is `name` (default), `content` or `attribute` (implied by *attribute*). Names are matched as written,
+   !< contents and attribute values decoded (as *content* and
+   !< *attribute* return them); a tag without the attribute never matches; a regex not compiled matches nothing.
+   class(xml_file), intent(in)           :: self       !< XML file.
+   type(regex),     intent(in)           :: re         !< Compiled regular expression.
+   integer(I4P),    intent(in), optional :: ids(:)     !< Tags IDs to filter (default: all the tags).
+   character(*),    intent(in), optional :: on         !< What is matched.
+   character(*),    intent(in), optional :: attribute  !< Attribute name.
+   logical,         intent(in), optional :: whole      !< Match the whole text.
+   integer(I4P), allocatable             :: matched(:) !< Matching IDs.
+   integer(I4P), allocatable             :: ids_(:)    !< Tags IDs to filter, local variable.
+   character(len=:), allocatable         :: on_        !< What is matched, local variable.
+   character(len=:), allocatable         :: attribute_ !< Attribute name, local variable.
+   logical                               :: whole_     !< Match the whole text, local variable.
+   integer(I4P), allocatable             :: buffer(:)  !< Matching IDs found (contents).
+   integer(I4P)                          :: n          !< Number of matching IDs.
+   integer(I4P)                          :: i          !< Counter.
+
+   if (present(ids)) then
+      ids_ = ids
+   else
+      ids_ = tags_indexes(self%nt)
+   endif
+   attribute_ = '' ; if (present(attribute)) attribute_ = attribute
+   on_ = 'name'
+   if (present(attribute)) on_ = 'attribute'
+   if (present(on)) on_ = on
+   whole_ = .false. ; if (present(whole)) whole_ = whole
+   if (on_=='name'.or.on_=='attribute') then
+      matched = tree_matching(tag=self%tag, nt=self%nt, ids=ids_, re=re, on=on_, attribute=attribute_, whole=whole_)
+      elseif (on_=='content') then
+         allocate(buffer(size(ids_, dim=1)))
+         n = 0
+         if (re%is_compiled()) then
+            do i=1, size(ids_, dim=1)
+               if (ids_(i)<1.or.ids_(i)>self%nt) cycle
+               if (regex_matches(re=re, subject=self%content(id=ids_(i)), whole=whole_)) then
+                  n = n + 1
+                  buffer(n) = ids_(i)
+               endif
+            enddo
+         endif
+         matched = buffer(1:n)
+   else
+      allocate(matched(0))
+   endif
+   endfunction matching
 
    pure function name(self, id) result(name_)
    !< Return the name of the tag with ID *id*, an empty string if it does not exist.

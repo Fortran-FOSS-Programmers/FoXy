@@ -17,7 +17,7 @@ output shown is the real output of that program.
 |---|---|
 | [1. A first document](./tutorial/01-first-document) | `xml_file`, `parse`, `content`, `find`, `attribute`, `stringify`; tag IDs |
 | [2. Reading the case file](./tutorial/02-reading) | `parse(filename=)`, paths, typed values (`get_content`, `get_attribute`), errors |
-| [3. Walking the tree](./tutorial/03-walking) | `children`, `name`, `attributes_number`, `attribute_name`, `find_all`, `tags_number` |
+| [3. Walking the tree](./tutorial/03-walking) | `children`, `name`, `attributes_number`, `attribute_name`, `find_all`, `tags_number`, `matching` |
 | [4. Editing and saving](./tutorial/04-editing) | `set_content`, `set_attribute`, `delete_attribute`, `delete_tag`, `add_tag`, `save` |
 | [5. Writing the results](./tutorial/05-writing) | `xml_writer`: `open`, `start`, `attribute`, `text`, `raw`, `end`, `close` |
 | [6. Large outputs: the index](./tutorial/06-index) | `xml_index`: `scan`, content on demand, byte ranges, `stop_at` |

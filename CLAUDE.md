@@ -134,6 +134,10 @@ elements are balanced (implicit closes and the source end emit `end_element`); p
 among text pieces depends on the chunks). `foxy_test_events` checks events = DOM on every test file and equal events for
 strings and chunks 1..4096.
 
+Regular expressions: `foxy` re-exports StringiFor `regex`/`regex_match`; `matching(re, [ids=], [on=], [attribute=],
+[whole=])` (pure, `tree_matching`/`regex_matches` in `foxy_xml_tree`) filters names, contents (`xml_file` only) and
+attribute values.
+
 Namespaces are resolved lazily in `foxy_xml_tree` (nothing stored, parsing unchanged, no parse-time checks): the nearest
 `xmlns:p`/`xmlns` declaration up the ancestors (`resolve_namespace`). `find`/`find_all` names go through `name_pattern`:
 literal (as before), `{uri}local` (Clark), or prefixes resolved by `namespaces='xmlns:p="uri"'` (parsed as an attributes

@@ -1,0 +1,4 @@
+$ regex_filter
+fluid properties: density viscosity
+closed sides: east north south
+small values: dt=1.0e-3 viscosity=1.8e-5

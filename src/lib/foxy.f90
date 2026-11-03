@@ -9,10 +9,12 @@ use foxy_xml_tag, only : xml_tag
 use foxy_xml_values, only : to_value, to_values, XML_BAD_VALUE, XML_NOT_FOUND
 use foxy_xml_writer, only : xml_writer
 use penf
+use stringifor, only : regex, regex_match
 
 implicit none
 private
 public :: I1P, I2P, I4P, I8P, R4P, R8P
+public :: regex, regex_match
 public :: to_value
 public :: to_values
 public :: xml_attribute

@@ -119,6 +119,15 @@ IDs follow the document order, so a plain loop visits the tree depth first; `chi
 
 `content` returns the direct text: references decoded, CDATA literal, comments and child tags out.
 
+### Filter tags with a regular expression
+
+<<< @/examples/snippets/regex_filter.f90
+
+<<< @/examples/output/regex_filter.ansi{ansi}
+
+Compile the pattern once; `matching` takes the IDs of any query (`ids=`) and keeps those whose name, content or
+attribute value matches. See [Regular expressions](/guide/regex).
+
 ### Match a namespace, whatever the prefix
 
 <<< @/examples/snippets/namespaces_clark.f90

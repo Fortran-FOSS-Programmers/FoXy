@@ -10,6 +10,7 @@ module foxy_xml_tree
 use foxy_xml_tag, only : xml_tag
 use foxy_xml_values, only : XML_NOT_FOUND
 use penf
+use stringifor, only : regex, regex_match
 
 implicit none
 private
@@ -23,6 +24,8 @@ public :: tree_find
 public :: tree_find_all
 public :: tree_level
 public :: tree_local_name
+public :: tree_matching
+public :: regex_matches
 public :: tree_name
 public :: tree_namespace
 public :: tree_parent
@@ -224,6 +227,60 @@ contains
 
    local_name = name_local(tree_name(tag=tag, nt=nt, id=id))
    endfunction tree_local_name
+
+   pure function tree_matching(tag, nt, ids, re, on, attribute, whole) result(matched)
+   !< Return the IDs of *ids* (in their order) whose name (*on*=`name`) or the value of *attribute* (*on*=`attribute`)
+   !< matches the compiled regular expression *re* (anywhere, or the whole text with *whole*); a tag without the attribute
+   !< never matches, a regex not compiled matches nothing.
+   type(xml_tag), allocatable, intent(in) :: tag(:)     !< Tags.
+   integer(I4P),               intent(in) :: nt         !< Number of tags.
+   integer(I4P),               intent(in) :: ids(:)     !< Tags IDs to filter.
+   type(regex),                intent(in) :: re         !< Compiled regular expression.
+   character(*),               intent(in) :: on         !< What is matched: `name` or `attribute`.
+   character(*),               intent(in) :: attribute  !< Attribute name (with *on*=`attribute`).
+   logical,                    intent(in) :: whole      !< Match the whole text, not a part of it.
+   integer(I4P), allocatable              :: matched(:) !< Matching IDs.
+   integer(I4P), allocatable              :: buffer(:)  !< Matching IDs found.
+   integer(I4P)                           :: n          !< Number of matching IDs.
+   integer(I4P)                           :: i          !< Counter.
+   logical                                :: is_match   !< The current tag matches.
+
+   allocate(buffer(size(ids, dim=1)))
+   n = 0
+   if (re%is_compiled()) then
+      do i=1, size(ids, dim=1)
+         if (ids(i)<1.or.ids(i)>nt) cycle
+         is_match = .false.
+         if (on=='name') then
+            is_match = regex_matches(re=re, subject=tag(ids(i))%name(), whole=whole)
+         elseif (on=='attribute') then
+            if (tag(ids(i))%is_attribute_present(name=attribute)) &
+               is_match = regex_matches(re=re, subject=tag(ids(i))%get_attribute(name=attribute), whole=whole)
+         endif
+         if (is_match) then
+            n = n + 1
+            buffer(n) = ids(i)
+         endif
+      enddo
+   endif
+   matched = buffer(1:n)
+   endfunction tree_matching
+
+   pure function regex_matches(re, subject, whole) result(is_match)
+   !< Return true if the compiled regular expression *re* matches a part of *subject* (the whole of it with *whole*).
+   type(regex),  intent(in) :: re       !< Compiled regular expression.
+   character(*), intent(in) :: subject  !< Subject.
+   logical,      intent(in) :: whole    !< Match the whole subject.
+   logical                  :: is_match !< Check result.
+   type(regex_match)        :: found    !< Match.
+
+   if (whole) then
+      found = re%fullmatch(subject)
+   else
+      found = re%search(subject)
+   endif
+   is_match = found%found
+   endfunction regex_matches
 
    pure function tree_name(tag, nt, id) result(name)
    !< Return the name of the tag with ID *id*, an empty string if it does not exist.

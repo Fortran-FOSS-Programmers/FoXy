@@ -9,6 +9,8 @@ boundaries. Nothing here knows the names in advance.
 - `children(id)` returns the IDs of the direct children of a tag (`children(0)`: the root tags); `name(id)` its name.
 - `attributes_number(id)` and `attribute_name(id, a)` list the attributes of a tag, in source order.
 - `find_all` returns every match, in document order: here the four `boundary` tags under `case`.
+- `matching` keeps the tags whose name, content or attribute matches a regular expression: here the boundaries whose
+  `type` is a wall or an outflow. The regex (`type(regex)`, StringiFor's engine) is compiled once.
 
 ## Running it
 

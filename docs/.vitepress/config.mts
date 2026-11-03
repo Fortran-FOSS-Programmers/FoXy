@@ -44,6 +44,7 @@ const docs = [
       { text: 'The index',       link: '/guide/index-files' },
       { text: 'Streaming parser', link: '/guide/events' },
       { text: 'Namespaces',      link: '/guide/namespaces' },
+      { text: 'Regular expressions', link: '/guide/regex' },
       { text: 'Single tags',     link: '/guide/tags' },
       { text: 'Methods summary', link: '/guide/api-reference' },
     ],
@@ -86,7 +87,7 @@ export default withMermaid({
       {
         text: 'Reference',
         link: '/guide/features',
-        activeMatch: '^/guide/(features|parsing|querying|values|editing|writing|index-files|events|namespaces|tags|api-reference)',
+        activeMatch: '^/guide/(features|parsing|querying|values|editing|writing|index-files|events|namespaces|regex|tags|api-reference)',
       },
       { text: 'API', link: '/api/' },
       {
