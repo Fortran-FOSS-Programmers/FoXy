@@ -18,11 +18,14 @@ use stringifor, only : string_t => string
 
 implicit none
 private
+public :: attribute_value
+public :: character_data
 public :: first_bad_reference
 public :: first_utf8_error
 public :: is_name
 public :: strip_blanks
 public :: text_value
+public :: utf8_tail_len
 public :: without_markup
 public :: xml_escape
 public :: xml_unescape
@@ -70,6 +73,24 @@ contains
    enddo
    is_valid = .true.
    endfunction is_name
+
+   pure function attribute_value(raw) result(value)
+   !< Return the value of a raw attribute value (as in the source): each literal tab, new line and carriage return (a CR LF
+   !< pair as one) read as a space (XML 1.0 3.3.3), then its references decoded.
+   character(*), intent(in)      :: raw   !< Raw attribute value.
+   character(len=:), allocatable :: value !< Value.
+
+   value = xml_unescape(blanks_as_spaces(raw))
+   endfunction attribute_value
+
+   pure function character_data(raw) result(value)
+   !< Return the value of raw character data, without removing anything: line ends normalized (CR LF and CR read as LF),
+   !< references decoded (the streaming parser gives it in pieces; *text_value* also strips and drops markup).
+   character(*), intent(in)      :: raw   !< Raw character data.
+   character(len=:), allocatable :: value !< Value.
+
+   value = xml_unescape(line_ends_normalized(raw))
+   endfunction character_data
 
    pure function first_bad_reference(text) result(position)
    !< Return the position of the `&` of the first malformed reference of *text*, 0 if there is none: an `&` that does not
@@ -326,6 +347,29 @@ contains
    text = buffer(1:n)
    endfunction without_markup
 
+   pure function utf8_tail_len(bytes) result(n)
+   !< Return the number of bytes at the end of *bytes* that start a UTF-8 sequence not complete in them (0 to 3).
+   character(*), intent(in) :: bytes !< Bytes.
+   integer(I8P)             :: n     !< Bytes of the incomplete sequence.
+   integer(I8P)             :: l     !< Position of the last lead byte.
+   integer                  :: code  !< Lead byte code.
+   integer                  :: need  !< Length of the sequence the lead byte starts.
+
+   n = 0
+   do l=len(bytes, kind=I8P), max(1_I8P, len(bytes, kind=I8P)-3), -1
+      code = iachar(bytes(l:l))
+      if (code<128) return            ! ASCII: nothing split
+      if (code>=192) exit             ! a lead byte
+   enddo
+   if (l<1) return
+   code = iachar(bytes(l:l))
+   if (code<192) return               ! only continuation bytes: not a split sequence (an error, checked now)
+   need = 2
+   if (code>=224) need = 3
+   if (code>=240) need = 4
+   if (len(bytes, kind=I8P)-l+1<need) n = len(bytes, kind=I8P) - l + 1
+   endfunction utf8_tail_len
+
    pure function strip_blanks(string) result(stripped)
    !< Return string without leading and trailing blanks: spaces, tabs, new lines and carriage returns.
    character(*), intent(in)      :: string   !< String to strip.
@@ -343,6 +387,25 @@ contains
    endfunction strip_blanks
 
    ! private procedures
+   pure function blanks_as_spaces(text) result(normalized)
+   !< Return a text with each blank (tab, new line, carriage return) replaced by a space, a CR LF pair by one space: the
+   !< normalization of attribute values (XML 1.0 3.3.3), done by StringiFor `string%replace`.
+   character(*), intent(in)      :: text       !< Text.
+   character(len=:), allocatable :: normalized !< Normalized string.
+   type(string_t)                :: work       !< String being normalized.
+
+   if (scan(text, achar(9)//achar(10)//achar(13))==0) then
+      normalized = text
+      return
+   endif
+   work = text
+   work = work%replace(old=achar(13)//achar(10), new=' ')
+   work = work%replace(old=achar(13), new=' ')
+   work = work%replace(old=achar(10), new=' ')
+   work = work%replace(old=achar(9), new=' ')
+   normalized = work%chars()
+   endfunction blanks_as_spaces
+
    elemental function is_continuation(byte) result(is_cont)
    !< Return true if *byte* is a UTF-8 continuation byte, 10xxxxxx.
    character(len=1), intent(in) :: byte    !< Byte.

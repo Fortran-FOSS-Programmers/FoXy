@@ -1,7 +1,7 @@
 !< FoXy XML tag class.
 module foxy_xml_tag
 !< FoXy XML tag class.
-use foxy_xml_entities, only : xml_unescape
+use foxy_xml_entities, only : attribute_value
 use foxy_xml_tokenizer, only : xml_builder, xml_tokenizer
 use penf
 use stringifor
@@ -321,7 +321,7 @@ contains
    value = ''
    do a=1, self%attributes_number
       if (self%attribute(1, a)==name) then
-         if (self%attribute(2, a)%is_allocated()) value = xml_unescape(blanks_as_spaces(self%attribute(2, a)%chars()))
+         if (self%attribute(2, a)%is_allocated()) value = attribute_value(self%attribute(2, a)%chars())
          exit
       endif
    enddo
@@ -849,24 +849,6 @@ contains
    if (last>builder%open_end) content = source(builder%open_end+1:last)
    endsubroutine tag_content
 
-   pure function blanks_as_spaces(text) result(normalized)
-   !< Return a text with each blank (tab, new line, carriage return) replaced by a space, a CR LF pair by one space: the
-   !< normalization of attribute values (XML 1.0 3.3.3), done by StringiFor `string%replace`.
-   character(*), intent(in)      :: text       !< Text.
-   character(len=:), allocatable :: normalized !< Normalized string.
-   type(string)                  :: work       !< String being normalized.
-
-   if (scan(text, achar(9)//achar(10)//achar(13))==0) then
-      normalized = text
-      return
-   endif
-   work = text
-   work = work%replace(old=achar(13)//achar(10), new=' ')
-   work = work%replace(old=achar(13), new=' ')
-   work = work%replace(old=achar(10), new=' ')
-   work = work%replace(old=achar(9), new=' ')
-   normalized = work%chars()
-   endfunction blanks_as_spaces
 
    ! tag_builder methods
    pure subroutine tag_start_tag(self, id, parent_id, level, name, start)

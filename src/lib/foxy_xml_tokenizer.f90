@@ -19,7 +19,7 @@ module foxy_xml_tokenizer
 !< character data and attribute values. Each piece is checked for UTF-8 once, when it is fed; its first error is reported
 !< when the tokenizer reaches it, so that problems are always reported in the order they are met. A UTF-8 sequence or a
 !< reference split by the piece end is checked with the next piece.
-use foxy_xml_entities, only : first_bad_reference, first_utf8_error, is_name
+use foxy_xml_entities, only : first_bad_reference, first_utf8_error, is_name, utf8_tail_len
 use penf
 
 implicit none
@@ -596,7 +596,7 @@ contains
    bytes = self%utf8_carry//chars(b:)
    first = offset + b - len(self%utf8_carry, kind=I8P)
    keep = 0
-   if (.not.is_last) keep = split_sequence_len(bytes)
+   if (.not.is_last) keep = utf8_tail_len(bytes)
    self%utf8_carry = bytes(len(bytes, kind=I8P)-keep+1:)
    e = first_utf8_error(bytes(1:len(bytes, kind=I8P)-keep))
    if (e>0) then
@@ -704,28 +704,6 @@ contains
    call builder%problem(pos=pos, message=message)
    endsubroutine report
 
-   pure function split_sequence_len(bytes) result(n)
-   !< Return the number of bytes at the end of *bytes* that start a UTF-8 sequence not complete in them (0 to 3).
-   character(*), intent(in) :: bytes !< Bytes.
-   integer(I8P)             :: n     !< Bytes of the incomplete sequence.
-   integer(I8P)             :: l     !< Position of the last lead byte.
-   integer                  :: code  !< Lead byte code.
-   integer                  :: need  !< Length of the sequence the lead byte starts.
-
-   n = 0
-   do l=len(bytes, kind=I8P), max(1_I8P, len(bytes, kind=I8P)-3), -1
-      code = iachar(bytes(l:l))
-      if (code<128) return            ! ASCII: nothing split
-      if (code>=192) exit             ! a lead byte
-   enddo
-   if (l<1) return
-   code = iachar(bytes(l:l))
-   if (code<192) return               ! only continuation bytes: not a split sequence (an error, checked now)
-   need = 2
-   if (code>=224) need = 3
-   if (code>=240) need = 4
-   if (len(bytes, kind=I8P)-l+1<need) n = len(bytes, kind=I8P) - l + 1
-   endfunction split_sequence_len
 
    pure function is_attribute_present(attributes, na, name) result(is_present)
    !< Return true if the current start tag has already an attribute named *name*.
