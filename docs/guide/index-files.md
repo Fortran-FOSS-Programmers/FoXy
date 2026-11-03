@@ -11,9 +11,9 @@ read from the file when you ask for it: the memory used does not depend on the d
 
 | Method | Does |
 |---|---|
-| `scan(filename, [stop_at=], [chunk_size=], [iostat=], [iomsg=], [sanitize_attributes_value=])` | indexes a file read in chunks (default 64 KiB); with `stop_at`, stops after the start tag of the first tag with that name; errors as `xml_file%parse` |
-| `find`, `find_all`, `children`, `attribute`, `attributes_number`, `attribute_name`, `tags_number`, `name`, `parent`, `level`, `prefix`, `local_name`, `namespace` | the queries of `xml_file` |
-| `content(id, [iostat=], [iomsg=])` | reads the content of a tag from the file, as `xml_file%content(id=)`; `''` for a self-closing or unclosed tag |
+| `scan(filename, [stop_at=], [chunk_size=], [iostat=], [iomsg=], [sanitize_attributes_value=])` | indexes a file read in chunks (default 64 KiB, smaller than the 1 MiB of `parse`, so a scan stopped early reads little beyond the stop); with `stop_at`, stops after the start tag of the first tag with that name; errors as `xml_file%parse` |
+| `find`, `find_all`, `select`, `matching`, `children`, `attribute`, `attributes_number`, `attribute_name`, `tags_number`, `name`, `parent`, `level`, `prefix`, `local_name`, `namespace` | the queries of `xml_file` (`matching` on names and attributes: the index holds no content) |
+| `content(id, [iostat=], [iomsg=])` | reads the content of a tag from the file, as `xml_file%content(id=)`; `''` for a self-closing or unclosed tag; the file bytes, so a single byte encoded file (ISO-8859-1, ...) gives them unconverted |
 | `get_content`, `get_attribute` | the [typed values](./values); `get_content` reads from the file |
 | `text_range(id, first, last)` | the byte range of the text of a tag (up to its first child); `last < first` if empty |
 | `content_range(id, first, last)` | the byte range of the whole content (children included) |

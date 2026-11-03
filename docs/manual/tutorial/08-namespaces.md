@@ -11,7 +11,8 @@ A coupled run mixes two solvers in one file, each vocabulary in its namespace,
   namespace is the one declared by the nearest `xmlns:prefix` (or `xmlns`, for an unprefixed name) up the tree.
 - In `find` and `find_all`, `{uri}local` (Clark notation) matches a local name in a namespace, whatever the prefix the
   file uses.
-- With `namespaces=`, declared as in XML, every name of the query uses your prefixes: the file may use others.
+- With `namespaces=`, declared as in XML, every name of the query uses your prefixes: the file may use others. An
+  unprefixed name then means the default namespace of your map (`xmlns="..."`), or no namespace if the map has none.
 - Without either, names match literally: `dt` is only the unprefixed `dt`.
 
 ## Running it

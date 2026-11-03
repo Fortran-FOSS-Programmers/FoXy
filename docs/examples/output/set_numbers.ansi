@@ -1,0 +1,6 @@
+$ set_numbers
+<mesh>
+  <grid ni="128" spacing="0.1" periodic="true"/>
+  <domain>0.0 1.0 0.0 0.5</domain>
+  <origin>0.00 0.25</origin>
+</mesh>

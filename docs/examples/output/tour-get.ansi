@@ -1,0 +1,2 @@
+$ fx get case.xml case/time/dt
+case/time/dt = 1.000E-03 s

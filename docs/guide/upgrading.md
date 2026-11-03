@@ -5,7 +5,9 @@ title: Upgrading
 # Upgrading
 
 What changes for a program written for an older FoXy. The calls of 0.5 still compile in 0.7: every change below is in
-what a call returns or writes, not in its interface. Most of them make FoXy report, as `XML_MALFORMED`, input it used
+what a call returns or writes, not in its interface. One exception: `foxy` exports new names in 0.7 (`xml_handler`,
+`xml_attribute`, `to_value`, `to_values`, `regex`, `regex_match`), so a program that does `use foxy` without `only:`
+and declares one of these names itself must rename it, or use `only:`. Most of them make FoXy report, as `XML_MALFORMED`, input it used
 to accept silently; the document is still built (parsing stays tolerant), so a program that ignores `iostat` sees no
 difference.
 

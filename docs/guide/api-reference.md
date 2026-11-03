@@ -4,13 +4,15 @@ title: Methods summary
 
 # Methods summary
 
-Every type-bound procedure, with its arguments. The `foxy` module exports the four types, the PENF kinds, the error
-codes and the escaping functions:
+Every type-bound procedure, with its arguments. The `foxy` module exports the five types, the PENF kinds, the error
+codes, the escaping and conversion functions, and StringiFor's regular expressions:
 
 ```fortran
-use foxy, only: xml_tag, xml_file, xml_index, xml_writer
-use foxy, only: I1P, I2P, I4P, I8P, R4P, R8P  ! PENF kinds
+use foxy, only: xml_file, xml_index, xml_handler, xml_attribute, xml_writer, xml_tag
+use foxy, only: I1P, I2P, I4P, I8P, R4P, R8P                 ! PENF kinds
 use foxy, only: XML_MALFORMED, XML_NOT_FOUND, XML_BAD_VALUE  ! iostat values
+use foxy, only: xml_escape, xml_unescape, to_value, to_values
+use foxy, only: regex, regex_match                           ! StringiFor
 ```
 
 ## `xml_tag` — single XML element
@@ -20,13 +22,12 @@ Defined in `src/lib/foxy_xml_tag.F90`.
 ### Constructor
 
 ```fortran
-! flat tag (scalar content)
-tag = xml_tag(name, [content], [attribute], [attributes], [attributes_stream], &
-              [indent], [is_content_indented], [is_self_closing], &
-              [id], [level], [parent_id])
-
-! nested tag (xml_tag content)
-tag = xml_tag(name, content=inner_tag, ...)
+! a tag with text content
+tag = xml_tag(name, [content=], [attribute=], [attributes=], [attributes_stream=], [sanitize_attributes_value=], &
+              [is_self_closing=], [indent=], [is_content_indented=], [id=], [level=], [parent_id=], [pos=])
+! a nested tag as content (no is_self_closing)
+tag = xml_tag(name, content=inner_tag, [attribute=], [attributes=], [attributes_stream=], &
+              [sanitize_attributes_value=], [indent=], [is_content_indented=], [id=], [level=], [parent_id=], [pos=])
 ```
 
 ### Key methods
@@ -36,13 +37,13 @@ tag = xml_tag(name, content=inner_tag, ...)
 | `tag%set(...)` | Set any tag field after construction; `attribute_name=`/`attribute_value=` add one attribute with the value stored exactly (no padding as with the `attribute=` pair) |
 | `tag%parse(source, [tstart=], [tend=])` | Parse the first tag of `source` with the document tokenizer: name, attributes (single or double quoted, `<`, `>`, `=` allowed in values), content raw up to the matching end tag (to the source end if unclosed); `tstart`/`tend` (`integer(I8P)`) its first and last character, `0` if there is no tag; `pos` is set |
 | `tag%name()` | Return tag name as `character(:)` |
-| `tag%stringify([is_indented], [is_content_indented], [only_start], [only_content], [only_end], [linearize])` | Serialise to string |
+| `tag%stringify([is_indented], [is_content_indented], [only_start], [only_content], [only_end], [linearize])` | Serialise to string: `is_indented` puts the tag's own `indent` spaces before its start and end tags, `is_content_indented` puts the content on its own line, two more spaces in |
 | `tag%start_tag([is_indented])` | Return `<name...>` |
 | `tag%end_tag([is_indented])` | Return `</name>` |
 | `tag%self_closing_tag([is_indented])` | Return `<name.../>` |
-| `tag%attributes()` | Return all attributes as `att1="v1" att2="v2"` string |
-| `tag%add_attributes(attribute=[name,val])` | Add or update one attribute |
-| `tag%add_attributes(attributes=matrix)` | Add or update multiple attributes |
+| `tag%attributes()` | Return all attributes as `att1="v1" att2="v2"` string (unallocated if the tag has none: check `get_attributes_number()` first) |
+| `tag%add_attributes(attribute=[name,val], [sanitize_value=])` | Add or update one attribute |
+| `tag%add_attributes(attributes=matrix, [sanitize_values=])` | Add or update multiple attributes (note the plural `sanitize_values`) |
 | `tag%add_attributes(attributes_stream=string, [sanitize_values=])` | Add or update the attributes of a stream as in a start tag, e.g. `x="1" y='a > b'` (values stored as written) |
 | `tag%delete_attributes(name)` | Delete one attribute |
 | `tag%delete_attributes(name=array)` | Delete multiple attributes |
@@ -55,7 +56,7 @@ tag = xml_tag(name, content=inner_tag, ...)
 | `tag%get_level()` / `tag%get_indent()` / `tag%get_pos()` | Return the level (1 for a root tag), the indentation and the source positions (start `<`, start tag `>`, end tag `<`: `-1` if self-closing, `0` if unclosed) |
 | `tag%get_id()` / `tag%get_parent_id()` | Return the tag ID / its parent ID (`0` for a root tag) |
 | `tag%get_tail()` | Return the text after the end tag (mixed content), `''` if none |
-| `tag%write(unit, [form], [is_indented], [is_content_indented], [only_start], [only_content], [only_end], [end_record])` | Write to file unit |
+| `tag%write(unit, [form], [is_indented], [is_content_indented], [only_start], [only_content], [only_end], [end_record], [iostat], [iomsg])` | Write to file unit; `form` is `'UNFORMATTED'` (default: a stream unit) or `'FORMATTED'` |
 | `tag%free()` | Reset all fields |
 
 ### Fields (public)
@@ -149,7 +150,7 @@ file. Positions are 1-based byte offsets (`integer(I8P)`).
 | Method | Description |
 |--------|-------------|
 | `idx%scan(filename, [stop_at=], [chunk_size=], [iostat=], [iomsg=], [sanitize_attributes_value=])` | Index a file, read in chunks (default 64 KiB); with `stop_at` the scan stops after the start tag of the first tag with that name (e.g. `AppendedData`, before raw binary data); errors as `xfile%parse` |
-| `idx%find(...)`, `idx%find_all(...)`, `idx%select(...)`, `idx%children(id)`, `idx%attribute(id, name)`, `idx%tags_number()`, `idx%attributes_number(id)`, `idx%attribute_name(id, a)`, `idx%name(id)`, `idx%parent(id)`, `idx%level(id)`, `idx%prefix(id)`, `idx%local_name(id)`, `idx%namespace(id)` | The `xml_file` queries, same arguments and results |
+| `idx%find(...)`, `idx%find_all(...)`, `idx%select(...)`, `idx%matching(...)` (names, attributes), `idx%children(id)`, `idx%attribute(id, name)`, `idx%tags_number()`, `idx%attributes_number(id)`, `idx%attribute_name(id, a)`, `idx%name(id)`, `idx%parent(id)`, `idx%level(id)`, `idx%prefix(id)`, `idx%local_name(id)`, `idx%namespace(id)` | The `xml_file` queries, same arguments and results |
 | `idx%get_attribute(...)`, `idx%get_content(...)` | The `xml_file` [typed values](#typed-values); `get_content` reads the content from the file |
 | `idx%content(id, [iostat=], [iomsg=])` | Read the content of tag `id` from the file, as `xfile%content(id=)`; `''` for a self-closing or unclosed tag |
 | `idx%text_range(id, first, last)` | Byte range of the text of tag `id` (up to its first child); `last < first` if empty |
@@ -182,17 +183,19 @@ default); see [Streaming parser](./events).
 ## `xml_writer` — streaming writer
 
 Defined in `src/lib/foxy_xml_writer.f90`. Writes a document sequentially, with bounded memory, to a file, a unit or
-memory. Every method takes optional `iostat`/`iomsg`: errors are sticky (the first one is kept, the following calls do
-nothing) and `close` always reports them; without `iostat`, `close` stops the program on an error never returned through
-an `iostat`. A misuse is `XML_MALFORMED`. Only well-formed XML is written: element and attribute names must be XML names,
-a duplicate attribute is a misuse, `]]>` in text and attribute values is written `]]&gt;`.
+memory. Every subroutine takes optional `iostat`/`iomsg` (`string()` is a function, without them): errors are sticky
+(the first one is kept, the following calls do nothing) and `close` always reports them; without `iostat`, `close`
+stops the program on an error never returned through an `iostat`. A misuse is `XML_MALFORMED`. Names, attributes and
+text are always well-formed: element and attribute names must be XML names, a duplicate attribute is a misuse, `]]>` in
+text and attribute values is written `]]&gt;`. The document as a whole is not checked: a second root element is not
+refused.
 
 | Method | Description |
 |--------|-------------|
 | `w%open([filename=], [unit=], [indent=], [iostat=], [iomsg=])` | Open on a file (created/replaced, closed by `close`), on a unit open for stream unformatted access (left open), or on memory if neither is passed; `indent` spaces per level (default 2, `0` for compact output) |
 | `w%declaration([version=], [encoding=])` | Write `<?xml version="1.0"?>`; only as the first thing; `encoding` must name UTF-8 (the writer writes UTF-8) |
 | `w%start(name)` | Open an element; its start tag stays pending for attributes until its first content |
-| `w%attribute(name, value, [fmt=])` | Add an attribute: `value` character (escaped, tab, new line and CR as references), integer (`I1P`…`I8P`), real (`R4P`, `R8P`), logical (`true`/`false`) or a rank-1 list of numbers; reals are written with the shortest text that reads back exactly unless `fmt` formats them |
+| `w%attribute(name, value \| values, [fmt=])` | Add an attribute: `value` character (escaped, tab, new line and CR as references), integer (`I1P`…`I8P`), real (`R4P`, `R8P`), logical (`true`/`false`) or a rank-1 list of numbers; reals are written with the shortest text that reads back exactly unless `fmt` formats them |
 | `w%text(value \| values, [fmt=])` | A number, a logical or a rank-1 list of numbers (separated by a space), as `attribute` |
 | `w%text(string)` | Escaped character data; the element is written inline |
 | `w%raw(string, [is_block=])` | Characters as they are (data, base64); in pieces with many calls; `is_block=.true.` on its own indented line |

@@ -1,0 +1,2 @@
+$ fx check broken.xml
+broken.xml: line 5: end tag </time> closes open tag <steps>

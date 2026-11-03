@@ -1,0 +1,3 @@
+$ fx select case.xml '//boundary[@type="wall"]'
+ 15 boundary side=north
+ 16 boundary side=south

@@ -1,0 +1,5 @@
+$ check_exists
+dt is set: 1.0e-3
+no cfl: the default is used
+the west boundary has a velocity: T
+the case has a name: T

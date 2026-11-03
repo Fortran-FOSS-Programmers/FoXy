@@ -235,7 +235,9 @@ VitePress site in `docs/`, shaped as StringiFor/FLAP: `guide/` (Start here: `ind
 feature map, `parsing`, `querying`, `values`, `editing`, `writing`, `index-files`, `events`, `namespaces`, `regex`, `tags`,
 `api-reference` methods summary; Project: `upgrading` (behaviour changes per release, update it with each release), `changelog`), `manual/` (tutorial `tutorial/0N-*.md` building one program `solver`, `cookbook.md`), one
 sidebar in reading order (`docs/.vitepress/config.mts`), palette in `.vitepress/theme/custom.css`, `public/logo.svg`.
-Every sample is a program in `docs/examples/src` (markers `!run ID CMD`, `!region NAME`/`!endregion NAME`, `!as NAME`),
+Every sample is a program in `docs/examples/src` (markers `!run ID CMD`, `!region NAME`/`!endregion NAME`, `!as NAME`,
+`!image ID` and `!cast NAME ID ...` for terminal SVGs in `docs/examples/images` by `scripts/ansi2svg.py`, from StringiFor:
+`tour.f90`, the `fx` tool, is the home page and README cast),
 input files in `docs/examples/files`; `bash scripts/docs_examples.sh` rebuilds the library (`fobis build --mode
 foxy-static-gnu`), builds and runs them in one scratch dir (alphabetical file order: a run may read what an earlier one
 wrote), and regenerates `docs/examples/snippets` and `docs/examples/output`, included by the pages (`<<< @/examples/...`).

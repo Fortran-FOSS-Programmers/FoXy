@@ -1,0 +1,3 @@
+$ fx match case.xml 'e-[0-9]+$'
+dt = 1.0e-3
+viscosity = 1.8e-5

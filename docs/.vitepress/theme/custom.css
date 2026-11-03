@@ -27,3 +27,13 @@
 .VPFeature.link:hover {
   border-color: #f08c2e !important;
 }
+
+/* animated terminal sessions of the examples (docs/examples/images, scripts/ansi2svg.py) */
+.fx-casts {
+  display: flex;
+  justify-content: center;
+  margin: 1.4rem 0;
+}
+.fx-casts img {
+  max-width: 100%;
+}

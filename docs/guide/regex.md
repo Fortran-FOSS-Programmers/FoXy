@@ -5,7 +5,8 @@ title: Regular expressions
 # Regular expressions
 
 FoXy filters tags with regular expressions, by their name, their content or the value of an attribute. The engine is
-StringiFor's (`regex`, a Pike VM: linear time, the syntax and the results of Python `re`); `foxy` exports its `regex`
+StringiFor's (`regex`, a Pike VM: linear time, the syntax and the results of Python `re`, without backreferences,
+lookaround and octal escapes); `foxy` exports its `regex`
 and `regex_match` types, so no other `use` is needed. The syntax is documented in StringiFor:
 [Regular Expressions](https://szaghi.github.io/StringiFor/guide/regex).
 
@@ -26,6 +27,7 @@ and `regex_match` types, so no other `use` is needed. The syntax is documented i
 - `re` is compiled once, with `call re%compile(pattern, iostat=, iomsg=)`; a regex not compiled (or whose pattern did
   not compile) matches nothing. `matching` is pure.
 - `xml_index` filters names and attributes the same way (it holds no content: `on='content'` gives no IDs).
+- An `on` other than `name`, `content` or `attribute` gives no IDs, and so does `on='attribute'` without `attribute=`.
 
 `matching` takes the IDs of any query, so it chains with `find`/`find_all` (here: the boundaries, then those of a type),
 and its result goes to any accessor.

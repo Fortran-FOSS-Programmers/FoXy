@@ -23,10 +23,12 @@ contains
    character(*),          intent(in)    :: name
    type(xml_attribute),   intent(in)    :: attributes(:)
    integer                              :: a
+   integer(I4P)                         :: iostat
+   character(len=:), allocatable        :: iomsg
    select case(name)
    case('snapshot')
       do a=1, size(attributes)                        ! attributes come with the start of the element
-         if (attributes(a)%name=='step') read(attributes(a)%value, *) self%step
+         if (attributes(a)%name=='step') call to_value(attributes(a)%value, self%step, iostat, iomsg)
       enddo
    case('pressure')
       self%is_inside = .true.

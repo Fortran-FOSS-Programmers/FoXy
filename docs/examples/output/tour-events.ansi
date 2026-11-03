@@ -1,0 +1,6 @@
+$ fx events station-utf16.xml
+start station name="Zürich" country="CH"
+  start reading unit="°C"
+    text  21.5
+  end   reading
+end   station

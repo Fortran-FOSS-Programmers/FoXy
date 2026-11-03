@@ -1,0 +1,4 @@
+$ stream_stop
+first wall: north, iostat 0
+problem: line 5: end tag </time> closes open tag <steps>
+broken.xml malformed: T

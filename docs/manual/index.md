@@ -17,17 +17,24 @@ output shown is the real output of that program.
 |---|---|
 | [1. A first document](./tutorial/01-first-document) | `xml_file`, `parse`, `content`, `find`, `attribute`, `stringify`; tag IDs |
 | [2. Reading the case file](./tutorial/02-reading) | `parse(filename=)`, paths, typed values (`get_content`, `get_attribute`), errors |
-| [3. Walking the tree](./tutorial/03-walking) | `children`, `name`, `attributes_number`, `attribute_name`, `find_all`, `tags_number`, `matching` |
-| [4. Editing and saving](./tutorial/04-editing) | `set_content`, `set_attribute`, `delete_attribute`, `delete_tag`, `add_tag`, `save` |
-| [5. Writing the results](./tutorial/05-writing) | `xml_writer`: `open`, `start`, `attribute`, `text`, `raw`, `end`, `close` |
+| [3. Walking the tree](./tutorial/03-walking) | `children`, `name`, `attributes_number`, `attribute_name`, `find_all`, `tags_number`, `matching`, `select` |
+| [4. Editing and saving](./tutorial/04-editing) | `set_content` (text or numbers), `set_attribute`, `delete_attribute`, `add_tag` (`parent=`, `before=`, `after=`), `delete_tag`, `set_name`, `save` |
+| [5. Writing the results](./tutorial/05-writing) | `xml_writer`: `open`, `declaration`, `start`, `attribute` and `text` (text or numbers), `comment`, `end`, `close`; sticky errors |
 | [6. Large outputs: the index](./tutorial/06-index) | `xml_index`: `scan`, content on demand, byte ranges, `stop_at` |
 | [7. Your own handler](./tutorial/07-handler) | `xml_handler`: callbacks, `parse`, collecting text, `to_values`, `stop_parsing` |
 | [8. Namespaces](./tutorial/08-namespaces) | `prefix`, `local_name`, `namespace`, `{uri}local`, `namespaces=` |
-| [9. Robust input and text](./tutorial/09-robust) | malformed input, tolerant parsing, references, CDATA, mixed content, `xml_escape` |
+| [9. Robust input and text](./tutorial/09-robust) | malformed input, tolerant parsing, encodings, references, CDATA, mixed content, `xml_escape` |
+
+The chapters read and write these files (run them in order: chapters 6 and 7 read what chapter 5 writes):
 
 ```mermaid
 flowchart LR
-  c1[1 first document] --> c2[2 reading] --> c3[3 walking] --> c4[4 editing] --> c5[5 writing] --> c6[6 index] --> c7[7 handler] --> c8[8 namespaces] --> c9[9 robust input]
+  case[(case.xml)] --> c1to4["1-4: parse, read,<br/>walk, edit"] --> restart[(restart.xml)]
+  c5["5: write the results"] --> results[(results.xml)]
+  results --> c6["6: the index"]
+  results --> c7["7: a handler"]
+  coupled[(coupled.xml)] --> c8["8: namespaces"]
+  broken[(broken.xml)] --> c9["9: robust input"]
 ```
 
 ## The cookbook
@@ -47,4 +54,5 @@ gfortran -I lib/mod docs/examples/src/solver_1.f90 lib/libfoxy.a -o solver
 ```
 
 `bash scripts/docs_examples.sh` builds and runs all of them, regenerating the outputs shown in these pages. The programs
-that read a file expect the ones of `docs/examples/files` in the current directory.
+that read a file expect the ones of `docs/examples/files` in the current directory; chapters 6 and 7 read the
+`results.xml` that chapter 5 writes, so run the chapters in order.

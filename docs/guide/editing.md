@@ -11,10 +11,11 @@ title: Editing
 <<< @/examples/output/build_document.ansi{ansi}
 
 `add_tag(tag, [parent=], [id=])` appends an `xml_tag` as the last child of `parent` (one level deeper, indented two
-more spaces), or as a root tag without `parent`; `id` returns its ID (`0` if `parent` is not a tag). Tags are appended,
-so the IDs of a built document follow the insertion order. With `before=` (or `after=`) the tag is inserted right before
-(after) a sibling, after its whole subtree for `after`: it takes that place in the document order and the following
-IDs are renumbered. See [Single tags](./tags) for `xml_tag`.
+more spaces), or as a root tag without `parent`. Tags are appended, so the IDs of a built document follow the insertion
+order. With `before=` (or `after=`) the tag is inserted right before (after) a sibling, after its whole subtree for
+`after`: it takes that place in the document order and the following IDs are renumbered. `id` returns the new ID, `0`
+if the tag is not added: `parent`, `before` or `after` is not a tag, the sibling is not a child of `parent`, or both
+`before` and `after` are passed. See [Single tags](./tags) for `xml_tag`.
 
 ## Editing by ID
 
@@ -30,9 +31,11 @@ IDs are renumbered. See [Single tags](./tags) for `xml_tag`.
 | `set_name(id, name, [iostat=], [iomsg=])` | renames a tag; `XML_MALFORMED` if `name` is not an XML name |
 | `free()` | empties the document |
 
-`iostat` is `XML_NOT_FOUND` for a tag or attribute that does not exist and `XML_MALFORMED` for an invalid attribute
-name; without it, errors are silent. A deletion (`delete_tag`, `set_content` on a tag with children) renumbers the
-following tags: look IDs up again after it.
+`iostat` is `XML_NOT_FOUND` for a tag or attribute that does not exist, `XML_MALFORMED` for an invalid attribute
+name, and `XML_BAD_VALUE` when `fmt=` cannot write the value (an invalid format, or a value that does not fit its
+field: asterisks); without it, errors are silent. IDs change with the structure: a deletion (`delete_tag`,
+`set_content` on a tag with children) or an insertion (`before=`, `after=`) renumbers the following tags, an append
+(`parent=`) takes the next free ID. Look IDs up again after a structural edit.
 
 ::: warning Escaping
 `set_attribute` escapes the value: `attribute()` returns it as you passed it. `set_content` and `xml_tag(content=)`

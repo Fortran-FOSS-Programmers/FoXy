@@ -23,3 +23,4 @@ boundary east: outflow
 boundary north: wall
 boundary south: wall
 closed boundaries: 3 (east, ...)
+walls: north south

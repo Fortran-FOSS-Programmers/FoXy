@@ -5,6 +5,7 @@ implicit none
 type(xml_file)            :: case_file
 integer(I4P), allocatable :: ids(:)
 integer(I4P)              :: b
+integer(I4P)              :: iostat
 type(regex)               :: walls
 
 call case_file%parse(filename='case.xml')
@@ -14,9 +15,11 @@ ids = case_file%find_all(path='case/boundary')       ! every match, in document 
 do b=1, size(ids)
    print '(A)', 'boundary '//case_file%attribute(ids(b), 'side')//': '//case_file%attribute(ids(b), 'type')
 enddo
-call walls%compile('^(wall|outflow)$', iostat=b)               ! a regular expression (StringiFor engine)
+call walls%compile('^(wall|outflow)$', iostat=iostat)          ! a regular expression (StringiFor engine)
 ids = case_file%matching(walls, ids=case_file%find_all(path='case/boundary'), attribute='type')
 print '(A,I0,A)', 'closed boundaries: ', size(ids), ' ('//case_file%attribute(ids(1), 'side')//', ...)'
+ids = case_file%select('case/boundary[@type="wall"]')           ! a path expression: the same in one call
+print '(A,*(1X,A))', 'walls:', (case_file%attribute(ids(b), 'side'), b=1, size(ids))
 contains
    recursive subroutine outline(id, depth)
    !< Print a tag, its attributes and, indented, its children.

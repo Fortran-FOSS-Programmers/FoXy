@@ -11,6 +11,10 @@ boundaries. Nothing here knows the names in advance.
 - `find_all` returns every match, in document order: here the four `boundary` tags under `case`.
 - `matching` keeps the tags whose name, content or attribute matches a regular expression: here the boundaries whose
   `type` is a wall or an outflow. The regex (`type(regex)`, StringiFor's engine) is compiled once.
+- `select` takes a path expression, a small XPath: `/` for children, `//` for descendants, `*` for any name, and tests in
+  brackets (`[@type="wall"]`, `[@side~="^(east|west)$"]`, `[2]`). It does in one call what `find_all` and `matching`
+  do above; a malformed expression returns `XML_MALFORMED` with its column. See the
+  [path selector](/guide/querying#path-selector).
 
 ## Running it
 
@@ -21,7 +25,8 @@ section is taken literally (its `<` is text, not a tag).
 
 ::: tip What you learned
 `children` and `name` walk the tree, `attributes_number` and `attribute_name` list attributes, `find_all` collects
-repeated tags. Reference: [Querying](/guide/querying).
+repeated tags, `matching` filters them by a regular expression, `select` does both with a path expression. Reference:
+[Querying](/guide/querying).
 :::
 
 Next: [4. Editing and saving](./04-editing).

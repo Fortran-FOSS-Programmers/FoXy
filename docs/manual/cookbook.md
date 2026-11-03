@@ -5,9 +5,11 @@ title: Cookbook
 # Cookbook
 
 Short answers to "how do I ...?". Each recipe is a complete program with its real output; the
-[reference](/guide/features#feature-map) has the details. The files they read are the ones of the
-[tutorial](./index): [`case.xml`](https://github.com/Fortran-FOSS-Programmers/FoXy/blob/master/docs/examples/files/case.xml)
-and [`coupled.xml`](https://github.com/Fortran-FOSS-Programmers/FoXy/blob/master/docs/examples/files/coupled.xml).
+[reference](/guide/features#feature-map) has the details. The files they read are in
+[`docs/examples/files`](https://github.com/Fortran-FOSS-Programmers/FoXy/tree/master/docs/examples/files) (`case.xml` and
+`coupled.xml` of the [tutorial](./index), `broken.xml`, `station-*.xml`), or are written by an earlier program:
+`results.xml` by [chapter 5](./tutorial/05-writing) of the tutorial, `appended.xml` by *Write binary data inside a
+document*.
 
 [[toc]]
 
@@ -67,7 +69,7 @@ Logicals are `true`, `false`, `1` or `0`; any integer kind (`I1P`…`I8P`), `R4P
 
 On error the value is not touched: set the default first, check `iostat` if you need to know.
 
-### Report a value that is not a number
+### Report a bad or missing value
 
 <<< @/examples/snippets/report_bad_value.f90
 
@@ -81,7 +83,38 @@ Tokens are checked before conversion: `,`, `/`, quotes and repeat counts (`2*5`)
 
 <<< @/examples/output/keep_attribute_spaces.ansi{ansi}
 
+### Read text with markup around it
+
+<<< @/examples/snippets/mixed_content.f90
+
+<<< @/examples/output/mixed_content.ansi{ansi}
+
+`content` returns the direct text: references decoded, CDATA literal, comments and child tags out.
+
+
+### Read a UTF-16 or Latin-1 file
+
+<<< @/examples/snippets/read_encodings.f90
+
+<<< @/examples/output/read_encodings.ansi{ansi}
+
+<<< @/examples/output/read_encodings-head.ansi{ansi}
+
+Nothing to do: the encoding is detected (byte order mark, declaration) and the text converted to UTF-8; `save` writes
+UTF-8 and declares it. The index reads the file bytes (its positions are file positions), so it refuses a UTF-16 file:
+parse it with `xml_file` or a handler. See [Encodings](/guide/parsing#encodings).
+
+
 ## Finding
+
+### Check that a tag exists
+
+<<< @/examples/snippets/check_exists.f90
+
+<<< @/examples/output/check_exists.ansi{ansi}
+
+`find` returns `0` when there is no such tag, `select` an empty array, `attribute` an empty string; the accessors also
+take `0` safely (`content(id=0)` is `''`, `get_content(id=0, ...)` returns `XML_NOT_FOUND`).
 
 ### Loop over repeated tags
 
@@ -109,24 +142,9 @@ Tokens are checked before conversion: `,`, `/`, quotes and repeat counts (`2*5`)
 
 <<< @/examples/output/walk_tree.ansi{ansi}
 
-IDs follow the document order, so a plain loop visits the tree depth first; `children` and recursion give the structure.
-
-### Read text with markup around it
-
-<<< @/examples/snippets/mixed_content.f90
-
-<<< @/examples/output/mixed_content.ansi{ansi}
-
-`content` returns the direct text: references decoded, CDATA literal, comments and child tags out.
-
-### Read a UTF-16 or Latin-1 file
-
-<<< @/examples/snippets/read_encodings-read.f90
-
-<<< @/examples/output/read_encodings.ansi{ansi}
-
-Nothing to do: the encoding is detected (byte order mark, declaration) and the text converted to UTF-8; `save` writes
-UTF-8. See [Encodings](/guide/parsing#encodings).
+In a parsed document IDs follow the document order, so a plain loop visits the tree depth first; `children` and
+recursion give the structure. A tag appended later with `add_tag(parent=)` gets the next free ID: after such edits,
+walk with `children`.
 
 ### Select tags with a path expression
 
@@ -186,6 +204,15 @@ An insertion takes the place of the sibling in the document order: the tags afte
 
 <<< @/examples/output/edit_and_save.ansi{ansi}
 
+### Set numbers, logicals and lists
+
+<<< @/examples/snippets/set_numbers.f90
+
+<<< @/examples/output/set_numbers.ansi{ansi}
+
+`set_attribute` and `set_content` take numbers, logicals and lists as the writer does: integers with their digits,
+reals with the shortest text that reads back exactly, unless `fmt=` formats them. See [Editing](/guide/editing).
+
 ### Delete tags
 
 <<< @/examples/snippets/delete_tags.f90
@@ -224,7 +251,8 @@ Contents are stored as given (they may hold markup): escape text that is not mar
 
 <<< @/examples/output/writer_file_cat.ansi{ansi}
 
-`fmt=` formats a number attribute; without it, integers have no sign when positive and reals full precision.
+`fmt=` formats a number attribute; without it, integers get their digits (a sign only if negative) and reals the
+shortest text that reads back exactly.
 
 ### Write numbers, logicals and lists
 
@@ -271,13 +299,24 @@ The first error is kept and the following calls do nothing; `close(iostat=)` ret
 Only the callbacks you override are called; the file is read in chunks, never whole. See
 [Streaming parser](/guide/events).
 
+### Stop a streaming parse early, and see its problems
+
+<<< @/examples/snippets/stream_stop.f90
+
+<<< @/examples/output/stream_stop.ansi{ansi}
+
+`stop_parsing` ends the parse from a callback: no more callbacks, the rest of the file is not read. Override `problem`
+to see each problem as it is met; `parse` also returns the first one in `iomsg`.
+
 ### Index a file and stop before its binary data
 
 <<< @/examples/snippets/index_stop.f90
 
 <<< @/examples/output/index_stop.ansi{ansi}
 
-The bytes after `stop_position()` are never read: read the binary data yourself from there.
+`stop_position()` is the first byte after the `>` of the start tag; there the writer's `flush` put a new line, so the
+data start one byte later. What follows is not parsed, and the scan reads nothing beyond its current chunk (64 KiB by
+default): read the binary data yourself from there.
 
 ### Read only the contents you need
 

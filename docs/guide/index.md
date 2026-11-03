@@ -4,14 +4,32 @@ title: About FoXy
 
 # About FoXy
 
-FoXy (Fortran XML for poor people) is a pure Fortran library to read, edit and write XML. Four types cover every use:
+FoXy (Fortran XML for poor people) is a pure Fortran library to read, edit and write XML. Five types cover every use:
 
 | Type | For |
 |---|---|
 | `xml_file` | a whole document in memory (a DOM): parse a string or a file, query it, edit it, save it |
 | `xml_index` | a file too large to hold: its tags and attributes, the contents read on demand |
+| `xml_handler` | a document of any size read once, in order: your callbacks are called for each tag and text, nothing is stored |
 | `xml_writer` | a document of any size, written element by element to a file, a unit or memory |
 | `xml_tag` | a single element: build it, parse it, write it |
+
+Which one you need depends on what you do with the document:
+
+```mermaid
+flowchart TD
+  start([An XML document]) --> q1{Read it or write it?}
+  q1 -- write --> q2{Build it whole first?}
+  q2 -- "yes: build, edit, then save" --> file1[xml_file<br/>add_tag, set_content, save]
+  q2 -- "no: write as you go, any size" --> writer[xml_writer<br/>start, attribute, text, end]
+  q1 -- read --> q3{Does it fit in memory?}
+  q3 -- yes --> q4{Edit it, or query it in any order?}
+  q4 -- yes --> file2[xml_file<br/>parse, find, select, content]
+  q4 -- "no: one pass is enough" --> handler[xml_handler<br/>your callbacks]
+  q3 -- no --> q5{Visit the tags more than once?}
+  q5 -- "yes: random access" --> index[xml_index<br/>scan, then contents on demand]
+  q5 -- "no: one pass" --> handler
+```
 
 The library targets scientific codes: case files, results metadata (VTK, XDMF), catalogues (QuakeML). It is standard
 Fortran 2008, with no C bindings; it depends on small libraries by the same author (PENF for the kinds, StringiFor for

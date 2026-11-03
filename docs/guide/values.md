@@ -13,7 +13,8 @@ title: Typed values
 | `get_content(id, value, [iostat=], [iomsg=])` | the content of tag `id` (as `content(id=)`) |
 | `get_attribute(id, name, value, [iostat=], [iomsg=])` | attribute `name` of tag `id` |
 
-`value` is an integer (`I1P`, `I2P`, `I4P`, `I8P`), a real (`R4P`, `R8P`) or a logical (`true`, `false`, `1`, `0`).
+`value` is an integer (`I1P`, `I2P`, `I4P`, `I8P`), a real (`R4P`, `R8P`) or a logical (`true`, `false`, `1`, `0`,
+lowercase only: `True` is `XML_BAD_VALUE`, as in XML Schema).
 With `values=` instead, an allocatable rank-1 integer or real array, the text is a blank-separated list
 (`"0 10 0 10 0 0"`) and the array gets its size.
 
@@ -28,8 +29,8 @@ With `values=` instead, an allocatable rank-1 integer or real array, the text is
 | `XML_BAD_VALUE` | not a value of that type: a character not allowed, a token not converted (e.g. out of range), not exactly one token for a scalar; `iomsg` quotes the token and names the tag or attribute |
 | other | `xml_index%get_content` only: the I/O error reading the file |
 
-On error the scalar keeps its value and the list is empty: a default set before the call survives. Without `iostat`
-errors are silent.
+On error the scalar keeps its value and the list is empty: a default set before the call survives. An empty text is an
+empty list with `iostat=0`: check `size(values)` when a value is required. Without `iostat` errors are silent.
 
 Each token is converted by StringiFor (`string%read_number`): correctly rounded, with exact range checks and without
 a `read` statement, so the results are the same with every compiler.
