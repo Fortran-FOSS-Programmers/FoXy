@@ -20,4 +20,4 @@ tags and their attributes, but no content: the memory it needs does not depend o
 Index large files with `xml_index` and read only the contents you need. Reference: [The index](/guide/index-files).
 :::
 
-Next: [7. Namespaces](./07-namespaces).
+Next: [7. Your own handler](./07-handler).

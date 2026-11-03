@@ -1,11 +1,7 @@
 $ solver
-coupled -> prefix "", local "coupled", namespace "https://example.org/flow"
-case -> prefix "", local "case", namespace "https://example.org/flow"
-dt -> prefix "", local "dt", namespace "https://example.org/flow"
-th:case -> prefix "th", local "case", namespace "https://example.org/thermal"
-th:dt -> prefix "th", local "dt", namespace "https://example.org/thermal"
-conductivity -> prefix "", local "conductivity", namespace "https://example.org/materials"
-thermal dt: 5.0e-3
-flow dt:    1.0e-3
-k:          237.0
-literal "dt" matches: 1
+step 100: mean p =  0.611, max =  1.000
+step 300: mean p =  0.204, max =  0.333
+step 500: mean p =  0.122, max =  0.200
+iostat = 0
+step 100: mean p =  0.611, max =  1.000
+step 300: mean p =  0.204, max =  0.333

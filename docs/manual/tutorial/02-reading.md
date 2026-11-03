@@ -10,7 +10,7 @@ The case lives in a file, [`case.xml`](https://github.com/Fortran-FOSS-Programme
 
 - `parse(filename=)` reads the file in chunks (1 MiB by default): the file is never loaded whole, so it may be larger
   than the memory left. `iostat` is `0`, the runtime I/O error (the file cannot be read), or `XML_MALFORMED` (see
-  [chapter 8](./08-robust)).
+  [chapter 9](./09-robust)).
 - `get_content(id, value)` converts the text of a tag into `value`: any integer kind, `real(R4P)`, `real(R8P)` or
   `logical` (`true`, `false`, `1`, `0`). With `values=`, an allocatable array, it reads a blank-separated list.
 - `get_attribute(id, name, value)` does the same for an attribute.

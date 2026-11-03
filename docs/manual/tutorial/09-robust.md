@@ -1,11 +1,11 @@
-# 8. Robust input and text
+# 9. Robust input and text
 
 Case files are written by hand, and hands make mistakes. [`broken.xml`](https://github.com/Fortran-FOSS-Programmers/FoXy/blob/master/docs/examples/files/broken.xml)
 forgets an end tag:
 
 <<< @/examples/files/broken.xml
 
-<<< @/examples/snippets/solver_8.f90
+<<< @/examples/snippets/solver_9.f90
 
 - Parsing is tolerant: the document is built as far as possible, and `iostat=XML_MALFORMED` with `iomsg` reports the
   first problem and its line. Besides the tags structure, FoXy reports invalid names, duplicate attributes, text
@@ -19,7 +19,7 @@ forgets an end tag:
 
 ## Running it
 
-<<< @/examples/output/solver_8.ansi{ansi}
+<<< @/examples/output/solver_9.ansi{ansi}
 
 ::: tip What you learned
 Check `iostat`/`iomsg` of `parse`; read text through the accessors, escape what you write as content. Reference:

@@ -1,8 +1,11 @@
 $ solver
-broken.xml: line 5: end tag </time> closes open tag <steps>
-dt is still read: 1.0e-3
-notes:  Lid-driven cavity & inflow, after <paper ref="1">.
-escape: a &lt; b &amp; &quot;c&quot;
-raw:    1 < 2 & été
-mixed:  the  moves at  m/s
-<p>the <b>lid</b> moves at <v>1</v> m/s</p>
+coupled -> prefix "", local "coupled", namespace "https://example.org/flow"
+case -> prefix "", local "case", namespace "https://example.org/flow"
+dt -> prefix "", local "dt", namespace "https://example.org/flow"
+th:case -> prefix "th", local "case", namespace "https://example.org/thermal"
+th:dt -> prefix "th", local "dt", namespace "https://example.org/thermal"
+conductivity -> prefix "", local "conductivity", namespace "https://example.org/materials"
+thermal dt: 5.0e-3
+flow dt:    1.0e-3
+k:          237.0
+literal "dt" matches: 1

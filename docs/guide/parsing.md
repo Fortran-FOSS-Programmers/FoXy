@@ -62,7 +62,7 @@ tab, new line and CR read as a space (XML 1.0 3.3.3).
 
 ## Character references
 
-<<< @/examples/snippets/solver_8-text.f90
+<<< @/examples/snippets/solver_9-text.f90
 
 `xml_unescape` decodes `&lt;` `&gt;` `&amp;` `&quot;` `&apos;` and the numeric references `&#N;` and `&#xH;` (as
 UTF-8, any number of digits); malformed references (`&nbsp;`, defined by a DTD, a bare `&`, `&#0;`, a surrogate) are

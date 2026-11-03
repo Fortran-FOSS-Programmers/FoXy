@@ -1,19 +1,21 @@
 program solver
-!< Tutorial, chapter 8: robust input and text.
+!< Tutorial, chapter 8: namespaces.
 use foxy
 implicit none
-type(xml_file)     :: case_file
-integer(I4P)       :: iostat
-character(len=256) :: iomsg
+type(xml_file)            :: coupled
+integer(I4P), allocatable :: ids(:)
+integer(I4P)              :: t
 
-call case_file%parse(filename='broken.xml', iostat=iostat, iomsg=iomsg)
-if (iostat==XML_MALFORMED) print '(A)', 'broken.xml: '//trim(iomsg)
-print '(A)', 'dt is still read: '//case_file%content('dt')          ! tolerant: the document is built anyway
-call case_file%parse(filename='case.xml')
-print '(A)', 'notes:  '//case_file%content('notes')                  ! references decoded, CDATA literal
-print '(A)', 'escape: '//xml_escape('a < b & "c"')
-print '(A)', 'raw:    '//xml_unescape('1 &lt; 2 &#x26; &#233;t&#233;')
-call case_file%parse(string='<p>the <b>lid</b> moves at <v>1</v> m/s</p>')
-print '(A)', 'mixed:  '//case_file%content('p')                     ! the direct text of p, children excluded
-print '(A)', case_file%stringify()                                   ! written back as it was
+call coupled%parse(filename='coupled.xml')
+ids = coupled%find_all(name='{https://example.org/thermal}dt')   ! Clark notation: {namespace}local name
+do t=1, coupled%tags_number()
+   print '(A)', coupled%name(t)//' -> prefix "'//coupled%prefix(t)//'", local "'//coupled%local_name(t)// &
+                '", namespace "'//coupled%namespace(t)//'"'
+enddo
+print '(A)', 'thermal dt: '//coupled%content(id=ids(1))
+t = coupled%find(path='f:coupled/f:case/f:dt', namespaces='xmlns:f="https://example.org/flow"')   ! your own prefixes
+print '(A)', 'flow dt:    '//coupled%content(id=t)
+t = coupled%find(name='m:conductivity', namespaces='xmlns:m="https://example.org/materials"')
+print '(A)', 'k:          '//coupled%content(id=t)
+print '(A,I0)', 'literal "dt" matches: ', size(coupled%find_all(name='dt'))       ! names without a map: literal
 endprogram solver

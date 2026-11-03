@@ -21,8 +21,9 @@ const docs = [
       { text: '4. Editing and saving',        link: '/manual/tutorial/04-editing' },
       { text: '5. Writing the results',       link: '/manual/tutorial/05-writing' },
       { text: '6. Large outputs: the index',  link: '/manual/tutorial/06-index' },
-      { text: '7. Namespaces',                link: '/manual/tutorial/07-namespaces' },
-      { text: '8. Robust input and text',     link: '/manual/tutorial/08-robust' },
+      { text: '7. Your own handler',          link: '/manual/tutorial/07-handler' },
+      { text: '8. Namespaces',                link: '/manual/tutorial/08-namespaces' },
+      { text: '9. Robust input and text',     link: '/manual/tutorial/09-robust' },
     ],
   },
   {

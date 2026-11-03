@@ -8,7 +8,7 @@ Names are stored as written; their namespaces (Namespaces in XML 1.0) are resolv
 parsing is unchanged. The namespace of a tag is declared by the nearest `xmlns:prefix` attribute (`xmlns` for an
 unprefixed name) on the tag or on its ancestors.
 
-<<< @/examples/snippets/solver_7-resolve.f90
+<<< @/examples/snippets/solver_8-resolve.f90
 
 | Method | Returns |
 |---|---|
@@ -22,7 +22,7 @@ reported by `parse`).
 
 ## Queries
 
-<<< @/examples/snippets/solver_7-queries.f90
+<<< @/examples/snippets/solver_8-queries.f90
 
 | Name in `find`/`find_all` (and each `path` segment) | Matches |
 |---|---|

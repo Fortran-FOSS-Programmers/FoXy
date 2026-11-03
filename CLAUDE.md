@@ -195,6 +195,11 @@ The suite passes with gfortran 14/16, ifx 2025.3 and nvfortran 26.5/26.9. Compil
   `xml_tag` is corrupted (`tag_builder` keeps plain components); a constant `repeat(..., 100000)` is folded and crashes
   the compiler (use a variable count);
 - ifx puts large temporaries (function results) on the stack: build with `-heap-arrays` (in the fobos intel modes).
+- nvfortran 26.9 (found with the streaming parser): an internal procedure reads stale values of host-associated
+  variables (`dispatch` of `foxy_xml_events` is a module procedure with explicit arguments); a file already open for
+  reading cannot be opened again (lines of a problem are counted on the open unit, `lines_to`); an array of derived
+  types with allocatable string components, updated through a polymorphic `self`, gets corrupted (the test recorder
+  keeps its texts in one string);
 - StringiFor keys its nvfortran workarounds on `_NVF`: the fobos nvidia modes define it (`$CSTATIC_NV`); without it
   nvfortran 26.5/26.9 builds empty strings (33 of 36 tests fail, since StringiFor cc63426, 2026-10-30).
 

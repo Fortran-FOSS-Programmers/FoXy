@@ -20,7 +20,7 @@ strings, BeFoR64 and FACE), which every build system fetches.
 This documentation reads in order, and each page links to the next one:
 
 1. [Installation](./installation): get FoXy into your project.
-2. The [tutorial](/manual/): eight short chapters that build the input and output of a solver, step by step.
+2. The [tutorial](/manual/): nine short chapters that build the input and output of a solver, step by step.
 3. The [cookbook](/manual/cookbook): short recipes, one for each "how do I ...?".
 4. The reference, from the [feature map](./features#feature-map) on: every method, every argument.
 
