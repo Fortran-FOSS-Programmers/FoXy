@@ -4,6 +4,51 @@ All notable changes to this project are documented here.
 Versions follow [Semantic Versioning](https://semver.org/).
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.7.0] — 2026-11-03
+### Added
+- **parser**: Report ill-formed UTF-8 ⚠ BREAKING CHANGE
+
+- **parser**: Report malformed references ⚠ BREAKING CHANGE
+
+- **dom**: Set contents and attributes as numbers, logicals and lists
+
+- **writer**: Write numbers, logicals and lists, reals as their shortest text ⚠ BREAKING CHANGE
+
+- **events**: Add a streaming parser with your own callbacks
+
+- **dom**: Insert a tag before or after a sibling, rename a tag
+
+- **tree**: Filter tags with regular expressions
+
+- **tree**: Select tags with a path expression
+
+- **parse**: Read UTF-16, UTF-32, ISO-8859-1 and windows-1252 sources
+
+
+### Changed
+- **values**: Convert typed values with StringiFor read_number
+
+- **entities**: Escape and decode with StringiFor ⚠ BREAKING CHANGE
+
+- **tag**: Normalize attribute values with StringiFor replace
+
+- **entities**: Share the decoding of attribute values and character data
+
+
+### Documentation
+- **tutorial**: Add the chapter "Your own handler"
+
+- **guide**: Add the Upgrading page for 0.5, 0.6 and 0.7
+
+
+### Fixed
+- **gitignore**: Ignore only the root lib/ and build/
+
+- **entities**: Check names with the XML 1.0 character ranges ⚠ BREAKING CHANGE
+
+- **values**: Report a field of asterisks as a value that does not fit
+
+
 ## [0.6.0] — 2026-11-02
 ### Added
 - **parser**: Report invalid names, duplicate attributes and data outside the root
