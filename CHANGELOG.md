@@ -4,6 +4,25 @@ All notable changes to this project are documented here.
 Versions follow [Semantic Versioning](https://semver.org/).
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.8.0] — 2026-11-03
+### Documentation
+- Audit the documentation against the code, add a cast and diagrams
+
+- **guide**: Name the 0.8 section of the Upgrading page
+
+
+### Fixed
+- **writer**: Check the document as a whole: one root, valid PI targets ⚠ BREAKING CHANGE
+
+- **tag**: Return empty strings for no attributes or content, report an unknown form
+
+- **tag**: Stop on a write error when no iostat is given ⚠ BREAKING CHANGE
+
+
+### Performance
+- **tree**: Read the children list in children(id)
+
+
 ## [0.7.0] — 2026-11-03
 ### Added
 - **parser**: Report ill-formed UTF-8 ⚠ BREAKING CHANGE
