@@ -119,6 +119,15 @@ IDs follow the document order, so a plain loop visits the tree depth first; `chi
 
 `content` returns the direct text: references decoded, CDATA literal, comments and child tags out.
 
+### Read a UTF-16 or Latin-1 file
+
+<<< @/examples/snippets/read_encodings-read.f90
+
+<<< @/examples/output/read_encodings.ansi{ansi}
+
+Nothing to do: the encoding is detected (byte order mark, declaration) and the text converted to UTF-8; `save` writes
+UTF-8. See [Encodings](/guide/parsing#encodings).
+
 ### Select tags with a path expression
 
 <<< @/examples/snippets/select_path.f90

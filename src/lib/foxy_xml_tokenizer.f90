@@ -19,6 +19,7 @@ module foxy_xml_tokenizer
 !< character data and attribute values. Each piece is checked for UTF-8 once, when it is fed; its first error is reported
 !< when the tokenizer reaches it, so that problems are always reported in the order they are met. A UTF-8 sequence or a
 !< reference split by the piece end is checked with the next piece.
+use foxy_xml_source, only : converted_line, source_encoding
 use foxy_xml_entities, only : first_bad_reference, first_utf8_error, is_name, utf8_tail_len
 use penf
 
@@ -152,9 +153,12 @@ type :: xml_tokenizer
    character(len=:), allocatable :: ref_carry        !< Start of a reference split by the piece end (from its `&`).
    integer(I8P)                :: ref_carry_pos=0_I8P !< Position of that `&`.
    logical                     :: is_ref_reported=.false. !< A malformed reference has been reported.
+   character(len=:), allocatable :: source_name        !< Encoding of the source if not UTF-8, for the messages.
+   logical                     :: is_converted=.false. !< The source is converted to UTF-8 (an FF byte is an invalid sequence).
    contains
-      procedure, pass(self) :: feed  !< Feed a piece of the source.
-      procedure, pass(self) :: reset !< Reset the tokenizer, ready for a new source.
+      procedure, pass(self) :: feed       !< Feed a piece of the source.
+      procedure, pass(self) :: reset      !< Reset the tokenizer, ready for a new source.
+      procedure, pass(self) :: set_source !< Set the encoding of the source, for the messages.
 endtype xml_tokenizer
 
 contains
@@ -437,6 +441,8 @@ contains
    if (allocated(self%ref_carry)) deallocate(self%ref_carry)
    self%ref_carry_pos = 0_I8P
    self%is_ref_reported = .false.
+   if (allocated(self%source_name)) deallocate(self%source_name)
+   self%is_converted = .false.
    endsubroutine reset
 
    pure function located(source, pos, message) result(problem)
@@ -455,13 +461,15 @@ contains
    problem = 'line '//trim(str(line, no_sign=.true.))//': '//message
    endfunction located
 
-   function located_in_file(filename, pos, message, chunk_size) result(problem)
-   !< Return a problem description prefixed by its line in a file (read again in chunks, counting the new lines).
-   character(*), intent(in)      :: filename   !< File name.
-   integer(I8P), intent(in)      :: pos        !< Position of the problem.
-   character(*), intent(in)      :: message    !< Problem description.
-   integer(I8P), intent(in)      :: chunk_size !< Size of the chunks read from the file.
-   character(len=:), allocatable :: problem    !< Located problem description.
+   function located_in_file(filename, pos, message, chunk_size, encoding) result(problem)
+   !< Return a problem description prefixed by its line in a file (read again in chunks, counting the new lines; for a
+   !< converted source, of the converted text).
+   character(*),                    intent(in) :: filename   !< File name.
+   integer(I8P),                    intent(in) :: pos        !< Position of the problem.
+   character(*),                    intent(in) :: message    !< Problem description.
+   integer(I8P),                    intent(in) :: chunk_size !< Size of the chunks read from the file.
+   type(source_encoding), optional, intent(in) :: encoding   !< Encoding of the file.
+   character(len=:), allocatable               :: problem    !< Located problem description.
    character(len=:), allocatable :: chunk      !< Chunk read.
    integer(I8P)                  :: line       !< Line of the problem.
    integer(I8P)                  :: read_size  !< Characters read so far.
@@ -469,11 +477,17 @@ contains
    integer(I8P)                  :: c          !< Counter.
    integer(I4P)                  :: unit       !< File unit.
    integer(I4P)                  :: iostat     !< IO status.
+   logical                       :: is_converted !< The file is converted (its lines are counted on the converted text).
 
    line = 1
+   is_converted = .false.
+   if (present(encoding)) is_converted = encoding%is_converted
    open(newunit=unit, file=trim(adjustl(filename)), access='STREAM', form='UNFORMATTED', action='READ', status='OLD', &
         iostat=iostat)
-   if (iostat==0) then
+   if (iostat==0.and.is_converted) then
+      line = converted_line(unit=unit, pos=pos, chunk=chunk_size, encoding=encoding)
+      close(unit)
+   elseif (iostat==0) then
       read_size = 0
       do while (read_size<pos-1)
          piece = min(chunk_size, pos - 1 - read_size)
@@ -574,6 +588,17 @@ contains
       attributes(na)%value = value
    endif
    endsubroutine add_attribute
+
+   pure subroutine set_source(self, name, is_converted)
+   !< Set the encoding of the source (not UTF-8), for the messages of the invalid sequences: converted to UTF-8, an
+   !< invalid sequence is the byte FF; read as UTF-8, a byte not UTF-8 is reported with the encoding.
+   class(xml_tokenizer), intent(inout) :: self         !< Tokenizer.
+   character(*),         intent(in)    :: name         !< Encoding name.
+   logical,              intent(in)    :: is_converted !< The source is converted to UTF-8.
+
+   self%source_name = name
+   self%is_converted = is_converted
+   endsubroutine set_source
 
    pure subroutine check_utf8(self, chars, offset, is_last)
    !< Check for UTF-8 the bytes of a piece not checked yet (a piece may hold again the bytes not consumed before); the
@@ -689,7 +714,14 @@ contains
    if (self%utf8_error==0.or.self%is_utf8_reported) return
    if (self%utf8_error>upto) return
    self%is_utf8_reported = .true.
-   call builder%problem(pos=self%utf8_error, message='invalid UTF-8 byte 0x'//self%utf8_byte)
+   if (.not.allocated(self%source_name)) then
+      call builder%problem(pos=self%utf8_error, message='invalid UTF-8 byte 0x'//self%utf8_byte)
+   elseif (self%is_converted.and.self%utf8_byte=='FF') then
+      call builder%problem(pos=self%utf8_error, message='invalid '//self%source_name//' sequence')
+   else
+      call builder%problem(pos=self%utf8_error, message='invalid UTF-8 byte 0x'//self%utf8_byte//' (the source is '// &
+                           self%source_name//', read as UTF-8)')
+   endif
    endsubroutine flush_utf8
 
    pure subroutine report(self, builder, upto, pos, message)

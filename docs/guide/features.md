@@ -31,6 +31,7 @@ print '(A)', doc%content('dt')
 | **Namespaces** | prefix, local name, namespace of each tag; queries by `{uri}local` or with your own prefixes | [Namespaces](./namespaces) |
 | **Regular expressions** | filter tags by name, content or attribute value with a compiled regex (StringiFor engine, Python `re` syntax), chained with any query | [Regular expressions](./regex) |
 | **Path selector** | `select('//event[@type="x"]/origin[1]')`: children, descendants, any name, attribute and regex predicates, positions; a malformed expression reported with its column | [Querying](./querying#path-selector) |
+| **Encodings** | UTF-8, UTF-16, UTF-32, ISO-8859-1, windows-1252 and US-ASCII sources read (converted to UTF-8 as they are read, StringiFor engine); other encodings reported; output always UTF-8 | [Parsing](./parsing#encodings) |
 | **Single tags** | `xml_tag`: create, parse, add and delete attributes, write a start tag, content or end tag | [Single tags](./tags) |
 | **Every method** | the arguments of each type-bound procedure, in tables | [Methods summary](./api-reference) |
 

@@ -21,6 +21,7 @@ use foxy_xml_entities, only : is_name, xml_escape
 use foxy_xml_values, only : to_text
 use foxy_xml_file, only : XML_MALFORMED
 use penf
+use stringifor, only : canonical_encoding
 
 implicit none
 private
@@ -202,7 +203,7 @@ contains
    !< Write the XML declaration, only as the first thing of the document.
    class(xml_writer),      intent(inout) :: self     !< XML writer.
    character(*), optional, intent(in)    :: version  !< XML version (default `1.0`).
-   character(*), optional, intent(in)    :: encoding !< Encoding (not written if not passed).
+   character(*), optional, intent(in)    :: encoding !< Encoding (not written if not passed): UTF-8 (any alias) only.
    integer(I4P), optional, intent(out)   :: iostat   !< IO status.
    character(*), optional, intent(inout) :: iomsg    !< IO message.
    character(len=:), allocatable         :: decl     !< Declaration.
@@ -210,6 +211,8 @@ contains
    if (self%is_writable()) then
       if (.not.self%is_empty) then
          call self%fail(XML_MALFORMED, 'the XML declaration must be the first thing of the document')
+      elseif (present(encoding).and.canonical_encoding(encoding)/='UTF-8') then
+         call self%fail(XML_MALFORMED, 'encoding "'//encoding//'": the writer writes UTF-8 only')
       else
          decl = '<?xml version="1.0"'
          if (present(version)) decl = '<?xml version="'//version//'"'

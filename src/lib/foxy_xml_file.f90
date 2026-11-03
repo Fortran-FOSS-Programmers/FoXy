@@ -2,6 +2,8 @@
 module foxy_xml_file
 !< FoXy XML file class.
 use foxy_xml_entities, only : is_name, text_value, without_markup, xml_escape
+use foxy_xml_source, only : DETECT_LEN, MAX_PIECE, decode_piece, decoded, detect_encoding, detect_file_encoding, &
+                            source_encoding, with_utf8_declaration
 use foxy_xml_tag, only : xml_tag
 use foxy_xml_tokenizer, only : xml_builder, xml_tokenizer, located, located_in_file, DATA_TEXT, DATA_PI
 use foxy_xml_tree, only : tree_attribute, tree_attribute_name, tree_attribute_text, tree_attributes_number, &
@@ -1590,6 +1592,9 @@ contains
    integer(I8P)                                 :: consumed   !< Characters consumed by the tokenizer.
    integer(I4P)                                 :: unit       !< File unit.
    logical                                      :: is_last    !< The window ends the file.
+   type(source_encoding)                        :: encoding   !< Encoding of the file.
+   character(len=:), allocatable                :: raw        !< Chunk read, to convert.
+   character(len=:), allocatable                :: utf8       !< Chunk converted.
 
    call self%free
    builder%sanitize = sanitize
@@ -1597,20 +1602,40 @@ contains
         iostat=iostat, iomsg=iomsg)
    if (iostat/=0) return
    inquire(unit=unit, size=file_size)
-   read_size = 0
+   call detect_file_encoding(unit=unit, file_size=file_size, encoding=encoding, iostat=iostat, iomsg=iomsg)
+   if (iostat/=0) then
+      close(unit)
+      return
+   endif
+   if (encoding%is_converted) call tokenizer%set_source(name=encoding%name, is_converted=.true.)
+   read_size = encoding%skip
    offset = 0
    rest = ''
    do
       piece = max(0_I8P, min(chunk_size, file_size - read_size))
-      allocate(character(len=len(rest, kind=I8P)+piece) :: window)
-      window(1:len(rest, kind=I8P)) = rest
-      if (piece>0) then
-         read(unit=unit, iostat=iostat, iomsg=iomsg) window(len(rest, kind=I8P)+1:)
+      if (encoding%is_converted) piece = min(piece, MAX_PIECE)
+      if (encoding%is_converted.and.piece>0) then
+         allocate(character(len=piece) :: raw)
+         read(unit=unit, pos=read_size+1, iostat=iostat, iomsg=iomsg) raw
          if (iostat/=0) then
             close(unit)
             return
          endif
          read_size = read_size + piece
+         call decode_piece(encoding=encoding, raw=raw, is_last=read_size>=file_size, utf8=utf8)
+         deallocate(raw)
+         window = rest//utf8
+      else
+         allocate(character(len=len(rest, kind=I8P)+piece) :: window)
+         window(1:len(rest, kind=I8P)) = rest
+         if (piece>0) then
+            read(unit=unit, pos=read_size+1, iostat=iostat, iomsg=iomsg) window(len(rest, kind=I8P)+1:)
+            if (iostat/=0) then
+               close(unit)
+               return
+            endif
+            read_size = read_size + piece
+         endif
       endif
       is_last = read_size>=file_size
       call tokenizer%feed(chars=window, offset=offset, is_last=is_last, builder=builder, consumed=consumed)
@@ -1624,8 +1649,13 @@ contains
    call move_alloc(from=builder%doc%tag, to=self%tag)
    self%nt = builder%doc%nt
    if (allocated(builder%doc%prolog)) call move_alloc(from=builder%doc%prolog, to=self%prolog)
-   if (allocated(builder%first_problem)) problem = located_in_file(filename=filename, pos=builder%problem_pos, &
-                                                                   message=builder%first_problem, chunk_size=chunk_size)
+   if (encoding%is_converted.and.allocated(self%prolog)) self%prolog = with_utf8_declaration(self%prolog)
+   if (len(encoding%problem)>0) then ! at the source start: the first problem
+      problem = 'line 1: '//encoding%problem
+   elseif (allocated(builder%first_problem)) then
+      problem = located_in_file(filename=filename, pos=builder%problem_pos, message=builder%first_problem, &
+                                chunk_size=chunk_size, encoding=encoding)
+   endif
    endsubroutine parse_from_file
 
    subroutine parse_from_string(self, source_string, sanitize, problem)
@@ -1637,16 +1667,33 @@ contains
    type(xml_tokenizer)                          :: tokenizer     !< Tokenizer.
    type(dom_builder)                            :: builder       !< DOM builder.
    integer(I8P)                                 :: consumed      !< Characters consumed by the tokenizer.
+   type(source_encoding)                        :: encoding      !< Encoding of the string.
+   character(len=:), allocatable                :: utf8          !< String converted.
 
    call self%free
    builder%sanitize = sanitize
-   call tokenizer%feed(chars=source_string, offset=0_I8P, is_last=.true., builder=builder, consumed=consumed)
+   call detect_encoding(prefix=source_string(1:min(len(source_string, kind=I8P), DETECT_LEN)), encoding=encoding)
+   if (encoding%is_converted) then
+      call tokenizer%set_source(name=encoding%name, is_converted=.true.)
+      utf8 = decoded(source=source_string, encoding=encoding)
+      call tokenizer%feed(chars=utf8, offset=0_I8P, is_last=.true., builder=builder, consumed=consumed)
+   else
+      call tokenizer%feed(chars=source_string, offset=0_I8P, is_last=.true., builder=builder, consumed=consumed)
+   endif
    call builder%finish
    call move_alloc(from=builder%doc%tag, to=self%tag)
    self%nt = builder%doc%nt
    if (allocated(builder%doc%prolog)) call move_alloc(from=builder%doc%prolog, to=self%prolog)
-   if (allocated(builder%first_problem)) problem = located(source=source_string, pos=builder%problem_pos, &
-                                                          message=builder%first_problem)
+   if (encoding%is_converted.and.allocated(self%prolog)) self%prolog = with_utf8_declaration(self%prolog)
+   if (len(encoding%problem)>0) then ! at the source start: the first problem
+      problem = 'line 1: '//encoding%problem
+   elseif (allocated(builder%first_problem)) then
+      if (encoding%is_converted) then
+         problem = located(source=utf8, pos=builder%problem_pos, message=builder%first_problem)
+      else
+         problem = located(source=source_string, pos=builder%problem_pos, message=builder%first_problem)
+      endif
+   endif
    endsubroutine parse_from_string
 
    recursive pure subroutine stringify_recursive(self, tag, is_done, buffer, n)

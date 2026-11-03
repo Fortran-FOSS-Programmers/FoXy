@@ -1,0 +1,4 @@
+$ read_encodings
+UTF-16: 0 Zürich
+ISO-8859-1: 0 Zürich 21.5 °C
+T line 1: a UTF-16LE file cannot be indexed: the index reads the file bytes as UTF-8 (parse it with xml_file or xml_handler)

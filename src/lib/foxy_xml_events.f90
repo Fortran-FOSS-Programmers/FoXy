@@ -15,6 +15,8 @@ module foxy_xml_events
 !< problem inside character data may come between two pieces of that text (where depends on the chunks).
 use foxy_xml_entities, only : attribute_value, character_data, line_ends_normalized, utf8_tail_len
 use foxy_xml_file, only : XML_MALFORMED
+use foxy_xml_source, only : DETECT_LEN, MAX_PIECE, converted_line, decode_piece, decoded, detect_encoding, &
+                            detect_file_encoding, source_encoding
 use foxy_xml_tokenizer, only : xml_builder, xml_tokenizer, located, &
                                DATA_TEXT, DATA_CDATA, DATA_COMMENT, DATA_PI, DATA_DECLARATION
 use penf
@@ -199,6 +201,10 @@ contains
    integer(I4P)                          :: unit                      !< File unit.
    logical                               :: is_file                   !< The source is a file.
    logical                               :: is_last                   !< The window ends the source.
+   type(source_encoding)                 :: encoding                  !< Encoding of the source.
+   character(len=:), allocatable         :: source                    !< String source converted to UTF-8.
+   character(len=:), allocatable         :: raw                       !< Chunk read, to convert.
+   character(len=:), allocatable         :: utf8                      !< Chunk converted.
 
    if (present(iostat)) iostat = 0
    self%is_stopped = .false.
@@ -219,37 +225,84 @@ contains
          return
       endif
       inquire(unit=unit, size=source_size)
+      call detect_file_encoding(unit=unit, file_size=source_size, encoding=encoding, iostat=io_status, iomsg=io_message)
+      if (io_status/=0) then
+         close(unit)
+         if (present(iostat)) iostat = io_status
+         if (present(iomsg)) iomsg = trim(io_message)
+         return
+      endif
+      read_size = encoding%skip
    else
-      source_size = len(string, kind=I8P)
+      call detect_encoding(prefix=string(1:min(len(string, kind=I8P), DETECT_LEN)), encoding=encoding)
+      if (encoding%is_converted) then ! converted whole: the pieces are then UTF-8
+         source = decoded(source=string, encoding=encoding)
+         source_size = len(source, kind=I8P)
+      else
+         source_size = len(string, kind=I8P)
+      endif
+      read_size = 0
    endif
-   read_size = 0
+   if (encoding%is_converted) call tokenizer%set_source(name=encoding%name, is_converted=.true.)
+   if (len(encoding%problem)>0) then ! at the source start: the first problem
+      first_problem = 'line 1: '//encoding%problem
+      call self%problem(message=first_problem)
+   endif
    offset = 0
    lines = 0
    rest = ''
    do
       piece = max(0_I8P, min(chunk, source_size - read_size))
-      allocate(character(len=len(rest, kind=I8P)+piece) :: window)
-      window(1:len(rest, kind=I8P)) = rest
-      if (piece>0) then
-         if (is_file) then
-            read(unit=unit, pos=read_size+1, iostat=io_status, iomsg=io_message) window(len(rest, kind=I8P)+1:)
+      if (is_file.and.encoding%is_converted) then
+         piece = min(piece, MAX_PIECE)
+         if (piece>0) then
+            allocate(character(len=piece) :: raw)
+            read(unit=unit, pos=read_size+1, iostat=io_status, iomsg=io_message) raw
             if (io_status/=0) then
                close(unit)
                if (present(iostat)) iostat = io_status
                if (present(iomsg)) iomsg = trim(io_message)
                return
             endif
+            read_size = read_size + piece
+            call decode_piece(encoding=encoding, raw=raw, is_last=read_size>=source_size, utf8=utf8)
+            deallocate(raw)
+            window = rest//utf8
          else
-            window(len(rest, kind=I8P)+1:) = string(read_size+1:read_size+piece)
+            window = rest
          endif
-         read_size = read_size + piece
+      else
+         allocate(character(len=len(rest, kind=I8P)+piece) :: window)
+         window(1:len(rest, kind=I8P)) = rest
+         if (piece>0) then
+            if (is_file) then
+               read(unit=unit, pos=read_size+1, iostat=io_status, iomsg=io_message) window(len(rest, kind=I8P)+1:)
+               if (io_status/=0) then
+                  close(unit)
+                  if (present(iostat)) iostat = io_status
+                  if (present(iomsg)) iomsg = trim(io_message)
+                  return
+               endif
+            elseif (encoding%is_converted) then
+               window(len(rest, kind=I8P)+1:) = source(read_size+1:read_size+piece)
+            else
+               window(len(rest, kind=I8P)+1:) = string(read_size+1:read_size+piece)
+            endif
+            read_size = read_size + piece
+         endif
       endif
       is_last = read_size>=source_size
       call tokenizer%feed(chars=window, offset=offset, is_last=is_last, builder=builder, consumed=consumed)
       if (is_last.and.(.not.self%is_stopped)) call builder%finish
-      call dispatch(self=self, builder=builder, text_dec=text_dec, cdata_dec=cdata_dec, window=window, offset=offset, &
-                    lines=lines, first_problem=first_problem, is_last=is_last, is_file=is_file, chunk=chunk, &
-                    unit=unit, string=string)
+      if (encoding%is_converted.and..not.is_file) then
+         call dispatch(self=self, builder=builder, text_dec=text_dec, cdata_dec=cdata_dec, window=window, offset=offset, &
+                       lines=lines, first_problem=first_problem, is_last=is_last, is_file=is_file, chunk=chunk, &
+                       unit=unit, string=source, encoding=encoding)
+      else
+         call dispatch(self=self, builder=builder, text_dec=text_dec, cdata_dec=cdata_dec, window=window, offset=offset, &
+                       lines=lines, first_problem=first_problem, is_last=is_last, is_file=is_file, chunk=chunk, &
+                       unit=unit, string=string, encoding=encoding)
+      endif
       lines = lines + count_new_lines(window(1:consumed))
       offset = offset + consumed
       rest = window(consumed+1:)
@@ -265,7 +318,7 @@ contains
 
    ! private procedures
    subroutine dispatch(self, builder, text_dec, cdata_dec, window, offset, lines, first_problem, is_last, is_file, chunk, &
-                       unit, string)
+                       unit, string, encoding)
    !< Call the handler for the events queued, then empty the queue.
    !<
    !< @note A module procedure with explicit arguments, not an internal procedure of *parse*: nvfortran 26.9 gives stale
@@ -283,6 +336,7 @@ contains
    integer(I8P),                  intent(in)    :: chunk         !< Size of the chunks.
    integer(I4P),                  intent(in)    :: unit          !< Unit of the source file (if a file).
    character(*), optional,        intent(in)    :: string        !< Source string.
+   type(source_encoding),         intent(in)    :: encoding      !< Encoding of the source.
    character(len=:), allocatable                :: message       !< Problem, located.
    character(len=:), allocatable                :: target        !< PI target.
    integer(I8P)                                 :: line          !< Line of a problem.
@@ -327,8 +381,12 @@ contains
             if (line>0) then
                message = 'line '//trim(str(line, no_sign=.true.))//': '//event%name
             elseif (is_file) then ! counted on the open unit (a second open of the file may be refused)
-               message = 'line '//trim(str(lines_to(unit=unit, pos=event%pos, chunk=chunk), no_sign=.true.))//': '// &
-                         event%name
+               if (encoding%is_converted) then
+                  line = converted_line(unit=unit, pos=event%pos, chunk=chunk, encoding=encoding)
+               else
+                  line = lines_to(unit=unit, pos=event%pos, chunk=chunk)
+               endif
+               message = 'line '//trim(str(line, no_sign=.true.))//': '//event%name
             else
                message = located(source=string, pos=event%pos, message=event%name)
             endif

@@ -8,6 +8,7 @@ module foxy_xml_index
 !< whose content is raw binary). The queries are the same as *xml_file* ones (*find*, *find_all*, *children*, ...).
 use foxy_xml_entities, only : text_value
 use foxy_xml_file, only : XML_MALFORMED
+use foxy_xml_source, only : detect_file_encoding, source_encoding
 use foxy_xml_tag, only : xml_tag
 use foxy_xml_tokenizer, only : xml_builder, xml_tokenizer, located_in_file
 use foxy_xml_tree, only : tree_attribute, tree_attribute_name, tree_attribute_text, tree_attributes_number, &
@@ -429,6 +430,9 @@ contains
    integer(I4P)                          :: iostat_     !< IO status, local variable.
    character(len=500)                    :: iomsg_      !< IO message, local variable.
    logical                               :: is_last     !< The window ends the file.
+   type(source_encoding)                 :: encoding    !< Encoding of the file.
+   logical                               :: is_indexable !< The file can be indexed (its bytes read as UTF-8).
+   logical                               :: is_open     !< The file is open.
 
    call self%free
    chunk_size_ = FILE_CHUNK_SIZE ; if (present(chunk_size)) chunk_size_ = max(1_I8P, chunk_size)
@@ -436,8 +440,18 @@ contains
    if (present(stop_at)) builder%stop_at = stop_at
    open(newunit=unit, file=trim(adjustl(filename)), access='STREAM', form='UNFORMATTED', action='READ', status='OLD', &
         iostat=iostat_, iomsg=iomsg_)
+   is_indexable = .true.
+   is_open = iostat_==0
    if (iostat_==0) then
       inquire(unit=unit, size=file_size)
+      call detect_file_encoding(unit=unit, file_size=file_size, encoding=encoding, iostat=iostat_, iomsg=iomsg_)
+      if (iostat_==0.and.encoding%is_converted) then
+         ! positions are file bytes: a single byte encoding is read as UTF-8 (only ASCII is the same), others are refused
+         is_indexable = encoding%name=='US-ASCII'.or.encoding%name=='ISO-8859-1'.or.encoding%name=='windows-1252'
+         if (is_indexable) call tokenizer%set_source(name=encoding%name, is_converted=.false.)
+      endif
+   endif
+   if (iostat_==0.and.is_indexable) then
       read_size = 0
       offset = 0
       rest = ''
@@ -446,7 +460,7 @@ contains
          allocate(character(len=len(rest, kind=I8P)+piece) :: window)
          window(1:len(rest, kind=I8P)) = rest
          if (piece>0) then
-            read(unit=unit, iostat=iostat_, iomsg=iomsg_) window(len(rest, kind=I8P)+1:)
+            read(unit=unit, pos=read_size+1, iostat=iostat_, iomsg=iomsg_) window(len(rest, kind=I8P)+1:)
             if (iostat_/=0) exit
             read_size = read_size + piece
          endif
@@ -457,9 +471,13 @@ contains
          deallocate(window)
          if (is_last.or.builder%is_stopped) exit
       enddo
-      close(unit)
    endif
-   if (iostat_==0) then
+   if (is_open) close(unit)
+   if (iostat_==0.and..not.is_indexable) then
+      iostat_ = XML_MALFORMED
+      iomsg_ = 'line 1: a '//encoding%name//' file cannot be indexed: the index reads the file bytes as UTF-8 (parse it '// &
+               'with xml_file or xml_handler)'
+   elseif (iostat_==0) then
       if (allocated(builder%tag)) then
          call move_alloc(from=builder%tag, to=self%tag)
          call move_alloc(from=builder%last, to=self%last)
@@ -468,7 +486,10 @@ contains
       call tree_build_children(tag=self%tag, nt=self%nt)
       self%filename = trim(adjustl(filename))
       self%stop_pos = builder%stop_pos
-      if (allocated(builder%first_problem)) then
+      if (len(encoding%problem)>0) then ! at the source start: the first problem
+         iostat_ = XML_MALFORMED
+         iomsg_ = 'line 1: '//encoding%problem
+      elseif (allocated(builder%first_problem)) then
          iostat_ = XML_MALFORMED
          iomsg_ = located_in_file(filename=filename, pos=builder%problem_pos, message=builder%first_problem, &
                                   chunk_size=chunk_size_)

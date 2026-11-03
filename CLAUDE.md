@@ -73,7 +73,7 @@ From `CONTRIBUTING.md`:
 
 ## Architecture
 
-Ten source modules, all in `src/lib/`:
+Eleven source modules, all in `src/lib/`:
 
 ```
 foxy.f90          ← thin re-export wrapper (use this in user code)
@@ -83,6 +83,7 @@ foxy_xml_events.f90 ← xml_handler: streaming parser, your callbacks (event_bui
 foxy_xml_tag.F90  ← xml_tag type: single element (note .F90 = preprocessed)
 foxy_xml_entities.f90 ← xml_escape/xml_unescape (StringiFor escape_xml/unescape_xml, sliced > 1 GiB); text_value/without_markup/strip_blanks
 foxy_xml_tree.f90 ← tree queries (find, find_all, children, attribute, namespace, build_children) over a tags array
+foxy_xml_source.f90 ← source encodings: detection, conversion to UTF-8 (StringiFor to_utf8), line counting
 foxy_xml_tokenizer.f90 ← resumable tokenizer (xml_tokenizer%feed) driving an abstract xml_builder
 foxy_xml_writer.f90 ← xml_writer type: streaming writer to a file, a unit or memory (sticky errors; typed text/attributes via to_text)
 foxy_xml_values.f90 ← typed values: text to numbers/logicals (get_attribute/get_content), XML_NOT_FOUND, XML_BAD_VALUE
@@ -183,6 +184,14 @@ closed by the next markup or the source end; an attribute is reported when its t
 `xml_writer` writes only well-formed XML (names, duplicate attributes, `& < > " '` escaped by `xml_escape`, attribute values
 with `attribute=.true.`: tab/LF/CR as references); `close` without
 `iostat` stops on an error never returned through an `iostat`.
+
+Encodings (`foxy_xml_source`): the first bytes (`DETECT_LEN`) give the encoding (byte order mark, Appendix F `<?`
+patterns, then the declaration `encoding`, aliases by StringiFor `canonical_encoding`); a non UTF-8 source is converted
+to UTF-8 piece by piece before the tokenizer (StringiFor `to_utf8` with a carry, an invalid sequence becomes the byte FF
+that the tokenizer reports as `invalid <encoding> sequence`, `set_source`), so every position is in the converted text
+(problem lines: `converted_line` reads the file again converting it). A string source is converted whole (`decoded`).
+A converted prolog declares UTF-8 (`with_utf8_declaration`). The index reads file bytes: UTF-16/UTF-32 refused, single
+byte encodings read raw. Encoding problems are the first problem (`line 1:`). The writer declares UTF-8 only.
 
 Known parser limits: entities defined by a DTD are not expanded; attribute values are trimmed of leading/trailing spaces
 when parsed, by default (`parse(..., sanitize_attributes_value=.false.)` keeps them, as XML requires).

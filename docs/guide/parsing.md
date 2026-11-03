@@ -43,6 +43,36 @@ checked once per chunk, a sequence split by two chunks included. An end tag clos
 open tags are closed); a stray end tag is ignored; an
 unterminated comment, CDATA section or PI is kept as text up to the end of the source.
 
+## Encodings
+
+<<< @/examples/snippets/read_encodings-read.f90
+
+<<< @/examples/output/read_encodings.ansi{ansi}
+
+<<< @/examples/output/read_encodings-head.ansi{ansi}
+
+FoXy works on UTF-8. A source in another encoding is converted to UTF-8 as it is read, chunk by chunk (StringiFor
+`to_utf8`), so the document, its accessors and `stringify` are UTF-8 whatever the source was:
+
+| Source | Read as |
+|---|---|
+| UTF-8 (with or without a byte order mark), or no declaration and no mark | UTF-8, as it is |
+| UTF-16, UTF-32 (byte order mark `FF FE`, `FE FF`, `FF FE 00 00`, `00 00 FE FF`) | converted |
+| `encoding="ISO-8859-1"`, `"windows-1252"`, `"US-ASCII"` (or an alias: `latin1`, `cp1252`, `ascii`, ...) | converted |
+| any other declared encoding (`Shift_JIS`, `GB18030`, ...) | a problem, `line 1: encoding "Shift_JIS" not supported`; read as UTF-8 |
+
+The encoding is detected as XML 1.0 says (4.3.3, Appendix F): the byte order mark, else the first bytes (`<?` in UTF-16
+or UTF-32), then the `encoding` of the XML declaration. A declaration that contradicts the mark, or a UTF-16 source
+without a mark, is a problem at line 1; the source is still read in the detected encoding. An invalid sequence (an
+unpaired UTF-16 surrogate, a windows-1252 byte without a character) is reported at its line, as
+`invalid UTF-16LE sequence`, and kept as the byte FF.
+
+- **Positions** (`xml_handler%pos`, the lines of the problems) refer to the converted text.
+- **`save`** writes UTF-8: the `encoding` of a converted source's declaration is rewritten to `UTF-8`.
+- **`xml_index`** reads the file bytes, as its positions are file positions: it refuses UTF-16 and UTF-32 files, and
+  reads the single byte encodings as UTF-8 (only their ASCII is the same; another byte is reported).
+- The XML writer writes UTF-8: `declaration(encoding=)` accepts UTF-8 only.
+
 ## What is kept
 
 The stored text is the source text, so `stringify` and `save` write back what was read:

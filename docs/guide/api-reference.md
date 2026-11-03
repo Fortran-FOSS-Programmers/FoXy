@@ -75,7 +75,7 @@ Defined in `src/lib/foxy_xml_file.f90`. Holds a flat `tag(:)` array with hierarc
 
 | Method | Description |
 |--------|-------------|
-| `xfile%parse([string=], [filename=], [iostat=], [iomsg=], [sanitize_attributes_value=], [chunk_size=])` | Parse XML from string or file (read in chunks of `chunk_size` characters, default 1 MiB, never loaded whole); clears previous data. `iostat`: `0`, the runtime I/O error code, or `XML_MALFORMED` (first problem in `iomsg`, as `line N: ...`); the document is built anyway. Attribute values are trimmed of leading/trailing spaces unless `sanitize_attributes_value=.false.` |
+| `xfile%parse([string=], [filename=], [iostat=], [iomsg=], [sanitize_attributes_value=], [chunk_size=])` | Parse XML from string or file (read in chunks of `chunk_size` characters, default 1 MiB, never loaded whole); clears previous data. `iostat`: `0`, the runtime I/O error code, or `XML_MALFORMED` (first problem in `iomsg`, as `line N: ...`); the document is built anyway. Attribute values are trimmed of leading/trailing spaces unless `sanitize_attributes_value=.false.`. UTF-16, UTF-32, ISO-8859-1, windows-1252 and US-ASCII sources are converted to UTF-8 (byte order mark, then the declared `encoding`); another declared encoding is a problem. See [encodings](./parsing#encodings) |
 | `xfile%stringify([linearize])` | Serialise full DOM to string, prolog first |
 | `xfile%save(filename, [is_declared=], [iostat=], [iomsg=])` | Write prolog plus `stringify()` and a final new line to a file; `is_declared=.true.` adds `<?xml version="1.0"?>` if the prolog has none; without `iostat` an I/O error stops the program; a document with more root tags is written and returns `XML_MALFORMED` |
 | `xfile%content(name)` | Return the direct text of the first tag named `name` (text plus children tails), without leading/trailing blanks, references decoded, CDATA literal |
@@ -190,7 +190,7 @@ a duplicate attribute is a misuse, `]]>` in text and attribute values is written
 | Method | Description |
 |--------|-------------|
 | `w%open([filename=], [unit=], [indent=], [iostat=], [iomsg=])` | Open on a file (created/replaced, closed by `close`), on a unit open for stream unformatted access (left open), or on memory if neither is passed; `indent` spaces per level (default 2, `0` for compact output) |
-| `w%declaration([version=], [encoding=])` | Write `<?xml version="1.0"?>`; only as the first thing |
+| `w%declaration([version=], [encoding=])` | Write `<?xml version="1.0"?>`; only as the first thing; `encoding` must name UTF-8 (the writer writes UTF-8) |
 | `w%start(name)` | Open an element; its start tag stays pending for attributes until its first content |
 | `w%attribute(name, value, [fmt=])` | Add an attribute: `value` character (escaped, tab, new line and CR as references), integer (`I1P`…`I8P`), real (`R4P`, `R8P`), logical (`true`/`false`) or a rank-1 list of numbers; reals are written with the shortest text that reads back exactly unless `fmt` formats them |
 | `w%text(value \| values, [fmt=])` | A number, a logical or a rank-1 list of numbers (separated by a space), as `attribute` |

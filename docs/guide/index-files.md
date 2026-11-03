@@ -20,6 +20,12 @@ read from the file when you ask for it: the memory used does not depend on the d
 | `stop_position()` | the byte after the `stop_at` start tag, `0` if the scan did not stop |
 | `free()` | empties the index |
 
+::: tip Encodings
+The index reads the file bytes (its positions are file positions): a UTF-16 or UTF-32 file is refused with
+`XML_MALFORMED`, a single byte encoding (`ISO-8859-1`, ...) is read as UTF-8. Parse such files with `xml_file` or
+`xml_handler`, which convert them: see [Encodings](./parsing#encodings).
+:::
+
 ## Stopping before raw data
 
 <<< @/examples/snippets/index_stop.f90

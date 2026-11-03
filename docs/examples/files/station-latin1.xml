@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<station name="Zürich" country="CH">
+  <reading unit="°C">21.5</reading>
+</station>
