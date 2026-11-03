@@ -4,10 +4,11 @@ implicit none
 type(xml_file)     :: doc
 integer(I4P)       :: iostat
 character(len=256) :: iomsg
-character(len=32)  :: sources(5), shown(5)
+character(len=32)  :: sources(6), shown(6)
 integer            :: s
 
-sources = [character(len=32) :: '<a><b/></a>', '<a x="1" x="2"/>', '<a/><b/>', '<a>1 < 2</a>', '<a>'//achar(255)//'</a>']
+sources = [character(len=32) :: '<a><b/></a>', '<a x="1" x="2"/>', '<a/><b/>', '<a>1 < 2</a>', '<a>'//achar(255)//'</a>', &
+           '<a>R&D</a>']
 shown = sources
 shown(5) = '<a>\xFF</a>'                       ! the byte 0xFF, not UTF-8
 do s=1, size(sources)

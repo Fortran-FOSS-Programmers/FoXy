@@ -18,6 +18,7 @@ use stringifor, only : string_t => string
 
 implicit none
 private
+public :: first_bad_reference
 public :: first_utf8_error
 public :: is_name
 public :: strip_blanks
@@ -69,6 +70,43 @@ contains
    enddo
    is_valid = .true.
    endfunction is_name
+
+   pure function first_bad_reference(text) result(position)
+   !< Return the position of the `&` of the first malformed reference of *text*, 0 if there is none: an `&` that does not
+   !< start a predefined entity (`&amp; &lt; &gt; &quot; &apos;`) or a character reference (`&#N;`, `&#xH;`) of a Unicode
+   !< scalar value other than 0 (a bare `&`, a missing `;`, `&nbsp;` of a DTD, `&#X41;`, a surrogate, `&#0;`).
+   !<
+   !< @note StringiFor (`string%xml_error`) checks; texts longer than *SLICE_LEN* are checked in slices never cut inside a
+   !< reference.
+   character(*), intent(in) :: text     !< Text.
+   integer(I8P)             :: position !< Position of the first malformed reference, 0 if none.
+   type(string_t)           :: slice    !< Slice of the text.
+   integer(I8P)             :: first    !< First position of a slice.
+   integer(I8P)             :: last     !< Last position of a slice.
+   integer(I8P)             :: amp      !< Position of the last `&` near the end of a slice.
+   integer(I8P)             :: e        !< Error position in a slice.
+
+   position = 0
+   if (index(text, '&', kind=I8P)==0) return
+   first = 1
+   do while (first<=len(text, kind=I8P))
+      last = min(len(text, kind=I8P), first+SLICE_LEN-1)
+      if (last<len(text, kind=I8P)) then ! do not cut a reference: end the slice before an unterminated one
+         amp = index(text(max(first, last-MAX_REFERENCE_LEN+1):last), '&', back=.true., kind=I8P)
+         if (amp>0) then
+            amp = max(first, last-MAX_REFERENCE_LEN+1) + amp - 1
+            if (index(text(amp:last), ';', kind=I8P)==0.and.amp>first) last = amp - 1
+         endif
+      endif
+      slice = text(first:last)
+      e = slice%xml_error()
+      if (e>0) then
+         position = first + e - 1
+         return
+      endif
+      first = last + 1
+   enddo
+   endfunction first_bad_reference
 
    pure function first_utf8_error(text) result(position)
    !< Return the position of the first byte of *text* that is not part of a well-formed UTF-8 sequence (Unicode Table 3-7:

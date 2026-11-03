@@ -35,6 +35,7 @@ Parsing is tolerant: the document is built as far as possible and only the first
 | an invalid tag or attribute name (XML 1.0 5th edition: `NameStartChar` then `NameChar`s, letters of every script included), a duplicate attribute | `<1a/>`, `<×/>`, `<a x="1" x="2"/>` |
 | text outside the root element (blanks and a UTF-8 byte order mark excepted) | `<a/>junk` |
 | more root elements, or none (an empty source included) | `<a/><b/>`, `''` |
+| a malformed reference in text or in an attribute value: not a predefined entity nor the character reference of a Unicode scalar value (not 0) | `<a>R&D</a>`, `&nbsp;`, `&#X41;` |
 | ill-formed UTF-8 (Unicode Table 3-7: an overlong form, a surrogate, a value above U+10FFFF, a truncated sequence, a stray continuation byte), anywhere in the source | `<a>`, byte `0xFF`, `</a>` |
 
 Problems are reported in the order they are met in the source: the first one is the earliest, also for UTF-8, which is

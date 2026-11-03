@@ -156,7 +156,9 @@ attributes,
 non-blank data outside the root (a leading BOM excepted, also split across chunks), a second root tag, a source
 without tags and ill-formed UTF-8 (each piece checked once by `check_utf8`, StringiFor `utf8_error` via
 `first_utf8_error`, a split sequence carried to the next piece; the error is reported by `report`/`flush_utf8` when the
-tokenizer reaches it, so problems stay in source order). `save` writes a document with more root tags but returns `XML_MALFORMED` (silent without `iostat`). Contents are read with CR LF/CR as LF (`text_value`), the stored source keeps them.
+tokenizer reaches it, so problems stay in source order), and malformed references in text and attribute values
+(StringiFor `xml_error` via `first_bad_reference`; a reference split by the piece end is carried by `check_references`,
+closed by the next markup or the source end; an attribute is reported when its tag is complete, as tags may be re-read). `save` writes a document with more root tags but returns `XML_MALFORMED` (silent without `iostat`). Contents are read with CR LF/CR as LF (`text_value`), the stored source keeps them.
 `xml_writer` writes only well-formed XML (names, duplicate attributes, `& < > " '` escaped by `xml_escape`, attribute values
 with `attribute=.true.`: tab/LF/CR as references); `close` without
 `iostat` stops on an error never returned through an `iostat`.

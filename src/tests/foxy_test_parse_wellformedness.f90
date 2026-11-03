@@ -19,7 +19,7 @@ integer(I4P)                  :: iostat             !< IO status.
 character(len=256)            :: iomsg              !< IO message.
 integer                       :: tmp_dir_len        !< Length of the TMPDIR environment variable.
 integer                       :: status             !< Status of the environment variable query.
-logical                       :: test_passed(11)    !< List of passed tests.
+logical                       :: test_passed(12)    !< List of passed tests.
 character(len=:), allocatable :: cjk                !< U+540D U+524D, a CJK name.
 character(len=:), allocatable :: times              !< U+00D7, the multiplication sign, not a name character.
 character(len=:), allocatable :: acute              !< U+0301, a combining acute accent: a name character, not a start.
@@ -64,6 +64,17 @@ test_passed(11) = is_valid('<'//cjk//' e'//acute//'="1" a'//achar(194)//achar(18
                   is_malformed('<'//times//'a/>', ['invalid  ']) .and. is_malformed('<'//acute//'a/>', ['invalid  ']) .and. &
                   is_malformed('<a'//greek_qm//'/>', ['invalid  ']) .and. is_malformed('<a '//times//'="1"/>', ['invalid  '])
 print "(A,L1)", 'Are non ASCII names checked by the XML ranges? ', test_passed(11)
+
+! references: the predefined entities and the character references of a Unicode scalar value (not 0) only, in text and
+! in attribute values (CDATA, comments and PIs are not text); a reference split by the chunks is checked whole
+test_passed(12) = is_valid('<a k="x&amp;y&#233;">1 &lt; 2 &#x20AC;&#65;<![CDATA[& raw]]><!-- & --><?p & ?></a>') .and. &
+                  is_malformed('<a>A & B</a>', ['line 1   ', 'reference', '"&"      ']) .and. &
+                  is_malformed('<a>&nbsp;</a>', ['reference', '&nbsp;   ']) .and. &
+                  is_malformed('<a>&#X41;</a>', ['reference']) .and. is_malformed('<a>&#0;</a>', ['reference']) .and. &
+                  is_malformed('<a>&amp</a>', ['reference']) .and. &
+                  is_malformed('<a k="&lt"/>', ['reference', '"k"      ', '<a>      ']) .and. &
+                  is_valid('<a>ok</a>'//NL//'<!-- &x; -->')
+print "(A,L1)", 'Are malformed references reported? ', test_passed(12)
 
 print "(A,L1)", new_line('a')//'Are all tests passed? ', all(test_passed)
 if (.not.all(test_passed)) error stop 1

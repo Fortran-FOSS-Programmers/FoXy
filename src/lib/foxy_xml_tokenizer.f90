@@ -15,10 +15,11 @@ module foxy_xml_tokenizer
 !<
 !< Besides the tags structure, the problems reported (parsing goes on) are: invalid tag and attribute names, duplicate
 !< attributes, character data outside the root tag (blanks and a leading UTF-8 byte order mark excepted), a second root
-!< tag (XML 1.0 2.1: exactly one root element), a source without tags and ill-formed UTF-8. Each piece is checked for
-!< UTF-8 once, when it is fed (a sequence split by the piece end is checked with the next piece); its first error is
-!< reported when the tokenizer reaches it, so that problems are always reported in the order they are met.
-use foxy_xml_entities, only : first_utf8_error, is_name
+!< tag (XML 1.0 2.1: exactly one root element), a source without tags, ill-formed UTF-8 and malformed references in
+!< character data and attribute values. Each piece is checked for UTF-8 once, when it is fed; its first error is reported
+!< when the tokenizer reaches it, so that problems are always reported in the order they are met. A UTF-8 sequence or a
+!< reference split by the piece end is checked with the next piece.
+use foxy_xml_entities, only : first_bad_reference, first_utf8_error, is_name
 use penf
 
 implicit none
@@ -40,6 +41,7 @@ integer(I4P), parameter :: INITIAL_DEPTH = 64_I4P !< Initial capacity of the ope
 integer(I8P), parameter :: LOOKAHEAD     = 9_I8P  !< Characters needed to classify a markup (`<![CDATA[`).
 character(*), parameter :: BLANKS   = ' '//achar(9)//achar(10)//achar(13) !< XML blanks: space, tab, new line, CR.
 character(*), parameter :: NAME_END = BLANKS//'/>=' !< Characters ending a tag or attribute name.
+integer(I8P), parameter :: MAX_REFERENCE_CARRY = 64_I8P !< Longest reference start carried to the next piece.
 character(*), parameter :: BOM      = achar(239)//achar(187)//achar(191) !< UTF-8 byte order mark (checked byte by byte:
                                                                      !< the pieces may split it, StringiFor `has_bom` needs
                                                                      !< the whole source).
@@ -147,6 +149,9 @@ type :: xml_tokenizer
    integer(I8P)                :: utf8_error=0_I8P   !< Position of the first ill-formed UTF-8 byte, 0 if none (yet).
    character(len=2)            :: utf8_byte='  '     !< That byte, in hexadecimal.
    logical                     :: is_utf8_reported=.false. !< The UTF-8 error has been reported.
+   character(len=:), allocatable :: ref_carry        !< Start of a reference split by the piece end (from its `&`).
+   integer(I8P)                :: ref_carry_pos=0_I8P !< Position of that `&`.
+   logical                     :: is_ref_reported=.false. !< A malformed reference has been reported.
    contains
       procedure, pass(self) :: feed  !< Feed a piece of the source.
       procedure, pass(self) :: reset !< Reset the tokenizer, ready for a new source.
@@ -175,6 +180,7 @@ contains
    integer(I8P)                        :: pos             !< Current position, in the piece.
    integer(I8P)                        :: k               !< Scan position, in the piece.
    integer(I8P)                        :: e               !< Relative position of a delimiter.
+   integer(I8P)                        :: e_ref           !< Relative position of a malformed reference.
    integer(I4P)                        :: l               !< Stack level.
    integer(I4P)                        :: a               !< Counter.
    logical                             :: is_self_closing !< Self closing tag flag.
@@ -210,8 +216,12 @@ contains
                self%is_outside_reported = .true.
             endif
          endif
+         call check_references(self=self, builder=builder, chars=chars(pos:k), first=offset+pos, &
+                               is_open=k==n.and.(.not.is_last))
          call builder%data(kind=DATA_TEXT, chars=chars(pos:k), first=offset+pos)
          pos = k + 1
+      elseif (self%ref_carry_pos>0.and.chars(pos:pos)=='<') then
+         call close_reference(self=self, builder=builder, upto=offset+pos)
       elseif ((.not.is_last).and.n-pos+1<LOOKAHEAD) then
          exit ! more characters needed to classify the markup
       elseif (chars(pos:min(n, pos+3))=='<!--') then
@@ -343,6 +353,13 @@ contains
             elseif (is_attribute_present(attributes=attributes, na=na, name=name)) then
                call first_problem(problem, problem_pos, offset+k, 'duplicate attribute "'//name//'" in tag <'// &
                                   tag%name//'>')
+            elseif (.not.self%is_ref_reported) then
+               e_ref = first_bad_reference(chars(k+1:k+e-1))
+               if (e_ref>0) then
+                  call first_problem(problem, problem_pos, offset+k+e_ref, 'malformed reference "'// &
+                                     reference_excerpt(chars(k+e_ref:k+e-1))//'" in attribute "'//name//'" of tag <'// &
+                                     tag%name//'>') ! reported when the tag is complete (it may be read again)
+               endif
             endif
             call add_attribute(attributes=attributes, na=na, name=name, value=chars(k+1:k+e-1), quote=chars(k:k))
             k = k + e + 1
@@ -389,6 +406,7 @@ contains
       consumed = n
       if (.not.self%is_done) then
          call flush_utf8(self=self, builder=builder, upto=huge(1_I8P))
+         if (self%ref_carry_pos>0) call close_reference(self=self, builder=builder, upto=huge(1_I8P))
          if (self%depth>0) call report(self=self, builder=builder, upto=huge(1_I8P), pos=self%stack(1)%start, &
             message='unclosed tag <'//self%stack(1)%name//'>')
          if (self%nt==0) call report(self=self, builder=builder, upto=huge(1_I8P), pos=1_I8P, message='no root tag')
@@ -416,6 +434,9 @@ contains
    if (allocated(self%utf8_carry)) deallocate(self%utf8_carry)
    self%utf8_error = 0_I8P
    self%is_utf8_reported = .false.
+   if (allocated(self%ref_carry)) deallocate(self%ref_carry)
+   self%ref_carry_pos = 0_I8P
+   self%is_ref_reported = .false.
    endsubroutine reset
 
    pure function located(source, pos, message) result(problem)
@@ -583,6 +604,81 @@ contains
       write(self%utf8_byte, '(Z2.2)') iachar(bytes(e:e))
    endif
    endsubroutine check_utf8
+
+   pure subroutine check_references(self, builder, chars, first, is_open)
+   !< Check the references of a piece of character data; with *is_open* (the data continues in the next piece) a final
+   !< reference without its `;` is carried, to be checked with the continuation.
+   class(xml_tokenizer), intent(inout) :: self    !< Tokenizer.
+   class(xml_builder),   intent(inout) :: builder !< Builder.
+   character(*),         intent(in)    :: chars   !< Character data.
+   integer(I8P),         intent(in)    :: first   !< Position of the first character.
+   logical,              intent(in)    :: is_open !< The data continues in the next piece.
+   character(len=:), allocatable       :: text    !< Carried reference and data.
+   integer(I8P)                        :: start   !< Position of the first character of *text*.
+   integer(I8P)                        :: amp     !< Position of the last `&` of *text*.
+   integer(I8P)                        :: e       !< Position of a malformed reference in *text*.
+
+   if (self%is_ref_reported) return
+   if (self%ref_carry_pos>0) then
+      text = self%ref_carry//chars
+      start = self%ref_carry_pos
+      self%ref_carry_pos = 0
+   else
+      if (index(chars, '&', kind=I8P)==0) return
+      text = chars
+      start = first
+   endif
+   if (is_open) then ! a final reference may continue in the next piece
+      amp = index(text, '&', back=.true., kind=I8P)
+      if (amp>0) then
+         if (index(text(amp:), ';', kind=I8P)==0.and.len(text, kind=I8P)-amp<MAX_REFERENCE_CARRY) then
+            self%ref_carry = text(amp:)
+            self%ref_carry_pos = start + amp - 1
+            text = text(:amp-1)
+         endif
+      endif
+   endif
+   e = first_bad_reference(text)
+   if (e>0) then
+      self%is_ref_reported = .true.
+      call report(self=self, builder=builder, upto=start+e-1, pos=start+e-1, &
+                  message='malformed reference "'//reference_excerpt(text(e:))//'"')
+   endif
+   endsubroutine check_references
+
+   pure subroutine close_reference(self, builder, upto)
+   !< Check a carried reference whose character data ended (by markup or by the source end): it has no `;`.
+   class(xml_tokenizer), intent(inout) :: self    !< Tokenizer.
+   class(xml_builder),   intent(inout) :: builder !< Builder.
+   integer(I8P),         intent(in)    :: upto    !< Position reached by the tokenizer.
+   integer(I8P)                        :: e       !< Position of a malformed reference in the carry.
+
+   e = first_bad_reference(self%ref_carry)
+   if (e>0.and.(.not.self%is_ref_reported)) then
+      self%is_ref_reported = .true.
+      call report(self=self, builder=builder, upto=upto, pos=self%ref_carry_pos+e-1, &
+                  message='malformed reference "'//reference_excerpt(self%ref_carry(e:))//'"')
+   endif
+   self%ref_carry_pos = 0
+   endsubroutine close_reference
+
+   pure function reference_excerpt(text) result(excerpt)
+   !< Return the reference starting a text: up to its `;`, or its first characters if it has none.
+   character(*), intent(in)      :: text    !< Text starting with `&`.
+   character(len=:), allocatable :: excerpt !< Reference excerpt.
+   integer(I8P)                  :: e       !< Position of the `;`.
+
+   e = scan(text(:min(len(text, kind=I8P), MAX_REFERENCE_CARRY)), '; <', kind=I8P)
+   if (e>0) then
+      if (text(e:e)==';') then
+         excerpt = text(:e)
+      else
+         excerpt = text(:e-1)
+      endif
+   else
+      excerpt = text(:min(len(text, kind=I8P), 12_I8P))
+   endif
+   endfunction reference_excerpt
 
    pure subroutine flush_utf8(self, builder, upto)
    !< Report the UTF-8 error, if any and not reported yet, when the tokenizer has reached its position.
