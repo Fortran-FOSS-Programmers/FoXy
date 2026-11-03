@@ -849,31 +849,23 @@ contains
    if (last>builder%open_end) content = source(builder%open_end+1:last)
    endsubroutine tag_content
 
-   pure function blanks_as_spaces(string) result(normalized)
-   !< Return string with each blank (tab, new line, carriage return) replaced by a space, a CR LF pair by one space.
-   character(*), intent(in)      :: string     !< String.
+   pure function blanks_as_spaces(text) result(normalized)
+   !< Return a text with each blank (tab, new line, carriage return) replaced by a space, a CR LF pair by one space: the
+   !< normalization of attribute values (XML 1.0 3.3.3), done by StringiFor `string%replace`.
+   character(*), intent(in)      :: text       !< Text.
    character(len=:), allocatable :: normalized !< Normalized string.
-   character(len=len(string))    :: buffer     !< Normalized characters.
-   integer(I4P)                  :: n          !< Length of normalized string.
-   integer(I4P)                  :: c          !< Counter.
+   type(string)                  :: work       !< String being normalized.
 
-   if (scan(string, achar(9)//achar(10)//achar(13))==0) then
-      normalized = string
+   if (scan(text, achar(9)//achar(10)//achar(13))==0) then
+      normalized = text
       return
    endif
-   n = 0
-   do c=1, len(string)
-      if (string(c:c)==achar(10).and.c>1) then
-         if (string(c-1:c-1)==achar(13)) cycle ! CR LF: the CR is already a space
-      endif
-      n = n + 1
-      if (scan(string(c:c), achar(9)//achar(10)//achar(13))>0) then
-         buffer(n:n) = ' '
-      else
-         buffer(n:n) = string(c:c)
-      endif
-   enddo
-   normalized = buffer(1:n)
+   work = text
+   work = work%replace(old=achar(13)//achar(10), new=' ')
+   work = work%replace(old=achar(13), new=' ')
+   work = work%replace(old=achar(10), new=' ')
+   work = work%replace(old=achar(9), new=' ')
+   normalized = work%chars()
    endfunction blanks_as_spaces
 
    ! tag_builder methods

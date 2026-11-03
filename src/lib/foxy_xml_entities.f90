@@ -5,6 +5,11 @@ module foxy_xml_entities
 !< *text_value*, *without_markup* and *strip_blanks* (values of raw character data) and *is_name* are public for the other
 !< FoXy modules, not re-exported by *foxy*.
 !<
+!< What StringiFor does, FoXy delegates to it (escaping, decoding, number conversion, replacements). Kept here, with
+!< their reasons: *strip_blanks* and *line_ends_normalized* work on document-sized text (contents over 2 GiB) with 64-bit
+!< positions and no copy, while StringiFor's `strip` and `replace` use default-integer positions on a copy; *is_name*
+!< and *without_markup* are XML rules StringiFor does not have.
+!<
 !< Character references are the predefined entities `&lt;`, `&gt;`, `&amp;`, `&quot;`, `&apos;` and the numeric
 !< references `&#N;` (decimal) and `&#xH;` (hexadecimal) of a Unicode code point, decoded as UTF-8 bytes; escaping and
 !< decoding are StringiFor's (`string%escape_xml`, `string%unescape_xml`).

@@ -38,7 +38,9 @@ integer(I4P), parameter :: INITIAL_DEPTH = 64_I4P !< Initial capacity of the ope
 integer(I8P), parameter :: LOOKAHEAD     = 9_I8P  !< Characters needed to classify a markup (`<![CDATA[`).
 character(*), parameter :: BLANKS   = ' '//achar(9)//achar(10)//achar(13) !< XML blanks: space, tab, new line, CR.
 character(*), parameter :: NAME_END = BLANKS//'/>=' !< Characters ending a tag or attribute name.
-character(*), parameter :: BOM      = achar(239)//achar(187)//achar(191) !< UTF-8 byte order mark.
+character(*), parameter :: BOM      = achar(239)//achar(187)//achar(191) !< UTF-8 byte order mark (checked byte by byte:
+                                                                     !< the pieces may split it, StringiFor `has_bom` needs
+                                                                     !< the whole source).
 
 type, abstract :: xml_builder
    !< Builder driven by the tokenizer: one call per token (character data and similar in pieces).
