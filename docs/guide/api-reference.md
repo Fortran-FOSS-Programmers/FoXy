@@ -56,7 +56,7 @@ tag = xml_tag(name, content=inner_tag, [attribute=], [attributes=], [attributes_
 | `tag%get_level()` / `tag%get_indent()` / `tag%get_pos()` | Return the level (1 for a root tag), the indentation and the source positions (start `<`, start tag `>`, end tag `<`: `-1` if self-closing, `0` if unclosed) |
 | `tag%get_id()` / `tag%get_parent_id()` | Return the tag ID / its parent ID (`0` for a root tag) |
 | `tag%get_tail()` | Return the text after the end tag (mixed content), `''` if none |
-| `tag%write(unit, [form], [is_indented], [is_content_indented], [only_start], [only_content], [only_end], [end_record], [iostat], [iomsg])` | Write to file unit; `form` is `'UNFORMATTED'` (default: a stream unit) or `'FORMATTED'`, in any case (another one writes nothing, `iostat=XML_BAD_VALUE`) |
+| `tag%write(unit, [form], [is_indented], [is_content_indented], [only_start], [only_content], [only_end], [end_record], [iostat], [iomsg])` | Write to file unit; `form` is `'UNFORMATTED'` (default: a stream unit) or `'FORMATTED'`, in any case (another one writes nothing, `iostat=XML_BAD_VALUE`); without `iostat` an error stops the program |
 | `tag%free()` | Reset all fields |
 
 ### Fields (public)

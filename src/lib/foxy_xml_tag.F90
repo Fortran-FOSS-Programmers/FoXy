@@ -647,6 +647,8 @@ contains
    !<
    !< @note *form* is `'UNFORMATTED'` (the default, a stream unit) or `'FORMATTED'`, in any case: another one writes
    !< nothing, *iostat* is *XML_BAD_VALUE*.
+   !< @note Without *iostat*, an error (a bad *form*, a failed write) stops the program with its message, as Fortran I/O
+   !< statements do.
    class(xml_tag), intent(in)            :: self                !< XML tag.
    integer(I4P),   intent(in)            :: unit                !< File unit.
    logical,        intent(in),  optional :: is_indented         !< Activate content indentation.
@@ -688,6 +690,7 @@ contains
       iostat_ = XML_BAD_VALUE
       iomsg_ = 'form "'//form_%chars()//'" is neither FORMATTED nor UNFORMATTED'
    endselect
+   if (iostat_/=0.and..not.present(iostat)) error stop 'xml_tag%write: '//trim(iomsg_)
    if (present(iostat)) iostat = iostat_
    if (present(iomsg)) iomsg = iomsg_
    endsubroutine write_tag

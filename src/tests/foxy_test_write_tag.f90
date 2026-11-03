@@ -68,7 +68,11 @@ test_passed(4) = iostat==XML_BAD_VALUE.and.index(iomsg, '"FORMATED"')>0.and.file
 call a_tag%write(unit=xunit, iostat=iostat, iomsg=iomsg)
 test_passed(4) = test_passed(4).and.iostat==0.and.iomsg==''
 close(unit=xunit)
-print "(A,L1)", 'Is an unknown form reported? ', test_passed(4)
+open(newunit=xunit, file='parse_file_simple.xml', status='OLD', action='READ')   ! a failed write is returned too
+call a_tag%write(unit=xunit, form='formatted', iostat=iostat, iomsg=iomsg)
+test_passed(4) = test_passed(4).and.iostat/=0.and.iomsg/=''
+close(unit=xunit)
+print "(A,L1)", 'Are an unknown form and a failed write reported? ', test_passed(4)
 
 ! a tag without attributes or content: empty strings, not unallocated results
 a_tag = xml_tag(name='empty')

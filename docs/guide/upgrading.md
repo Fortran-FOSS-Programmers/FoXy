@@ -24,6 +24,7 @@ The full list of changes is in the [Changelog](./changelog).
 | `xml_writer%pi` with a target that is not an XML name, or `xml` | written | `XML_MALFORMED` (write the declaration with `declaration`) |
 | `xml_tag%attributes()` of a tag without attributes, `stringify(only_content=.true.)` of a tag without content | unallocated | `''` |
 | `xml_tag%write` with a `form` other than `FORMATTED`/`UNFORMATTED` | nothing written, `iostat` undefined | nothing written, `XML_BAD_VALUE` |
+| `xml_tag%write` without `iostat`: an error (a bad `form`, a failed write) | ignored | the program stops with the message, as Fortran I/O statements do |
 
 `children(id)` of a tag reads its children list: a loop over the tags asking for their children is no longer quadratic.
 
