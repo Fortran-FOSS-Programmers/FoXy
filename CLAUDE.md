@@ -119,9 +119,9 @@ There is **one parser**, used everywhere:
   `xml_tag` procedures stay `pure`/`elemental`.
 
 Typed accessors (`get_attribute`/`get_content` of `xml_file` and `xml_index`, generic over `I1P`…`I8P`, `R4P`, `R8P`,
-logical scalars and rank-1 allocatable numeric lists) share `foxy_xml_values`: one pass checks the token characters
-(rejecting what list-directed input would interpret: `,`, `/`, `r*`, quotes) and cuts the text in ~64 KiB segments at
-blanks, then one list-directed read per segment converts them. The specific procedures are boilerplate per kind: keep
+logical scalars and rank-1 allocatable numeric lists) share `foxy_xml_values`: each blank-separated token is converted by
+StringiFor `string%read_number` (read into the result only on success, so a scalar is unchanged on error); integer tokens
+must also be digits and a sign (XML integers: StringiFor alone would read `1e3`). The specific procedures are boilerplate per kind: keep
 them in sync across kinds and across the two types.
 
 Namespaces are resolved lazily in `foxy_xml_tree` (nothing stored, parsing unchanged, no parse-time checks): the nearest
@@ -170,9 +170,9 @@ parents interleave); names are compared without copies (`xml_tag%is_named`). Che
 
 The suite passes with gfortran 14/16, ifx 2025.3 and nvfortran 26.5/26.9. Compiler pitfalls met, keep the workarounds:
 
-- list-directed input: tabs/new lines are not value separators for ifx (`blanks_as_spaces` before each read), and an
-  integer overflow is not reported by nvfortran (I1P-I4P are read as I8P and range checked; I8P overflow stays
-  compiler dependent);
+- typed values are converted by StringiFor `string%read_number` (no list-directed input, which had compiler dependent
+  separators and overflow checks); `I2P` is read as `I4P` and range checked, since StringiFor has no `I2P` reader when
+  `_NVF` is defined;
 - nvfortran: a deferred-length string assigned from `char(i)` (i not constant) gets length i (`utf8` fills a fixed
   buffer); an implied-do logical mask `[(tag(t)%... , t=1, nt)]` is evaluated out of bounds (use a loop); a binding
   named as a StringiFor `string` one (`scan`) is linked to the latter (`scan => scan_file`); a local builder holding an

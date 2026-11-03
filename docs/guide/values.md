@@ -31,9 +31,14 @@ With `values=` instead, an allocatable rank-1 integer or real array, the text is
 On error the scalar keeps its value and the list is empty: a default set before the call survives. Without `iostat`
 errors are silent.
 
-The tokens are checked against the characters of the type before conversion (integers: digits and signs; reals: also
-`.`, the exponent letters `eEdD`, `NaN`, `Inf`, `Infinity`): separators such as `,` or `/`, quotes and repeat counts
-(`2*5`) are rejected, never interpreted by list-directed input. A real out of range reads as an infinity. An integer out
-of range for `I1P`–`I4P` is always `XML_BAD_VALUE`; for `I8P` the check is the compiler's (nvfortran misses some).
+Each token is converted by StringiFor (`string%read_number`): correctly rounded, with exact range checks and without
+a `read` statement, so the results are the same with every compiler.
+
+- **Integers** are digits with an optional sign, as XML integers: `1e3`, `1.0` and `0x1F` are `XML_BAD_VALUE`. A value
+  out of the range of the kind is `XML_BAD_VALUE`, for every kind.
+- **Reals** are decimal numbers with an optional exponent (`e`, `E`, `d`, `D`), `Inf`, `Infinity` and `NaN` (any case,
+  with an optional sign; `NaN(...)` too). A real too large reads as an infinity, one too small as zero (or a subnormal).
+- Separators such as `,` or `/`, quotes, repeat counts (`2*5`) and Fortran's exponent without a letter (`1+3`) are
+  rejected, never interpreted.
 
 Next: [Editing](./editing).

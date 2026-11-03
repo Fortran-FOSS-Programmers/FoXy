@@ -129,12 +129,10 @@ new line) tokens. The `iostat` values, public constants of `foxy_xml_values` re-
 | `XML_BAD_VALUE` (`9003`) | Not a value of the requested type: a character not allowed in a token, a token not converted (e.g. out of range for the integer kind), or not exactly one token for a scalar; `iomsg` quotes the token and names the attribute or tag |
 | other | `xml_index%get_content` only: the runtime I/O error reading the file |
 
-The tokens are checked against the characters of the type (integers: digits and signs; reals: also `.`, exponent
-letters `eEdD`, and `NaN`/`Inf`/`Infinity`), then converted by Fortran list-directed input: separators such as `,` or
-`/` and repeat counts (`2*5`) are rejected, not interpreted. A real out of range reads as an infinity. An integer out
-of range for `I1P`–`I4P` is always `XML_BAD_VALUE`; for `I8P` the check is the compiler runtime's: gfortran and ifx
-report every overflow, nvfortran (26.5) misses some (`9223372036854775808` reads as `-9223372036854775808`). Without
-`iostat`, errors are silent: the scalar keeps its value (a default), the list is empty.
+Each token is converted by StringiFor (`string%read_number`), the same way with every compiler: integers are digits with
+an optional sign (out of range for the kind: `XML_BAD_VALUE`), reals are decimal numbers with an optional exponent,
+`Inf`, `Infinity` or `NaN`. See [Typed values](./values) for the rules. Without `iostat`, errors are silent: the scalar
+keeps its value (a default), the list is empty.
 
 ---
 

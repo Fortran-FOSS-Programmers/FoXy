@@ -34,7 +34,13 @@ integer                       :: unit                    !< File unit.
 integer                       :: tmp_dir_len             !< Length of the TMPDIR environment variable.
 integer                       :: status                  !< Status of the environment variable query.
 integer                       :: i                       !< Counter.
-logical                       :: test_passed(9)          !< List of passed tests.
+logical                       :: test_passed(10)         !< List of passed tests.
+real(R8P)                     :: r8                      !< Value.
+integer(I1P)                  :: i1                      !< Value.
+integer(I2P)                  :: i2                      !< Value.
+integer(I4P)                  :: i4                      !< Value.
+integer(I8P)                  :: i8                      !< Value.
+integer(I4P)                  :: st(12)                  !< IO statuses.
 
 test_passed = .false.
 
@@ -57,6 +63,37 @@ close(unit)
 call xindex%scan(filename=filename)
 test_passed(5:8) = checks(xindex)
 print "(A,L1)", 'Are the index typed accessors right (as the DOM ones)? ', all(test_passed(5:8))
+
+! number rules (StringiFor read_number): XML integers are digits and a sign only, `1+3` is not a real (list-directed
+! input reads 1000), NaN with a payload is a NaN, overflows and the extreme values are exact, values unchanged on error
+call xfile%parse(string='<n a="1+3" b="1e3" c="nan(1)" d="9223372036854775808" e="-9223372036854775808" '// &
+                        'f="4.9e-324" g="-0" h="32767" i="32768" j="1.5x" k="-128" l="128"/>')
+r8 = 7._R8P ; call xfile%get_attribute(id=1_I4P, name='a', value=r8, iostat=st(1))
+test_passed(10) = st(1)==XML_BAD_VALUE.and.r8==7._R8P
+i4 = 7_I4P ; call xfile%get_attribute(id=1_I4P, name='b', value=i4, iostat=st(2))
+test_passed(10) = test_passed(10).and.st(2)==XML_BAD_VALUE.and.i4==7_I4P
+call xfile%get_attribute(id=1_I4P, name='c', value=r8, iostat=st(3))
+test_passed(10) = test_passed(10).and.st(3)==0.and.ieee_is_nan(r8)
+i8 = 7_I8P ; call xfile%get_attribute(id=1_I4P, name='d', value=i8, iostat=st(4))
+test_passed(10) = test_passed(10).and.st(4)==XML_BAD_VALUE.and.i8==7_I8P
+call xfile%get_attribute(id=1_I4P, name='e', value=i8, iostat=st(5))
+test_passed(10) = test_passed(10).and.st(5)==0.and.i8==-huge(i8)-1_I8P
+call xfile%get_attribute(id=1_I4P, name='f', value=r8, iostat=st(6))
+test_passed(10) = test_passed(10).and.st(6)==0.and.r8==transfer(1_I8P, r8)
+call xfile%get_attribute(id=1_I4P, name='g', value=r8, iostat=st(7))
+test_passed(10) = test_passed(10).and.st(7)==0.and.r8==0._R8P.and.sign(1._R8P, r8)<0._R8P
+call xfile%get_attribute(id=1_I4P, name='h', value=i2, iostat=st(8))
+test_passed(10) = test_passed(10).and.st(8)==0.and.i2==huge(i2)
+i2 = 7_I2P ; call xfile%get_attribute(id=1_I4P, name='i', value=i2, iostat=st(9))
+test_passed(10) = test_passed(10).and.st(9)==XML_BAD_VALUE.and.i2==7_I2P
+r8 = 7._R8P ; call xfile%get_attribute(id=1_I4P, name='j', value=r8, iostat=st(10))
+test_passed(10) = test_passed(10).and.st(10)==XML_BAD_VALUE.and.r8==7._R8P
+call xfile%get_attribute(id=1_I4P, name='k', value=i1, iostat=st(11))
+test_passed(10) = test_passed(10).and.st(11)==0.and.i1==-huge(i1)-1_I1P
+i1 = 7_I1P ; call xfile%get_attribute(id=1_I4P, name='l', value=i1, iostat=st(12))
+test_passed(10) = test_passed(10).and.st(12)==XML_BAD_VALUE.and.i1==7_I1P
+if (.not.test_passed(10)) print "(A,12I6)", 'number rules: ', st
+print "(A,L1)", 'Are the number rules right? ', test_passed(10)
 
 ! a large list, read from the file through the index
 allocate(expected(N_LARGE))
