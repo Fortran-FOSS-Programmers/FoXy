@@ -150,7 +150,9 @@ Comments and PIs inside the document are raw text of their owner tag (after the 
 `stringify`); the `content(name)` fallback on nested tags set as content string ignores tags inside CDATA/comments/PIs.
 
 Well-formedness: the tokenizer reports (first problem, still tolerant) the tags structure, invalid names (`is_name` in
-`foxy_xml_entities`, a `select case` on bytes: an `index()` on a name set cost 30% of the parse), duplicate attributes,
+`foxy_xml_entities`: XML 1.0 5th edition NameStartChar/NameChar ranges with `select case`; ASCII bytes checked one by
+one, other names decoded by StringiFor `codepoints`; an `index()` on a name set once cost 30% of the parse), duplicate
+attributes,
 non-blank data outside the root (a leading BOM excepted, also split across chunks), a second root tag, a source
 without tags and ill-formed UTF-8 (each piece checked once by `check_utf8`, StringiFor `utf8_error` via
 `first_utf8_error`, a split sequence carried to the next piece; the error is reported by `report`/`flush_utf8` when the

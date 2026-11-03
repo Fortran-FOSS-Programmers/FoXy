@@ -32,7 +32,7 @@ Parsing is tolerant: the document is built as far as possible and only the first
 | an end tag closing inner open tags, or matching no open tag | `<a><b></a>`, `<a></x></a>` |
 | an unclosed tag, an unterminated comment, CDATA, PI or start tag | `<a><b>` |
 | a `<` not starting a tag, an unquoted or missing attribute value | `<a>1 < 2</a>`, `<a k=1/>` |
-| an invalid tag or attribute name, a duplicate attribute | `<1a/>`, `<a x="1" x="2"/>` |
+| an invalid tag or attribute name (XML 1.0 5th edition: `NameStartChar` then `NameChar`s, letters of every script included), a duplicate attribute | `<1a/>`, `<×/>`, `<a x="1" x="2"/>` |
 | text outside the root element (blanks and a UTF-8 byte order mark excepted) | `<a/>junk` |
 | more root elements, or none (an empty source included) | `<a/><b/>`, `''` |
 | ill-formed UTF-8 (Unicode Table 3-7: an overlong form, a surrogate, a value above U+10FFFF, a truncated sequence, a stray continuation byte), anywhere in the source | `<a>`, byte `0xFF`, `</a>` |

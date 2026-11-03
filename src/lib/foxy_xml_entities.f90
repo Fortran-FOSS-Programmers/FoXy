@@ -37,17 +37,35 @@ integer,      parameter :: FIRST_NON_ASCII   = 128         !< First non ASCII by
 integer,      parameter :: FIRST_LEAD        = 192         !< First byte above the UTF-8 continuation bytes, 10xxxxxx.
 contains
    pure function is_name(string) result(is_valid)
-   !< Return true if *string* is an XML name (XML 1.0 production *Name*): its first character a letter, `_` or `:`, the
-   !< others also digits, `-` or `.`; every non ASCII byte (UTF-8 encoded character) is accepted as a name character.
-   character(*), intent(in) :: string   !< String.
-   logical                  :: is_valid !< Check result.
-   integer(I8P)             :: c        !< Counter.
+   !< Return true if *string* is an XML name (XML 1.0 5th edition, production *Name*): its first character a
+   !< *NameStartChar*, the others *NameChar*s (the XML ranges of letters, digits, combining characters, ...).
+   !<
+   !< @note An ASCII name is checked byte by byte; a name with other bytes is decoded by StringiFor (`string%codepoints`),
+   !< an ill-formed UTF-8 byte is not a name character.
+   character(*), intent(in)  :: string   !< String.
+   logical                   :: is_valid !< Check result.
+   type(string_t)            :: name     !< Name, to decode.
+   integer(I4P), allocatable :: codes(:) !< Code points of the name.
+   integer(I8P)              :: c        !< Counter.
 
    is_valid = .false.
    if (len(string)==0) return
-   if (.not.is_name_start_char(iachar(string(1:1)))) return
-   do c=2, len(string, kind=I8P)
-      if (.not.is_name_char(iachar(string(c:c)))) return
+   if (iachar(string(1:1))<FIRST_NON_ASCII) then ! ASCII bytes are checked one by one: the common case
+      if (.not.is_name_start_char(iachar(string(1:1), I4P))) return
+      do c=2, len(string, kind=I8P)
+         if (iachar(string(c:c))>=FIRST_NON_ASCII) exit
+         if (.not.is_name_char(iachar(string(c:c), I4P))) return
+      enddo
+      if (c>len(string, kind=I8P)) then
+         is_valid = .true.
+         return
+      endif
+   endif
+   name = string
+   codes = name%codepoints()
+   if (.not.is_name_start_char(codes(1))) return
+   do c=2, size(codes, kind=I8P)
+      if (.not.is_name_char(codes(c))) return
    enddo
    is_valid = .true.
    endfunction is_name
@@ -296,12 +314,15 @@ contains
    endfunction is_continuation
 
    elemental function is_name_start_char(code) result(is_valid)
-   !< Return true if the byte *code* can start an XML name: ASCII letter, `_`, `:` or a non ASCII byte.
-   integer, intent(in) :: code     !< Byte code.
-   logical             :: is_valid !< Check result.
+   !< Return true if the code point *code* is an XML 1.0 *NameStartChar* (a negative code, an ill-formed byte, is not).
+   integer(I4P), intent(in) :: code     !< Code point.
+   logical                  :: is_valid !< Check result.
 
    select case(code)
-   case(iachar('A'):iachar('Z'), iachar('a'):iachar('z'), iachar('_'), iachar(':'), FIRST_NON_ASCII:)
+   case(iachar(':'), iachar('A'):iachar('Z'), iachar('_'), iachar('a'):iachar('z'), &
+        int(z'C0'):int(z'D6'), int(z'D8'):int(z'F6'), int(z'F8'):int(z'2FF'), int(z'370'):int(z'37D'), &
+        int(z'37F'):int(z'1FFF'), int(z'200C'):int(z'200D'), int(z'2070'):int(z'218F'), int(z'2C00'):int(z'2FEF'), &
+        int(z'3001'):int(z'D7FF'), int(z'F900'):int(z'FDCF'), int(z'FDF0'):int(z'FFFD'), int(z'10000'):int(z'EFFFF'))
       is_valid = .true.
    case default
       is_valid = .false.
@@ -309,16 +330,16 @@ contains
    endfunction is_name_start_char
 
    elemental function is_name_char(code) result(is_valid)
-   !< Return true if the byte *code* can be in an XML name: a name start byte, a digit, `-` or `.`.
-   integer, intent(in) :: code     !< Byte code.
-   logical             :: is_valid !< Check result.
+   !< Return true if the code point *code* is an XML 1.0 *NameChar*: a *NameStartChar*, `-`, `.`, a digit, U+00B7,
+   !< U+0300 to U+036F (combining marks), U+203F or U+2040.
+   integer(I4P), intent(in) :: code     !< Code point.
+   logical                  :: is_valid !< Check result.
 
    select case(code)
-   case(iachar('A'):iachar('Z'), iachar('a'):iachar('z'), iachar('_'), iachar(':'), iachar('0'):iachar('9'), iachar('-'), &
-        iachar('.'), FIRST_NON_ASCII:)
+   case(iachar('-'), iachar('.'), iachar('0'):iachar('9'), int(z'B7'), int(z'300'):int(z'36F'), int(z'203F'):int(z'2040'))
       is_valid = .true.
    case default
-      is_valid = .false.
+      is_valid = is_name_start_char(code)
    endselect
    endfunction is_name_char
 

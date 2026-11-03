@@ -19,7 +19,11 @@ integer(I4P)                  :: iostat             !< IO status.
 character(len=256)            :: iomsg              !< IO message.
 integer                       :: tmp_dir_len        !< Length of the TMPDIR environment variable.
 integer                       :: status             !< Status of the environment variable query.
-logical                       :: test_passed(10)    !< List of passed tests.
+logical                       :: test_passed(11)    !< List of passed tests.
+character(len=:), allocatable :: cjk                !< U+540D U+524D, a CJK name.
+character(len=:), allocatable :: times              !< U+00D7, the multiplication sign, not a name character.
+character(len=:), allocatable :: acute              !< U+0301, a combining acute accent: a name character, not a start.
+character(len=:), allocatable :: greek_qm           !< U+037E, the Greek question mark: not a name character.
 
 test_passed = .false.
 call get_environment_variable('TMPDIR', length=tmp_dir_len, status=status)
@@ -50,6 +54,16 @@ print "(A,L1)", 'Is malformed input reported? ', all(test_passed(5:9))
 test_passed(10) = is_valid_index(BOM//'<a x="1"/>'//NL).and.is_malformed_index('<a x="1" x="2"/>', 'duplicate').and. &
                   is_malformed_index('<a/>x', 'outside').and.is_malformed_index('<a/><b/>', 'second root')
 print "(A,L1)", 'Does the index report the same problems? ', test_passed(10)
+
+! names follow XML 1.0 (5th edition) NameStartChar and NameChar, beyond ASCII
+cjk = achar(229)//achar(144)//achar(141)//achar(229)//achar(137)//achar(141)
+times = achar(195)//achar(151)
+acute = achar(204)//achar(129)
+greek_qm = achar(205)//achar(190)
+test_passed(11) = is_valid('<'//cjk//' e'//acute//'="1" a'//achar(194)//achar(183)//'b="2"/>') .and. &
+                  is_malformed('<'//times//'a/>', ['invalid  ']) .and. is_malformed('<'//acute//'a/>', ['invalid  ']) .and. &
+                  is_malformed('<a'//greek_qm//'/>', ['invalid  ']) .and. is_malformed('<a '//times//'="1"/>', ['invalid  '])
+print "(A,L1)", 'Are non ASCII names checked by the XML ranges? ', test_passed(11)
 
 print "(A,L1)", new_line('a')//'Are all tests passed? ', all(test_passed)
 if (.not.all(test_passed)) error stop 1

@@ -174,10 +174,14 @@ test_passed(16) = test_passed(16).and.iostat==XML_MALFORMED
 call writer%close(iostat=iostat)
 call writer%open()
 call writer%start('x:a-b.c_1')
-call writer%attribute('é', 'v', iostat=iostat) ! UTF-8 bytes are name characters
+call writer%attribute('é', 'v', iostat=iostat) ! a letter beyond ASCII is a name character
 test_passed(16) = test_passed(16).and.iostat==0
 call writer%close(iostat=iostat)
 test_passed(16) = test_passed(16).and.iostat==0.and.writer%string()=='<x:a-b.c_1 é="v"/>'//NL
+call writer%open()
+call writer%start(achar(195)//achar(151), iostat=iostat) ! U+00D7, the multiplication sign: not a name character
+test_passed(16) = test_passed(16).and.iostat==XML_MALFORMED
+call writer%close(iostat=iostat)
 call writer%open()
 call writer%start('a')
 call writer%attribute('k v', 'v', iostat=iostat)
