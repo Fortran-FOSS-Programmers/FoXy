@@ -3,6 +3,7 @@ module foxy_xml_tag
 !< FoXy XML tag class.
 use foxy_xml_entities, only : attribute_value
 use foxy_xml_tokenizer, only : xml_builder, xml_tokenizer
+use foxy_xml_values, only : XML_BAD_VALUE
 use penf
 use stringifor
 
@@ -213,18 +214,16 @@ contains
    endsubroutine add_child_id
 
    pure function attributes(self) result(att_)
-   !< Return attributes name/value pairs as string.
+   !< Return attributes name/value pairs as string, `''` if the tag has none.
    class(xml_tag), intent(in)    :: self !< XML tag.
    character(len=:), allocatable :: att_ !< The attributes string.
    integer(I4P)                  :: a    !< Counter.
 
-   if (self%attributes_number>0) then
-      att_ = ''
-      do a=1, self%attributes_number
-         att_ = att_//' '//self%attribute(1, a)//'="'//self%attribute(2, a)//'"'
-      enddo
-      att_ = trim(adjustl(att_))
-   endif
+   att_ = ''
+   do a=1, self%attributes_number
+      att_ = att_//' '//self%attribute(1, a)//'="'//self%attribute(2, a)//'"'
+   enddo
+   att_ = trim(adjustl(att_))
    endfunction attributes
 
    pure function end_tag(self, is_indented) result(tag_)
@@ -610,6 +609,7 @@ contains
       if (only_start_) then
          stringed = self%start_tag(is_indented=is_indented)
       elseif (only_content_) then
+         stringed = ''
          if (self%tag_content%is_allocated()) then
            if (is_content_indented_) then
               stringed = repeat(' ', self%indent+2)//self%tag_content
@@ -644,6 +644,9 @@ contains
    subroutine write_tag(self, unit, is_indented, is_content_indented, form, end_record, only_start, only_content, only_end, &
                         iostat, iomsg)
    !< Write tag to unit file.
+   !<
+   !< @note *form* is `'UNFORMATTED'` (the default, a stream unit) or `'FORMATTED'`, in any case: another one writes
+   !< nothing, *iostat* is *XML_BAD_VALUE*.
    class(xml_tag), intent(in)            :: self                !< XML tag.
    integer(I4P),   intent(in)            :: unit                !< File unit.
    logical,        intent(in),  optional :: is_indented         !< Activate content indentation.
@@ -660,6 +663,8 @@ contains
    integer(I4P)                          :: iostat_             !< IO status.
    character(500)                        :: iomsg_              !< IO message.
 
+   iostat_ = 0
+   iomsg_ = ''
    form_ = 'UNFORMATTED'
    if (present(form)) then
       form_ = form
@@ -679,6 +684,9 @@ contains
                                                                               only_start=only_start,                   &
                                                                               only_content=only_content,               &
                                                                               only_end=only_end)//end_record_
+   case default
+      iostat_ = XML_BAD_VALUE
+      iomsg_ = 'form "'//form_%chars()//'" is neither FORMATTED nor UNFORMATTED'
    endselect
    if (present(iostat)) iostat = iostat_
    if (present(iomsg)) iomsg = iomsg_

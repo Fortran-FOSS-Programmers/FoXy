@@ -9,7 +9,10 @@ character(len=:), allocatable :: parsed         !< String containing the parsed 
 type(xml_tag)                 :: a_tag          !< XML tag handler.
 type(xml_file)                :: xfile          !< XML file handler.
 integer                       :: xunit          !< XML file unit.
-logical                       :: test_passed(3) !< List of passed tests.
+integer(I4P)                  :: iostat         !< IO status.
+character(len=128)            :: iomsg          !< IO message.
+integer(I8P)                  :: file_size      !< Size of the written file.
+logical                       :: test_passed(5) !< List of passed tests.
 
 test_passed = .false.
 
@@ -55,6 +58,23 @@ parsed = xfile%stringify()
 print "(A)", parsed
 test_passed(3) = trim(source)==trim(parsed)
 print "(A,L1)", 'Is parsed data correct? ', test_passed(3)
+
+! an unknown form: nothing written, XML_BAD_VALUE; a known one: iostat 0, iomsg blank
+open(newunit=xunit, file='parse_file_simple.xml', access='STREAM', form='UNFORMATTED', status='REPLACE')
+iomsg = 'not touched'
+call a_tag%write(unit=xunit, form='formated', iostat=iostat, iomsg=iomsg)
+inquire(unit=xunit, size=file_size)
+test_passed(4) = iostat==XML_BAD_VALUE.and.index(iomsg, '"FORMATED"')>0.and.file_size==0
+call a_tag%write(unit=xunit, iostat=iostat, iomsg=iomsg)
+test_passed(4) = test_passed(4).and.iostat==0.and.iomsg==''
+close(unit=xunit)
+print "(A,L1)", 'Is an unknown form reported? ', test_passed(4)
+
+! a tag without attributes or content: empty strings, not unallocated results
+a_tag = xml_tag(name='empty')
+test_passed(5) = a_tag%attributes()==''.and.len(a_tag%attributes())==0.and. &
+                 a_tag%stringify(only_content=.true.)==''.and.len(a_tag%stringify(only_content=.true.))==0
+print "(A,L1)", 'Are no attributes and no content empty strings? ', test_passed(5)
 
 open(newunit=xunit, file='parse_file_simple.xml')
 close(unit=xunit, status='DELETE')

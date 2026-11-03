@@ -41,7 +41,7 @@ tag = xml_tag(name, content=inner_tag, [attribute=], [attributes=], [attributes_
 | `tag%start_tag([is_indented])` | Return `<name...>` |
 | `tag%end_tag([is_indented])` | Return `</name>` |
 | `tag%self_closing_tag([is_indented])` | Return `<name.../>` |
-| `tag%attributes()` | Return all attributes as `att1="v1" att2="v2"` string (unallocated if the tag has none: check `get_attributes_number()` first) |
+| `tag%attributes()` | Return all attributes as `att1="v1" att2="v2"` string, `''` if the tag has none |
 | `tag%add_attributes(attribute=[name,val], [sanitize_value=])` | Add or update one attribute |
 | `tag%add_attributes(attributes=matrix, [sanitize_values=])` | Add or update multiple attributes (note the plural `sanitize_values`) |
 | `tag%add_attributes(attributes_stream=string, [sanitize_values=])` | Add or update the attributes of a stream as in a start tag, e.g. `x="1" y='a > b'` (values stored as written) |
@@ -56,7 +56,7 @@ tag = xml_tag(name, content=inner_tag, [attribute=], [attributes=], [attributes_
 | `tag%get_level()` / `tag%get_indent()` / `tag%get_pos()` | Return the level (1 for a root tag), the indentation and the source positions (start `<`, start tag `>`, end tag `<`: `-1` if self-closing, `0` if unclosed) |
 | `tag%get_id()` / `tag%get_parent_id()` | Return the tag ID / its parent ID (`0` for a root tag) |
 | `tag%get_tail()` | Return the text after the end tag (mixed content), `''` if none |
-| `tag%write(unit, [form], [is_indented], [is_content_indented], [only_start], [only_content], [only_end], [end_record], [iostat], [iomsg])` | Write to file unit; `form` is `'UNFORMATTED'` (default: a stream unit) or `'FORMATTED'` |
+| `tag%write(unit, [form], [is_indented], [is_content_indented], [only_start], [only_content], [only_end], [end_record], [iostat], [iomsg])` | Write to file unit; `form` is `'UNFORMATTED'` (default: a stream unit) or `'FORMATTED'`, in any case (another one writes nothing, `iostat=XML_BAD_VALUE`) |
 | `tag%free()` | Reset all fields |
 
 ### Fields (public)
