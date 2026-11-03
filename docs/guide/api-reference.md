@@ -187,8 +187,8 @@ memory. Every subroutine takes optional `iostat`/`iomsg` (`string()` is a functi
 (the first one is kept, the following calls do nothing) and `close` always reports them; without `iostat`, `close`
 stops the program on an error never returned through an `iostat`. A misuse is `XML_MALFORMED`. Names, attributes and
 text are always well-formed: element and attribute names must be XML names, a duplicate attribute is a misuse, `]]>` in
-text and attribute values is written `]]&gt;`. The document as a whole is not checked: a second root element is not
-refused.
+text and attribute values is written `]]&gt;`. The document is checked as a whole: a second root element is a misuse,
+`close` fails if no root element was written, a PI target must be an XML name other than `xml`.
 
 | Method | Description |
 |--------|-------------|

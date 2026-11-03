@@ -13,6 +13,16 @@ difference.
 
 The full list of changes is in the [Changelog](./changelog).
 
+## From 0.7 to the next release
+
+### Behaviour changes
+
+| What | 0.7 | Next |
+|---|---|---|
+| `xml_writer`: a second root element | written | `XML_MALFORMED` (a document has one root element) |
+| `xml_writer%close` with no root element written | `iostat=0`, an empty document | `XML_MALFORMED` |
+| `xml_writer%pi` with a target that is not an XML name, or `xml` | written | `XML_MALFORMED` (write the declaration with `declaration`) |
+
 ## From 0.6 to 0.7
 
 ### Behaviour changes

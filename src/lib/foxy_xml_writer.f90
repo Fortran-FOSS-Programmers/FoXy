@@ -52,6 +52,7 @@ type :: xml_writer
    character(len=:), allocatable   :: pending               !< Pending start tag (`<name attributes`), unallocated if none.
    character(len=:), allocatable   :: pending_names         !< Attributes names of the pending start tag, ` a b `.
    logical                         :: is_empty=.true.       !< Nothing written yet.
+   integer(I4P)                    :: roots=0_I4P           !< Root elements started (a document has one).
    integer(I4P)                    :: error=0_I4P           !< First error status, 0 if none.
    character(len=:), allocatable   :: error_message         !< First error message.
    logical                         :: is_reported=.false.   !< The error has been returned to the caller.
@@ -173,6 +174,7 @@ contains
    do while (self%depth>0.and.self%error==0)
       call self%end()
    enddo
+   if (self%is_open.and.self%error==0.and.self%roots==0) call self%fail(XML_MALFORMED, 'no root element written')
    if (self%is_unit_owned.and.self%is_open) then
       close(self%unit, iostat=iostat_)
       if (iostat_/=0) call self%fail(iostat_, 'cannot close the file')
@@ -294,6 +296,7 @@ contains
    self%depth = 0
    if (allocated(self%pending)) deallocate(self%pending)
    self%is_empty = .true.
+   self%roots = 0
    self%error = 0
    self%is_reported = .false.
    if (allocated(self%error_message)) deallocate(self%error_message)
@@ -318,14 +321,18 @@ contains
    endsubroutine open
 
    subroutine pi(self, target, string, iostat, iomsg)
-   !< Write a processing instruction (`<?target string?>`); *string* cannot contain `?>`.
+   !< Write a processing instruction (`<?target string?>`): *target* is an XML name other than `xml` (any case), *string*
+   !< cannot contain `?>`.
    class(xml_writer),      intent(inout) :: self   !< XML writer.
    character(*),           intent(in)    :: target !< PI target.
    character(*), optional, intent(in)    :: string !< PI content.
    integer(I4P), optional, intent(out)   :: iostat !< IO status.
    character(*), optional, intent(inout) :: iomsg  !< IO message.
 
-   if (present(string)) then
+   if (.not.is_name(target).or.is_xml_target(target)) then
+      call self%fail(XML_MALFORMED, 'processing instruction target "'//target//'" is not an XML name other than xml '// &
+                     '(the declaration is written by declaration)')
+   elseif (present(string)) then
       if (index(string, '?>')>0) then
          call self%fail(XML_MALFORMED, 'processing instruction "'//string//'" contains "?>"')
       else
@@ -377,7 +384,10 @@ contains
          call self%fail(XML_MALFORMED, 'element without name')
       elseif (.not.is_name(trim(name))) then
          call self%fail(XML_MALFORMED, 'element name "'//trim(name)//'" is not an XML name')
+      elseif (self%depth==0.and.self%roots>0) then
+         call self%fail(XML_MALFORMED, 'second root element <'//trim(name)//'>: a document has one root element')
       else
+         if (self%depth==0) self%roots = self%roots + 1
          element%name = trim(name)
          if (self%depth>0) then
             element%in_inline = self%stack(self%depth)%is_inline.or.self%stack(self%depth)%in_inline
@@ -976,6 +986,16 @@ contains
    endfunction start_content
 
    ! non type-bound procedures
+   pure function is_xml_target(target) result(is_xml)
+   !< Return true if a PI target is `xml` in any case, reserved by XML 1.0 (2.6) for the XML declaration.
+   character(*), intent(in) :: target !< PI target.
+   logical                  :: is_xml !< Check result.
+
+   is_xml = .false.
+   if (len(target)/=3) return
+   is_xml = index('xX', target(1:1))>0.and.index('mM', target(2:2))>0.and.index('lL', target(3:3))>0
+   endfunction is_xml_target
+
    pure function indentation(self, depth) result(blanks)
    !< Return the indentation of a depth.
    type(xml_writer), intent(in)  :: self   !< XML writer.

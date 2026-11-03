@@ -18,7 +18,7 @@ of the open elements, so a document may be any size.
 | `text(string)` | escaped character data; the element is written inline (`<a>text</a>`) |
 | `text(value \| values, [fmt=])` | a number, a logical or a rank-1 list of numbers, as `attribute` |
 | `raw(string, [is_block=])` | characters as they are (numbers, base64), in pieces with many calls; `is_block=.true.` on their own indented line |
-| `cdata(string)`, `comment(string)`, `pi(target, [string])` | the other markup (`]]>` split across CDATA sections; a comment cannot hold `--` nor end with `-`, a PI cannot hold `?>`) |
+| `cdata(string)`, `comment(string)`, `pi(target, [string])` | the other markup (`]]>` split across CDATA sections; a comment cannot hold `--` nor end with `-`; a PI target is an XML name other than `xml`, its string cannot hold `?>`) |
 | `end([name])` | closes the innermost element (self-closing if empty); `name` is checked |
 | `flush()` | completes the pending start tag, to write to the unit yourself (e.g. binary data) |
 | `close()` | closes the open elements and the writer |
@@ -38,8 +38,9 @@ an `iostat`, so no error is lost.
 
 Names, attributes and text are always written well-formed: names must be XML names, a duplicate attribute is a misuse,
 `&`, `<`, `>`, `"` and `'` are escaped in text and attribute values (so `]]>` cannot appear), and tab, new line and
-carriage return are written as references in attribute values, so that they read back exactly. The document as a whole
-is your responsibility: the writer does not refuse a second root element, nor check the target of a PI.
+carriage return are written as references in attribute values, so that they read back exactly. The document is checked
+as a whole too: a second root element is a misuse, `close` fails if no root element was written, and a PI target must
+be an XML name other than `xml` (the declaration is written by `declaration`).
 
 ## Binary data
 

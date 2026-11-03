@@ -26,7 +26,7 @@ print '(A)', doc%content('dt')
 | **Querying** | tags by name, path or parent; children, parent, level; attributes by name or listed; text with references decoded, CDATA literal, mixed content | [Querying](./querying) |
 | **Typed values** | contents and attributes as integers (`I1P`…`I8P`), reals (`R4P`, `R8P`), logicals or lists; `XML_NOT_FOUND`, `XML_BAD_VALUE` | [Typed values](./values) |
 | **Editing** | build in code (`add_tag`); edit by ID: content (text or numbers), attributes, names, insertion before or after a sibling, deletion; `stringify`, `save` | [Editing](./editing) |
-| **Writing** | `xml_writer`: streaming to a file, a unit or memory; layout, escaping, numbers and lists, binary blocks; names, attributes and text always well-formed | [Writing](./writing) |
+| **Writing** | `xml_writer`: streaming to a file, a unit or memory; layout, escaping, numbers and lists, binary blocks; only well-formed XML (names, attributes, text, one root element) | [Writing](./writing) |
 | **Large files** | `xml_index`: tags without content, contents on demand, byte ranges, scan stopped before raw data | [The index](./index-files) |
 | **Streaming** | `xml_handler`: your callbacks for each element, text and problem, in one pass over a source of any size; decoded text, balanced elements, `stop_parsing` | [Streaming parser](./events) |
 | **Namespaces** | prefix, local name, namespace of each tag; queries by `{uri}local` or with your own prefixes | [Namespaces](./namespaces) |
@@ -96,6 +96,5 @@ graph LR
 - XPath only as the subset of `select` (`/`, `//`, `*`, `[@k]`, `[@k="v"]`, `[@k~="re"]`, `[n]`): no axes, no
   functions, no boolean operators.
 - Regular expressions without backreferences or lookaround (StringiFor's engine, linear time).
-- The writer checks names, attributes and text, not the document as a whole: a second root element is not refused.
 
 Next: [Parsing](./parsing).

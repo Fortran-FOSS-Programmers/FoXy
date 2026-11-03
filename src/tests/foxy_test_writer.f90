@@ -37,7 +37,7 @@ integer                       :: unit               !< File unit.
 integer                       :: tmp_dir_len        !< Length of the TMPDIR environment variable.
 integer                       :: status             !< Status of the environment variable query.
 integer                       :: p                  !< Counter.
-logical                       :: test_passed(20)    !< List of passed tests.
+logical                       :: test_passed(21)    !< List of passed tests.
 
 test_passed = .false.
 
@@ -234,6 +234,30 @@ test_passed(20) = test_passed(20).and.iostat/=0
 call writer%close(iostat=iostat)
 if (.not.test_passed(20)) print "(A)", writer%string()
 print "(A,L1)", 'Are numbers, logicals and lists written? ', test_passed(20)
+
+! the document as a whole: one root element, PI targets are names other than xml
+call writer%open(iostat=iostat)
+call writer%start('a', iostat=iostat)
+call writer%end(iostat=iostat)
+call writer%start('b', iostat=iostat)
+call writer%close(iostat=iostat, iomsg=iomsg)
+test_passed(21) = iostat==XML_MALFORMED.and.index(iomsg, 'second root element <b>')>0
+call writer%open(iostat=iostat)
+call writer%comment(' nothing else ', iostat=iostat)
+call writer%close(iostat=iostat, iomsg=iomsg)
+test_passed(21) = test_passed(21).and.iostat==XML_MALFORMED.and.index(iomsg, 'no root element')>0
+call writer%open(iostat=iostat)
+call writer%pi('bad target', 'x', iostat=iostat)
+test_passed(21) = test_passed(21).and.iostat==XML_MALFORMED
+call writer%open(iostat=iostat)
+call writer%pi('XmL', 'version="1.0"', iostat=iostat)
+test_passed(21) = test_passed(21).and.iostat==XML_MALFORMED
+call writer%open(iostat=iostat)
+call writer%pi('xml-stylesheet', 'href="s.xsl"', iostat=iostat)
+call writer%start('a', iostat=iostat)
+call writer%close(iostat=iostat)
+test_passed(21) = test_passed(21).and.iostat==0.and.index(writer%string(), '<?xml-stylesheet href="s.xsl"?>')==1
+print "(A,L1)", 'Is the document checked as a whole (one root, PI targets)? ', test_passed(21)
 
 open(newunit=unit, file=filename, status='OLD')
 close(unit, status='DELETE')
