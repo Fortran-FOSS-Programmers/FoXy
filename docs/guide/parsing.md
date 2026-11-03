@@ -61,7 +61,10 @@ tab, new line and CR read as a space (XML 1.0 3.3.3).
 <<< @/examples/snippets/solver_8-text.f90
 
 `xml_unescape` decodes `&lt;` `&gt;` `&amp;` `&quot;` `&apos;` and the numeric references `&#N;` and `&#xH;` (as
-UTF-8); unknown references (e.g. `&nbsp;`, defined by a DTD) are left as they are. `xml_escape` replaces `&`, `<`, `"`
-and the `>` of `]]>` with references.
+UTF-8, any number of digits); malformed references (`&nbsp;`, defined by a DTD, a bare `&`, `&#0;`, a surrogate) are
+left as they are. `xml_escape(string, [attribute=])` replaces `&`, `<`, `>`, `"` and `'` with references; with
+`attribute=.true.` also tab, new line and carriage return (`&#9;`, `&#10;`, `&#13;`), so that an attribute value reads
+back exactly: a parser reads them as spaces otherwise. Both are StringiFor's (`string%escape_xml`,
+`string%unescape_xml`).
 
 Next: [Querying](./querying).

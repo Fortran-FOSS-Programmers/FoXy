@@ -199,7 +199,7 @@ call writer%close(iostat=iostat)
 output = writer%string()
 call xfile%parse(string=output, iostat=iostat)
 test_passed(19) = output=='<a>x]]&gt;y</a>'.and.iostat==0.and.xfile%content('a')=='x]]>y'.and. &
-                  xml_escape(']]>a]]>')==']]&gt;a]]&gt;'.and.xml_escape('a>b')=='a>b'
+                  xml_escape(']]>a]]>')==']]&gt;a]]&gt;'.and.xml_escape('a>b')=='a&gt;b'
 print "(A,L1)", 'Is the output well-formed (names, duplicate attributes, ]]>)? ', all(test_passed(16:19))
 
 open(newunit=unit, file=filename, status='OLD')

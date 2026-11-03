@@ -361,7 +361,7 @@ contains
    endfunction string
 
    subroutine text(self, string, iostat, iomsg)
-   !< Write character data, escaped (`&`, `<`, `"`); the element is written inline.
+   !< Write character data, escaped (`&`, `<`, `>`, `"`, `'`); the element is written inline.
    class(xml_writer),      intent(inout) :: self   !< XML writer.
    character(*),           intent(in)    :: string !< Character data.
    integer(I4P), optional, intent(out)   :: iostat !< IO status.
@@ -373,7 +373,8 @@ contains
 
    ! private methods
    subroutine attribute_character(self, name, value, iostat, iomsg)
-   !< Add an attribute to the pending start tag (the value is escaped).
+   !< Add an attribute to the pending start tag (the value is escaped, tab, new line and CR as references: it reads back
+   !< exactly).
    class(xml_writer),      intent(inout) :: self   !< XML writer.
    character(*),           intent(in)    :: name   !< Attribute name.
    character(*),           intent(in)    :: value  !< Attribute value.
@@ -392,7 +393,7 @@ contains
       elseif (index(self%pending_names, ' '//name//' ')>0) then
          call self%fail(XML_MALFORMED, 'duplicate attribute "'//name//'" in <'//self%stack(self%depth)%name//'>')
       else
-         self%pending = self%pending//' '//name//'="'//xml_escape(value)//'"'
+         self%pending = self%pending//' '//name//'="'//xml_escape(value, attribute=.true.)//'"'
          self%pending_names = self%pending_names//name//' '
       endif
    endif

@@ -351,7 +351,7 @@ contains
 
    pure subroutine set_attribute(self, id, name, value, iostat, iomsg)
    !< Set the attribute named *name* of the tag with ID *id*: added (last) or, if present, its value replaced; *value* is
-   !< escaped (`&`, `<`, `"`), *attribute* returns it as passed.
+   !< escaped (markup characters, tab, new line and CR), *attribute* returns it as passed.
    !<
    !< @note *iostat* is *XML_NOT_FOUND* if the tag does not exist, *XML_MALFORMED* if *name* is not an XML name (nothing is
    !< set); *iomsg* is unchanged on success.
@@ -373,7 +373,7 @@ contains
       iostat_ = XML_MALFORMED
       iomsg_ = 'attribute name "'//name//'" is not an XML name'
    else
-      call self%tag(id)%set(attribute_name=name, attribute_value=xml_escape(value))
+      call self%tag(id)%set(attribute_name=name, attribute_value=xml_escape(value, attribute=.true.))
    endif
    call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg)
    endsubroutine set_attribute

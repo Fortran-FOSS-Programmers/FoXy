@@ -80,7 +80,7 @@ foxy.f90          ← thin re-export wrapper (use this in user code)
 foxy_xml_file.f90 ← xml_file type: array-based DOM container
 foxy_xml_index.f90 ← xml_index type: tags of a file without content (scan in chunks, content read on demand)
 foxy_xml_tag.F90  ← xml_tag type: single element (note .F90 = preprocessed)
-foxy_xml_entities.f90 ← xml_escape/xml_unescape: character references; text_value/without_markup/strip_blanks
+foxy_xml_entities.f90 ← xml_escape/xml_unescape (StringiFor escape_xml/unescape_xml, sliced > 1 GiB); text_value/without_markup/strip_blanks
 foxy_xml_tree.f90 ← tree queries (find, find_all, children, attribute, namespace, build_children) over a tags array
 foxy_xml_tokenizer.f90 ← resumable tokenizer (xml_tokenizer%feed) driving an abstract xml_builder
 foxy_xml_writer.f90 ← xml_writer type: streaming writer to a file, a unit or memory (sticky errors)
@@ -153,7 +153,8 @@ Well-formedness: the tokenizer reports (first problem, still tolerant) the tags 
 `foxy_xml_entities`, a `select case` on bytes: an `index()` on a name set cost 30% of the parse), duplicate attributes,
 non-blank data outside the root (a leading BOM excepted, also split across chunks), a second root tag and a source
 without tags. `save` writes a document with more root tags but returns `XML_MALFORMED` (silent without `iostat`). Contents are read with CR LF/CR as LF (`text_value`), the stored source keeps them.
-`xml_writer` writes only well-formed XML (names, duplicate attributes, `]]>` escaped by `xml_escape`); `close` without
+`xml_writer` writes only well-formed XML (names, duplicate attributes, `& < > " '` escaped by `xml_escape`, attribute values
+with `attribute=.true.`: tab/LF/CR as references); `close` without
 `iostat` stops on an error never returned through an `iostat`.
 
 Known parser limits: entities defined by a DTD are not expanded; attribute values are trimmed of leading/trailing spaces

@@ -14,7 +14,7 @@ of the open elements, so a document may be any size.
 | `open([filename=], [unit=], [indent=])` | a file (created or replaced, closed by `close`), a unit open for stream unformatted access (left open), or memory if neither; `indent` spaces per level (default 2, `0`: no layout) |
 | `declaration([version=], [encoding=])` | `<?xml version="1.0"?>`, only as the first thing |
 | `start(name)` | opens an element; its start tag stays pending for attributes until its first content |
-| `attribute(name, value, [fmt=])` | character (escaped), integer (`I1P`…`I8P`), real (`R4P`, `R8P`) or logical (`true`/`false`) value; `fmt` formats numbers |
+| `attribute(name, value, [fmt=])` | character (escaped, tab, new line and CR as references, so it reads back exactly), integer (`I1P`…`I8P`), real (`R4P`, `R8P`) or logical (`true`/`false`) value; `fmt` formats numbers |
 | `text(string)` | escaped character data; the element is written inline (`<a>text</a>`) |
 | `raw(string, [is_block=])` | characters as they are (numbers, base64), in pieces with many calls; `is_block=.true.` on their own indented line |
 | `cdata(string)`, `comment(string)`, `pi(target, [string])` | the other markup (`]]>` split across CDATA sections; no `--` in a comment) |
@@ -35,8 +35,9 @@ an `iostat`, so no error is lost.
 
 <<< @/examples/output/writer_errors.ansi{ansi}
 
-Only well-formed XML is written: names must be XML names, a duplicate attribute is a misuse, `]]>` in text and
-attribute values is written `]]&gt;`.
+Only well-formed XML is written: names must be XML names, a duplicate attribute is a misuse, `&`, `<`, `>`, `"` and
+`'` are escaped in text and attribute values (so `]]>` cannot appear), and tab, new line and carriage return are written
+as references in attribute values, so that they read back exactly.
 
 ## Binary data
 

@@ -168,7 +168,7 @@ a duplicate attribute is a misuse, `]]>` in text and attribute values is written
 | `w%open([filename=], [unit=], [indent=], [iostat=], [iomsg=])` | Open on a file (created/replaced, closed by `close`), on a unit open for stream unformatted access (left open), or on memory if neither is passed; `indent` spaces per level (default 2, `0` for compact output) |
 | `w%declaration([version=], [encoding=])` | Write `<?xml version="1.0"?>`; only as the first thing |
 | `w%start(name)` | Open an element; its start tag stays pending for attributes until its first content |
-| `w%attribute(name, value, [fmt=])` | Add an attribute: `value` character (escaped), integer (`I1P`…`I8P`), real (`R4P`, `R8P`) or logical (`true`/`false`); `fmt` formats numbers |
+| `w%attribute(name, value, [fmt=])` | Add an attribute: `value` character (escaped, tab, new line and CR as references), integer (`I1P`…`I8P`), real (`R4P`, `R8P`) or logical (`true`/`false`); `fmt` formats numbers |
 | `w%text(string)` | Escaped character data; the element is written inline |
 | `w%raw(string, [is_block=])` | Characters as they are (data, base64); in pieces with many calls; `is_block=.true.` on its own indented line |
 | `w%cdata(string)`, `w%comment(string)`, `w%pi(target, [string])` | CDATA section (`]]>` split), comment (no `--`), processing instruction |
@@ -186,7 +186,7 @@ Defined in `src/lib/foxy_xml_entities.f90`, re-exported by `foxy`.
 | Function | Description |
 |----------|-------------|
 | `xml_unescape(string)` | Decode `&lt;` `&gt;` `&amp;` `&quot;` `&apos;`, `&#N;` and `&#xH;` (as UTF-8); unknown or invalid references are left verbatim |
-| `xml_escape(string)` | Replace `&`, `<`, `"` and the `>` of `]]>` with their references, for use as content or attribute value |
+| `xml_escape(string, [attribute=])` | Replace `&`, `<`, `>`, `"` and `'` with their references, for use as content or attribute value; `attribute=.true.` also tab, new line and CR (the value reads back exactly) |
 
 Stored tags keep the source text: `stringify()` reproduces references as parsed, while `content()`, `attribute()` and
 `get_attribute()` return decoded values. Content set programmatically may contain markup (e.g. a nested tag), so it is

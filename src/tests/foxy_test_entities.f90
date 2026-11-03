@@ -1,13 +1,16 @@
 !< FoXy test.
 program foxy_test_entities
 !< FoXy test.
-use foxy, only: xml_escape, xml_file, xml_unescape
+use foxy, only: I4P, xml_escape, xml_file, xml_unescape, xml_writer
 
 implicit none
 character(len=1), parameter   :: NL = new_line('a') !< New line.
 character(len=:), allocatable :: source             !< String containing the source XML data.
 type(xml_file)                :: xfile              !< XML file handler.
-logical                       :: test_passed(15)    !< List of passed tests.
+logical                       :: test_passed(19)    !< List of passed tests.
+type(xml_file)                :: xback              !< XML file parsed back.
+type(xml_writer)              :: writer             !< XML writer.
+character(len=3), parameter   :: BLANK3 = achar(9)//achar(10)//achar(13) !< Tab, new line, carriage return.
 
 test_passed = .false.
 
@@ -41,6 +44,22 @@ test_passed(13) = xfile%attribute(id=xfile%find(name='a'), name='k')=='x&y'
 test_passed(14) = xfile%content('b')==' padded ' ! layout blanks are stripped before decoding: encoded blanks are data
 test_passed(15) = xfile%stringify()==source
 print "(A,L1)", 'Are accessors decoding and stringify preserving? ', all(test_passed(12:15))
+
+! escaping by StringiFor: > and ' too; in attribute values tab, new line and CR as references, so they read back exactly
+test_passed(16) = xml_escape("a>b 'c'")=='a&gt;b &apos;c&apos;'.and.xml_escape('x]]>y')=='x]]&gt;y'
+test_passed(17) = xml_escape(BLANK3, attribute=.true.)=='&#9;&#10;&#13;'.and.xml_escape(BLANK3)==BLANK3
+call xfile%parse(string='<a/>')
+call xfile%set_attribute(id=1_I4P, name='k', value='1'//BLANK3//'2')
+call xback%parse(string=xfile%stringify())
+test_passed(18) = xback%attribute(1_I4P, 'k')=='1'//BLANK3//'2'
+call writer%open()
+call writer%start('a')
+call writer%attribute('k', '1'//BLANK3//'2')
+call writer%close()
+call xback%parse(string=writer%string())
+test_passed(18) = test_passed(18).and.xback%attribute(1_I4P, 'k')=='1'//BLANK3//'2'
+test_passed(19) = xml_unescape('&#x000000000041;&#0000000066;')=='AB' ! any number of digits
+print "(A,L1)", 'Do escaped attribute values read back exactly? ', all(test_passed(16:19))
 
 print "(A,L1)", new_line('a')//'Are all tests passed? ', all(test_passed)
 if (.not.all(test_passed)) error stop 1
