@@ -156,6 +156,26 @@ file. Positions are 1-based byte offsets (`integer(I8P)`).
 
 ---
 
+## `xml_handler` — streaming parser
+
+Defined in `src/lib/foxy_xml_events.f90`. Extend it and override the callbacks you need (each one does nothing by
+default); see [Streaming parser](./events).
+
+| Method | Description |
+|---|---|
+| `h%start_element(name, attributes)` | Callback: a start tag; `attributes(:)` of `type(xml_attribute)` (`name`, `value`: normalized, decoded) |
+| `h%end_element(name)` | Callback: an end tag (also after a self-closing start tag) |
+| `h%characters(text)` | Callback: character data, decoded, maybe in pieces (never splitting a reference or a character) |
+| `h%cdata(text)`, `h%comment(text)`, `h%doctype(text)` | Callbacks: CDATA content (literal), comment content, DOCTYPE as in the source |
+| `h%processing_instruction(target, data)` | Callback: a PI |
+| `h%problem(message)` | Callback: a problem, `line N: ...` |
+| `h%parse([string=], [filename=], [chunk_size=], [sanitize_attributes_value=], [iostat=], [iomsg=])` | Parse, calling the callbacks in source order; errors as `xfile%parse` |
+| `h%stop_parsing()` | No more callbacks: `parse` returns |
+| `h%level`, `h%pos` | During a callback: depth of the current element, byte position of the event |
+| `to_value(text, value, iostat, iomsg)`, `to_values(text, values, iostat, iomsg)` | The typed conversion (as `get_content`), for handlers: `iomsg` is `character(len=:), allocatable` |
+
+---
+
 ## `xml_writer` — streaming writer
 
 Defined in `src/lib/foxy_xml_writer.f90`. Writes a document sequentially, with bounded memory, to a file, a unit or

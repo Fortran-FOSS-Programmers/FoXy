@@ -24,6 +24,7 @@ public :: first_bad_reference
 public :: first_utf8_error
 public :: is_name
 public :: strip_blanks
+public :: line_ends_normalized
 public :: text_value
 public :: utf8_tail_len
 public :: without_markup

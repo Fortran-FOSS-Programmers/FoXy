@@ -73,12 +73,13 @@ From `CONTRIBUTING.md`:
 
 ## Architecture
 
-Nine source modules, all in `src/lib/`:
+Ten source modules, all in `src/lib/`:
 
 ```
 foxy.f90          ← thin re-export wrapper (use this in user code)
 foxy_xml_file.f90 ← xml_file type: array-based DOM container
 foxy_xml_index.f90 ← xml_index type: tags of a file without content (scan in chunks, content read on demand)
+foxy_xml_events.f90 ← xml_handler: streaming parser, your callbacks (event_builder queues one chunk, parse dispatches)
 foxy_xml_tag.F90  ← xml_tag type: single element (note .F90 = preprocessed)
 foxy_xml_entities.f90 ← xml_escape/xml_unescape (StringiFor escape_xml/unescape_xml, sliced > 1 GiB); text_value/without_markup/strip_blanks
 foxy_xml_tree.f90 ← tree queries (find, find_all, children, attribute, namespace, build_children) over a tags array
@@ -124,6 +125,13 @@ logical scalars and rank-1 allocatable numeric lists) share `foxy_xml_values`: e
 StringiFor `string%read_number` (read into the result only on success, so a scalar is unchanged on error); integer tokens
 must also be digits and a sign (XML integers: StringiFor alone would read `1e3`). The specific procedures are boilerplate per kind: keep
 them in sync across kinds and across the two types.
+
+The streaming parser (`foxy_xml_events`): the pure tokenizer drives a pure `event_builder` that queues the events of
+one chunk; the impure `xml_handler%parse` then decodes and dispatches them (callbacks are impure: I/O allowed), so the
+tokenizer stays pure. Text is decoded by `text_decoder` carrying a final reference/CR/UTF-8 tail to the next piece;
+elements are balanced (implicit closes and the source end emit `end_element`); problems are queued in order (their place
+among text pieces depends on the chunks). `foxy_test_events` checks events = DOM on every test file and equal events for
+strings and chunks 1..4096.
 
 Namespaces are resolved lazily in `foxy_xml_tree` (nothing stored, parsing unchanged, no parse-time checks): the nearest
 `xmlns:p`/`xmlns` declaration up the ancestors (`resolve_namespace`). `find`/`find_all` names go through `name_pattern`:

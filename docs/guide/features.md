@@ -27,6 +27,7 @@ print '(A)', doc%content('dt')
 | **Editing** | build in code (`add_tag`); edit by ID: content, attributes, deletion; `stringify`, `save` | [Editing](./editing) |
 | **Writing** | `xml_writer`: streaming to a file, a unit or memory; layout, escaping, typed attributes, binary blocks; only well-formed output | [Writing](./writing) |
 | **Large files** | `xml_index`: tags without content, contents on demand, byte ranges, scan stopped before raw data | [The index](./index-files) |
+| **Streaming** | `xml_handler`: your callbacks for each element, text and problem, in one pass over a source of any size; decoded text, balanced elements, `stop_parsing` | [Streaming parser](./events) |
 | **Namespaces** | prefix, local name, namespace of each tag; queries by `{uri}local` or with your own prefixes | [Namespaces](./namespaces) |
 | **Single tags** | `xml_tag`: create, parse, add and delete attributes, write a start tag, content or end tag | [Single tags](./tags) |
 | **Every method** | the arguments of each type-bound procedure, in tables | [Methods summary](./api-reference) |
@@ -46,7 +47,8 @@ print '(A)', doc%content('dt')
 
 ```mermaid
 graph LR
-  foxy --> foxy_xml_file & foxy_xml_index & foxy_xml_writer & foxy_xml_tag & foxy_xml_entities & foxy_xml_values
+  foxy --> foxy_xml_file & foxy_xml_index & foxy_xml_events & foxy_xml_writer & foxy_xml_tag & foxy_xml_entities & foxy_xml_values
+  foxy_xml_events --> foxy_xml_tokenizer
   foxy_xml_index --> foxy_xml_file
   foxy_xml_file & foxy_xml_index --> foxy_xml_tokenizer & foxy_xml_tree
   foxy_xml_tree --> foxy_xml_tag
@@ -59,6 +61,7 @@ graph LR
 | `foxy` | the public names (use only this one) |
 | `foxy_xml_file` | `xml_file`, the DOM |
 | `foxy_xml_index` | `xml_index`, the index of a file |
+| `foxy_xml_events` | `xml_handler`, the streaming parser |
 | `foxy_xml_writer` | `xml_writer`, the streaming writer |
 | `foxy_xml_tag` | `xml_tag`, a single element |
 | `foxy_xml_tokenizer` | the tokenizer, fed in pieces, driving a builder |

@@ -11,6 +11,7 @@ set(LIB FoXy)
 add_library(${LIB}
         foxy.f90
         foxy_xml_entities.f90
+        foxy_xml_events.f90
         foxy_xml_file.f90
         foxy_xml_index.f90
         foxy_xml_tag.F90

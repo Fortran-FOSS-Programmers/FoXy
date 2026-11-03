@@ -227,6 +227,15 @@ The first error is kept and the following calls do nothing; `close(iostat=)` ret
 
 ## Large files
 
+### Process a huge file in one pass
+
+<<< @/examples/snippets/stream_handler.f90
+
+<<< @/examples/output/stream_handler.ansi{ansi}
+
+Only the callbacks you override are called; the file is read in chunks, never whole. See
+[Streaming parser](/guide/events).
+
 ### Index a file and stop before its binary data
 
 <<< @/examples/snippets/index_stop.f90

@@ -29,4 +29,4 @@ read from the file when you ask for it: the memory used does not depend on the d
 A VTK file with appended raw data is the typical case: the XML header is indexed, the binary data after
 `<AppendedData encoding="raw">` is never read by the scan, and `stop_position()` tells where it starts.
 
-Next: [Namespaces](./namespaces).
+Next: [Streaming parser](./events).
