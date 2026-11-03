@@ -3,3 +3,4 @@ $ check_wellformed
 <a x="1" x="2"/>: line 1: duplicate attribute "x" in tag <a>
 <a/><b/>: line 1: second root tag <b>
 <a>1 < 2</a>: line 1: character '<' not starting a tag
+<a>\xFF</a>: line 1: invalid UTF-8 byte 0xFF

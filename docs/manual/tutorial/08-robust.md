@@ -9,7 +9,7 @@ forgets an end tag:
 
 - Parsing is tolerant: the document is built as far as possible, and `iostat=XML_MALFORMED` with `iomsg` reports the
   first problem and its line. Besides the tags structure, FoXy reports invalid names, duplicate attributes, text
-  outside the root element, more root elements and an empty source.
+  outside the root element, more root elements, an empty source and ill-formed UTF-8.
 - Stored text is the source text: `stringify` writes back what was read. The accessors decode it: references
   (`&amp;`, `&#233;`) become characters, CDATA sections are literal, comments are skipped, line ends are LF.
 - `xml_escape` and `xml_unescape` convert text yourself; content set with `set_content` or `xml_tag(content=)` is not

@@ -18,6 +18,7 @@ use stringifor, only : string_t => string
 
 implicit none
 private
+public :: first_utf8_error
 public :: is_name
 public :: strip_blanks
 public :: text_value
@@ -33,6 +34,7 @@ character(*), parameter :: LF                = achar(10)   !< Line feed.
 character(*), parameter :: CDATA_START       = '<![CDATA[' !< CDATA section start.
 character(*), parameter :: CDATA_END         = ']]>'       !< CDATA section end, escaped as `]]&gt;` in content.
 integer,      parameter :: FIRST_NON_ASCII   = 128         !< First non ASCII byte (UTF-8 multi-byte sequences).
+integer,      parameter :: FIRST_LEAD        = 192         !< First byte above the UTF-8 continuation bytes, 10xxxxxx.
 contains
    pure function is_name(string) result(is_valid)
    !< Return true if *string* is an XML name (XML 1.0 production *Name*): its first character a letter, `_` or `:`, the
@@ -49,6 +51,39 @@ contains
    enddo
    is_valid = .true.
    endfunction is_name
+
+   pure function first_utf8_error(text) result(position)
+   !< Return the position of the first byte of *text* that is not part of a well-formed UTF-8 sequence (Unicode Table 3-7:
+   !< no overlong form, no surrogate, nothing above U+10FFFF, no truncated sequence, no stray continuation byte), 0 if
+   !< there is none.
+   !<
+   !< @note StringiFor (`string%utf8_error`) checks; texts longer than *SLICE_LEN* are checked in slices cut before a lead
+   !< byte, so that no sequence is split.
+   character(*), intent(in) :: text     !< Text.
+   integer(I8P)             :: position !< Position of the first ill-formed byte, 0 if none.
+   type(string_t)           :: slice    !< Slice of the text.
+   integer(I8P)             :: first    !< First position of a slice.
+   integer(I8P)             :: last     !< Last position of a slice.
+   integer(I8P)             :: e        !< Error position in a slice.
+
+   position = 0
+   first = 1
+   do while (first<=len(text, kind=I8P))
+      last = min(len(text, kind=I8P), first+SLICE_LEN-1)
+      if (last<len(text, kind=I8P)) then ! end the slice before the sequence the next byte belongs to
+         do while (last>first.and.is_continuation(text(last+1:last+1)))
+            last = last - 1
+         enddo
+      endif
+      slice = text(first:last)
+      e = slice%utf8_error()
+      if (e>0) then
+         position = first + e - 1
+         return
+      endif
+      first = last + 1
+   enddo
+   endfunction first_utf8_error
 
    pure function xml_escape(string, attribute) result(escaped)
    !< Return *string* with `&`, `<`, `>`, `"` and `'` replaced by their predefined references, ready to be used as XML
@@ -252,6 +287,14 @@ contains
    endfunction strip_blanks
 
    ! private procedures
+   elemental function is_continuation(byte) result(is_cont)
+   !< Return true if *byte* is a UTF-8 continuation byte, 10xxxxxx.
+   character(len=1), intent(in) :: byte    !< Byte.
+   logical                      :: is_cont !< Check result.
+
+   is_cont = iachar(byte)>=FIRST_NON_ASCII.and.iachar(byte)<FIRST_LEAD
+   endfunction is_continuation
+
    elemental function is_name_start_char(code) result(is_valid)
    !< Return true if the byte *code* can start an XML name: ASCII letter, `_`, `:` or a non ASCII byte.
    integer, intent(in) :: code     !< Byte code.

@@ -15,8 +15,10 @@ module foxy_xml_tokenizer
 !<
 !< Besides the tags structure, the problems reported (parsing goes on) are: invalid tag and attribute names, duplicate
 !< attributes, character data outside the root tag (blanks and a leading UTF-8 byte order mark excepted), a second root
-!< tag (XML 1.0 2.1: exactly one root element) and a source without tags.
-use foxy_xml_entities, only : is_name
+!< tag (XML 1.0 2.1: exactly one root element), a source without tags and ill-formed UTF-8. Each piece is checked for
+!< UTF-8 once, when it is fed (a sequence split by the piece end is checked with the next piece); its first error is
+!< reported when the tokenizer reaches it, so that problems are always reported in the order they are met.
+use foxy_xml_entities, only : first_utf8_error, is_name
 use penf
 
 implicit none
@@ -140,6 +142,11 @@ type :: xml_tokenizer
    logical                     :: is_outside_reported=.false. !< Character data outside the root tags already reported.
    logical                     :: is_root_seen=.false.        !< A root tag has been started.
    logical                     :: is_second_root_reported=.false. !< A second root tag already reported.
+   integer(I8P)                :: utf8_checked=0_I8P !< Last position checked for UTF-8.
+   character(len=:), allocatable :: utf8_carry       !< Bytes of a sequence split by the piece end, checked with the next.
+   integer(I8P)                :: utf8_error=0_I8P   !< Position of the first ill-formed UTF-8 byte, 0 if none (yet).
+   character(len=2)            :: utf8_byte='  '     !< That byte, in hexadecimal.
+   logical                     :: is_utf8_reported=.false. !< The UTF-8 error has been reported.
    contains
       procedure, pass(self) :: feed  !< Feed a piece of the source.
       procedure, pass(self) :: reset !< Reset the tokenizer, ready for a new source.
@@ -180,6 +187,7 @@ contains
       return
    endif
    if (.not.allocated(self%stack)) allocate(self%stack(INITIAL_DEPTH))
+   call check_utf8(self=self, chars=chars, offset=offset, is_last=is_last)
    pos = 1
    do while (pos<=n)
       if (self%open_kind>0) then
@@ -197,7 +205,8 @@ contains
          endif
          if (self%depth==0.and.(.not.self%is_outside_reported)) then
             if (is_data_outside(chars=chars(pos:k), first=offset+pos)) then
-               call builder%problem(pos=offset+pos, message='character data outside the root tag')
+               call report(self=self, builder=builder, upto=offset+pos, pos=offset+pos, &
+                  message='character data outside the root tag')
                self%is_outside_reported = .true.
             endif
          endif
@@ -227,7 +236,7 @@ contains
          k = after_declaration(source=chars, start=pos)
          if (k==0) then
             if (.not.is_last) exit
-            call builder%problem(pos=offset+pos, message='unterminated declaration')
+            call report(self=self, builder=builder, upto=offset+pos, pos=offset+pos, message='unterminated declaration')
             self%is_done = .true.
             exit
          endif
@@ -239,7 +248,8 @@ contains
          e = 0 ; if (k<=n) e = index(chars(k:), '>', kind=I8P)
          if (e==0) then
             if (.not.is_last) exit
-            call builder%problem(pos=offset+pos, message='unterminated end tag </'//name//'>')
+            call report(self=self, builder=builder, upto=offset+pos, pos=offset+pos, &
+               message='unterminated end tag </'//name//'>')
             self%is_done = .true.
             exit
          endif
@@ -248,10 +258,12 @@ contains
             if (self%stack(l)%name==name) exit
          enddo
          if (l==0) then
-            call builder%problem(pos=offset+pos, message='end tag </'//name//'> without matching start tag')
+            call report(self=self, builder=builder, upto=offset+pos, pos=offset+pos, &
+               message='end tag </'//name//'> without matching start tag')
             call builder%data(kind=DATA_IGNORED, chars=chars(pos:k+e-1), first=offset+pos)
          else
-            if (l<self%depth) call builder%problem(pos=offset+pos, message='end tag </'//name//'> closes open tag <'// &
+            if (l<self%depth) call report(self=self, builder=builder, upto=offset+pos, pos=offset+pos, &
+               message='end tag </'//name//'> closes open tag <'// &
                                                    self%stack(self%depth)%name//'>')
             call builder%end_tag(id=self%stack(l)%id, start=self%stack(l)%start, open_end=self%stack(l)%open_end, &
                                  end_start=offset+pos, end_end=offset+k+e-1)
@@ -267,7 +279,8 @@ contains
          k = pos + 1
          call read_name(source=chars, pos=k, name=name)
          if (len(name)==0) then ! not a tag, e.g. "a < b"
-            call builder%problem(pos=offset+pos, message="character '<' not starting a tag")
+            call report(self=self, builder=builder, upto=offset+pos, pos=offset+pos, &
+               message="character '<' not starting a tag")
             call builder%data(kind=DATA_TEXT, chars='<', first=offset+pos)
             pos = pos + 1
             cycle
@@ -350,9 +363,11 @@ contains
          do a=1, na
             call builder%attribute(id=tag%id, name=attributes(a)%name, value=attributes(a)%value)
          enddo
-         if (allocated(problem)) call builder%problem(pos=problem_pos, message=problem)
+         if (allocated(problem)) call report(self=self, builder=builder, upto=offset+k, pos=problem_pos, &
+            message=problem)
          if (.not.is_terminated) then
-            call builder%problem(pos=tag%start, message='unterminated start tag <'//tag%name//'>')
+            call report(self=self, builder=builder, upto=offset+n, pos=tag%start, &
+               message='unterminated start tag <'//tag%name//'>')
             self%is_done = .true.
             exit
          endif
@@ -373,8 +388,10 @@ contains
    if (is_last.or.self%is_done) then
       consumed = n
       if (.not.self%is_done) then
-         if (self%depth>0) call builder%problem(pos=self%stack(1)%start, message='unclosed tag <'//self%stack(1)%name//'>')
-         if (self%nt==0) call builder%problem(pos=1_I8P, message='no root tag')
+         call flush_utf8(self=self, builder=builder, upto=huge(1_I8P))
+         if (self%depth>0) call report(self=self, builder=builder, upto=huge(1_I8P), pos=self%stack(1)%start, &
+            message='unclosed tag <'//self%stack(1)%name//'>')
+         if (self%nt==0) call report(self=self, builder=builder, upto=huge(1_I8P), pos=1_I8P, message='no root tag')
          self%is_done = .true.
       endif
    else
@@ -395,6 +412,10 @@ contains
    self%is_outside_reported = .false.
    self%is_root_seen = .false.
    self%is_second_root_reported = .false.
+   self%utf8_checked = 0_I8P
+   if (allocated(self%utf8_carry)) deallocate(self%utf8_carry)
+   self%utf8_error = 0_I8P
+   self%is_utf8_reported = .false.
    endsubroutine reset
 
    pure function located(source, pos, message) result(problem)
@@ -492,11 +513,13 @@ contains
       if (n>=from) call builder%data(kind=self%open_kind, chars=chars(from:n), first=offset+from)
       select case(self%open_kind)
       case(DATA_COMMENT)
-         call builder%problem(pos=self%open_start, message='unterminated comment')
+         call report(self=self, builder=builder, upto=huge(1_I8P), pos=self%open_start, message='unterminated comment')
       case(DATA_CDATA)
-         call builder%problem(pos=self%open_start, message='unterminated CDATA section')
+         call report(self=self, builder=builder, upto=huge(1_I8P), pos=self%open_start, &
+            message='unterminated CDATA section')
       case default
-         call builder%problem(pos=self%open_start, message='unterminated processing instruction')
+         call report(self=self, builder=builder, upto=huge(1_I8P), pos=self%open_start, &
+            message='unterminated processing instruction')
       endselect
       self%is_done = .true.
    else
@@ -530,6 +553,83 @@ contains
       attributes(na)%value = value
    endif
    endsubroutine add_attribute
+
+   pure subroutine check_utf8(self, chars, offset, is_last)
+   !< Check for UTF-8 the bytes of a piece not checked yet (a piece may hold again the bytes not consumed before); the
+   !< bytes of a sequence split by the piece end are kept, to be checked with the next piece. Only the first error is kept.
+   class(xml_tokenizer), intent(inout) :: self    !< Tokenizer.
+   character(*),         intent(in)    :: chars   !< Piece of the source.
+   integer(I8P),         intent(in)    :: offset  !< Position of the character before the piece.
+   logical,              intent(in)    :: is_last !< The source ends with this piece.
+   character(len=:), allocatable       :: bytes   !< Bytes to check: the carry and the new bytes.
+   integer(I8P)                        :: first   !< Position (absolute) of the first byte to check.
+   integer(I8P)                        :: b       !< First new byte, in the piece.
+   integer(I8P)                        :: keep    !< Bytes kept for the next piece.
+   integer(I8P)                        :: e       !< Error position in the bytes.
+
+   if (.not.allocated(self%utf8_carry)) self%utf8_carry = ''
+   b = max(1_I8P, self%utf8_checked - offset + 1)
+   if (b>len(chars, kind=I8P)) return
+   self%utf8_checked = offset + len(chars, kind=I8P)
+   if (self%utf8_error>0) return ! only the first error is reported
+   bytes = self%utf8_carry//chars(b:)
+   first = offset + b - len(self%utf8_carry, kind=I8P)
+   keep = 0
+   if (.not.is_last) keep = split_sequence_len(bytes)
+   self%utf8_carry = bytes(len(bytes, kind=I8P)-keep+1:)
+   e = first_utf8_error(bytes(1:len(bytes, kind=I8P)-keep))
+   if (e>0) then
+      self%utf8_error = first + e - 1
+      write(self%utf8_byte, '(Z2.2)') iachar(bytes(e:e))
+   endif
+   endsubroutine check_utf8
+
+   pure subroutine flush_utf8(self, builder, upto)
+   !< Report the UTF-8 error, if any and not reported yet, when the tokenizer has reached its position.
+   class(xml_tokenizer), intent(inout) :: self    !< Tokenizer.
+   class(xml_builder),   intent(inout) :: builder !< Builder.
+   integer(I8P),         intent(in)    :: upto    !< Position reached by the tokenizer.
+
+   if (self%utf8_error==0.or.self%is_utf8_reported) return
+   if (self%utf8_error>upto) return
+   self%is_utf8_reported = .true.
+   call builder%problem(pos=self%utf8_error, message='invalid UTF-8 byte 0x'//self%utf8_byte)
+   endsubroutine flush_utf8
+
+   pure subroutine report(self, builder, upto, pos, message)
+   !< Report a problem found when the tokenizer has reached *upto*, after the UTF-8 error met before it (if any).
+   class(xml_tokenizer), intent(inout) :: self    !< Tokenizer.
+   class(xml_builder),   intent(inout) :: builder !< Builder.
+   integer(I8P),         intent(in)    :: upto    !< Position reached by the tokenizer.
+   integer(I8P),         intent(in)    :: pos     !< Position of the problem.
+   character(*),         intent(in)    :: message !< Problem description.
+
+   call flush_utf8(self=self, builder=builder, upto=upto)
+   call builder%problem(pos=pos, message=message)
+   endsubroutine report
+
+   pure function split_sequence_len(bytes) result(n)
+   !< Return the number of bytes at the end of *bytes* that start a UTF-8 sequence not complete in them (0 to 3).
+   character(*), intent(in) :: bytes !< Bytes.
+   integer(I8P)             :: n     !< Bytes of the incomplete sequence.
+   integer(I8P)             :: l     !< Position of the last lead byte.
+   integer                  :: code  !< Lead byte code.
+   integer                  :: need  !< Length of the sequence the lead byte starts.
+
+   n = 0
+   do l=len(bytes, kind=I8P), max(1_I8P, len(bytes, kind=I8P)-3), -1
+      code = iachar(bytes(l:l))
+      if (code<128) return            ! ASCII: nothing split
+      if (code>=192) exit             ! a lead byte
+   enddo
+   if (l<1) return
+   code = iachar(bytes(l:l))
+   if (code<192) return               ! only continuation bytes: not a split sequence (an error, checked now)
+   need = 2
+   if (code>=224) need = 3
+   if (code>=240) need = 4
+   if (len(bytes, kind=I8P)-l+1<need) n = len(bytes, kind=I8P) - l + 1
+   endfunction split_sequence_len
 
    pure function is_attribute_present(attributes, na, name) result(is_present)
    !< Return true if the current start tag has already an attribute named *name*.

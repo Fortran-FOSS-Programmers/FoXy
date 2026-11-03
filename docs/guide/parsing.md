@@ -35,8 +35,11 @@ Parsing is tolerant: the document is built as far as possible and only the first
 | an invalid tag or attribute name, a duplicate attribute | `<1a/>`, `<a x="1" x="2"/>` |
 | text outside the root element (blanks and a UTF-8 byte order mark excepted) | `<a/>junk` |
 | more root elements, or none (an empty source included) | `<a/><b/>`, `''` |
+| ill-formed UTF-8 (Unicode Table 3-7: an overlong form, a surrogate, a value above U+10FFFF, a truncated sequence, a stray continuation byte), anywhere in the source | `<a>`, byte `0xFF`, `</a>` |
 
-An end tag closes up to its matching start tag (inner open tags are closed); a stray end tag is ignored; an
+Problems are reported in the order they are met in the source: the first one is the earliest, also for UTF-8, which is
+checked once per chunk, a sequence split by two chunks included. An end tag closes up to its matching start tag (inner
+open tags are closed); a stray end tag is ignored; an
 unterminated comment, CDATA section or PI is kept as text up to the end of the source.
 
 ## What is kept
