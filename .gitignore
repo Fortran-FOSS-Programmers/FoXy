@@ -38,5 +38,5 @@ docs/.vitepress/dist/
 docs/.vitepress/cache/
 
 # library and documentation examples builds
-lib/
-build/
+/lib/
+/build/
