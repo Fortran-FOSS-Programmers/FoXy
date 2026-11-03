@@ -52,6 +52,7 @@ const docs = [
   {
     text: 'Project',
     items: [
+      { text: 'Upgrading',         link: '/guide/upgrading' },
       { text: 'Changelog',         link: '/guide/changelog' },
       { text: 'Contributing',      link: '/guide/contributing' },
       { text: 'Coverage analysis', link: '/guide/coverage-analysis' },

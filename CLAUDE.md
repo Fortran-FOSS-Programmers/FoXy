@@ -205,7 +205,7 @@ parents interleave); names are compared without copies (`xml_tag%is_named`). Che
 
 ## Portability (gfortran, ifx, nvfortran)
 
-The suite passes with gfortran 14/16, ifx 2025.3 and nvfortran 26.5/26.9. Compiler pitfalls met, keep the workarounds:
+The suite passes with gfortran 14/16, ifx 2025.3 and nvfortran 26.5/26.9 (all three checked for v0.7.0). Compiler pitfalls met, keep the workarounds:
 
 - typed values are converted by StringiFor `string%read_number` (no list-directed input, which had compiler dependent
   separators and overflow checks); `I2P` is read as `I4P` and range checked, since StringiFor has no `I2P` reader when
@@ -216,6 +216,11 @@ The suite passes with gfortran 14/16, ifx 2025.3 and nvfortran 26.5/26.9. Compil
   `xml_tag` is corrupted (`tag_builder` keeps plain components); a constant `repeat(..., 100000)` is folded and crashes
   the compiler (use a variable count);
 - ifx puts large temporaries (function results) on the stack: build with `-heap-arrays` (in the fobos intel modes).
+- ifx defaults to `-assume nominus0`: `sign(1., x)` of a -0 is +1 (tests check -0 with `ieee_class`); a real written
+  under an `I` edit descriptor gives asterisks, iostat 0 (gfortran: an error), so `to_text` treats an all-asterisks
+  field as `XML_BAD_VALUE` (`is_overflow`, also the conforming "value too wide for the field");
+- gfortran's debug mode here has no `-fcheck=bounds`: the ifx debug mode (`-check all`) is the one that catches
+  substring overruns (it found one in `detect_encoding`); run it before a release.
 - nvfortran 26.9 (found with the streaming parser): an internal procedure reads stale values of host-associated
   variables (`dispatch` of `foxy_xml_events` is a module procedure with explicit arguments); a file already open for
   reading cannot be opened again (lines of a problem are counted on the open unit, `lines_to`); an array of derived
@@ -227,8 +232,8 @@ The suite passes with gfortran 14/16, ifx 2025.3 and nvfortran 26.5/26.9. Compil
 ## Documentation
 
 VitePress site in `docs/`, shaped as StringiFor/FLAP: `guide/` (Start here: `index`, `installation`; Reference: `features`
-feature map, `parsing`, `querying`, `values`, `editing`, `writing`, `index-files`, `namespaces`, `tags`, `api-reference`
-methods summary; Project), `manual/` (tutorial `tutorial/0N-*.md` building one program `solver`, `cookbook.md`), one
+feature map, `parsing`, `querying`, `values`, `editing`, `writing`, `index-files`, `events`, `namespaces`, `regex`, `tags`,
+`api-reference` methods summary; Project: `upgrading` (behaviour changes per release, update it with each release), `changelog`), `manual/` (tutorial `tutorial/0N-*.md` building one program `solver`, `cookbook.md`), one
 sidebar in reading order (`docs/.vitepress/config.mts`), palette in `.vitepress/theme/custom.css`, `public/logo.svg`.
 Every sample is a program in `docs/examples/src` (markers `!run ID CMD`, `!region NAME`/`!endregion NAME`, `!as NAME`),
 input files in `docs/examples/files`; `bash scripts/docs_examples.sh` rebuilds the library (`fobis build --mode
