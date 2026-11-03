@@ -1,0 +1,6 @@
+$ select_path
+walls: north south
+with a unit: dt density viscosity
+second boundary: east
+east/west velocity: 1.0 0.0 0.0
+malformed: T select: a quoted value expected at column 21 of "case/boundary[@type=wall]"

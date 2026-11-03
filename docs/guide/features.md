@@ -30,6 +30,7 @@ print '(A)', doc%content('dt')
 | **Streaming** | `xml_handler`: your callbacks for each element, text and problem, in one pass over a source of any size; decoded text, balanced elements, `stop_parsing` | [Streaming parser](./events) |
 | **Namespaces** | prefix, local name, namespace of each tag; queries by `{uri}local` or with your own prefixes | [Namespaces](./namespaces) |
 | **Regular expressions** | filter tags by name, content or attribute value with a compiled regex (StringiFor engine, Python `re` syntax), chained with any query | [Regular expressions](./regex) |
+| **Path selector** | `select('//event[@type="x"]/origin[1]')`: children, descendants, any name, attribute and regex predicates, positions; a malformed expression reported with its column | [Querying](./querying#path-selector) |
 | **Single tags** | `xml_tag`: create, parse, add and delete attributes, write a start tag, content or end tag | [Single tags](./tags) |
 | **Every method** | the arguments of each type-bound procedure, in tables | [Methods summary](./api-reference) |
 

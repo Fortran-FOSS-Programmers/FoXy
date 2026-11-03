@@ -12,7 +12,7 @@ use foxy_xml_tag, only : xml_tag
 use foxy_xml_tokenizer, only : xml_builder, xml_tokenizer, located_in_file
 use foxy_xml_tree, only : tree_attribute, tree_attribute_name, tree_attribute_text, tree_attributes_number, &
                           tree_build_children, tree_children, tree_find, tree_find_all, tree_level, tree_local_name, &
-                          tree_matching, regex_matches, tags_indexes, tree_name, &
+                          tree_matching, tree_select, regex_matches, tags_indexes, tree_name, &
                           tree_namespace, tree_parent, tree_prefix
 use foxy_xml_values, only : report, to_value, to_values, XML_NOT_FOUND
 use penf
@@ -43,6 +43,7 @@ type :: xml_index
       procedure, pass(self) :: content_range !< Return the positions in the file of the content of a tag.
       procedure, pass(self) :: find          !< Return the ID of the first tag matching a name or a path.
       procedure, pass(self) :: find_all      !< Return the IDs of all tags matching a name or a path.
+      procedure, pass(self) :: select     !< Return the IDs of the tags selected by a path expression.
       procedure, pass(self) :: free          !< Free dynamic memory.
       generic               :: get_attribute => &
                                get_attribute_I1P, get_attribute_I2P, get_attribute_I4P, get_attribute_I8P, &
@@ -271,6 +272,32 @@ contains
 
    ids = tree_find_all(tag=self%tag, nt=self%nt, name=name, path=path, parent=parent, namespaces=namespaces)
    endfunction find_all
+
+   function select(self, expression, namespaces, iostat, iomsg) result(ids)
+   !< Return the IDs (in document order) of the tags selected by the path *expression*, an XPath subset:
+   !<
+   !< + steps separated by `/` (direct children) or `//` (descendants at any depth); a leading `/` anchors the first step
+   !<   to the root tags, a leading `//` or none searches it at any depth (as *find_all* with a path);
+   !< + a step is a name (`*` for any, `{uri}local`, prefixes resolved by *namespaces* as *find_all*) and predicates:
+   !<   `[@a]` (the attribute exists), `[@a="v"]` (its decoded value is *v*), `[@a~="re"]` (its value matches the
+   !<   regular expression *re* anywhere), `[n]` (the *n*-th among its siblings that passed the previous predicates).
+   !<
+   !< A malformed expression selects nothing and returns `iostat=XML_MALFORMED`, *iomsg* giving the problem and its column.
+   !<
+   !< @note Not pure (the regular expressions are compiled): *find* and *find_all* are the pure lookups.
+   class(xml_index), intent(in)              :: self       !< XML index.
+   character(*),    intent(in)              :: expression !< Path expression, e.g. `//event[@type="x"]/origin`.
+   character(*),    intent(in),    optional :: namespaces !< Namespaces declarations of the names prefixes.
+   integer(I4P),    intent(out),   optional :: iostat     !< IO status, `XML_MALFORMED` for a malformed expression.
+   character(*),    intent(inout), optional :: iomsg      !< IO message.
+   integer(I4P), allocatable                :: ids(:)     !< Selected tags IDs, empty if there are none.
+   integer(I4P)                             :: column     !< Column of a problem, 0 if there is none.
+   character(len=:), allocatable            :: message    !< Problem message.
+
+   call tree_select(tag=self%tag, nt=self%nt, expression=expression, namespaces=namespaces, ids=ids, column=column, &
+                    message=message)
+   call report(iostat_=merge(XML_MALFORMED, 0_I4P, column>0), iomsg_=message, iostat=iostat, iomsg=iomsg)
+   endfunction select
 
    elemental subroutine free(self)
    !< Free dynamic memory.

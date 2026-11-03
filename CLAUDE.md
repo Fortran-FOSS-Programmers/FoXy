@@ -138,6 +138,13 @@ Regular expressions: `foxy` re-exports StringiFor `regex`/`regex_match`; `matchi
 [whole=])` (pure, `tree_matching`/`regex_matches` in `foxy_xml_tree`) filters names, contents (`xml_file` only) and
 attribute values.
 
+Path selector: `select(expression, [namespaces=], [iostat=], [iomsg=])` of `xml_file`/`xml_index` (`tree_select` in
+`foxy_xml_tree`, not pure: it compiles the `[@a~="re"]` regexes) parses and evaluates the expression step by step (an
+XPath subset: `/`, `//`, `*`, `[@a]`, `[@a="v"]`, `[@a~="re"]`, `[n]` among siblings); a malformed expression gives no
+IDs, `XML_MALFORMED` and the column in `iomsg`. `//` uses `descendants_named`, a forward sweep flagging subtrees by
+parent: a built document numbers tags in insertion order, so a subtree is not a range of IDs (never assume it). The
+parser helpers are module procedures with explicit arguments (nvfortran: internal procedures read stale host values).
+
 Namespaces are resolved lazily in `foxy_xml_tree` (nothing stored, parsing unchanged, no parse-time checks): the nearest
 `xmlns:p`/`xmlns` declaration up the ancestors (`resolve_namespace`). `find`/`find_all` names go through `name_pattern`:
 literal (as before), `{uri}local` (Clark), or prefixes resolved by `namespaces='xmlns:p="uri"'` (parsed as an attributes

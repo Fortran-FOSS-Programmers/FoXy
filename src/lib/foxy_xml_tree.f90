@@ -7,6 +7,7 @@ module foxy_xml_tree
 !<
 !< Namespaces (Namespaces in XML 1.0) are resolved on demand, nothing is stored: the namespace of a tag is declared by
 !< the nearest `xmlns:prefix` (or `xmlns`, for an unprefixed name) attribute of the tag or of its ancestors.
+use foxy_xml_entities, only : is_name
 use foxy_xml_tag, only : xml_tag
 use foxy_xml_values, only : XML_NOT_FOUND
 use penf
@@ -30,8 +31,12 @@ public :: tree_name
 public :: tree_namespace
 public :: tree_parent
 public :: tree_prefix
+public :: tree_select
 public :: tags_indexes
 
+character(*), parameter :: DIGITS = '0123456789' !< Decimal digits.
+integer,      parameter :: REGEX_MSG_LEN = 256 !< Length of a regular expression compile message.
+integer(I4P), parameter :: MAX_POSITION_DIGITS = 9_I4P !< Digits of a `[n]` position at most (an I4P).
 character(*), parameter :: XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace' !< Namespace bound to the *xml* prefix.
 
 type :: name_pattern
@@ -40,6 +45,7 @@ type :: name_pattern
    character(len=:), allocatable :: uri                 !< Namespace (empty for no namespace) if *is_expanded*.
    logical                       :: is_expanded=.false. !< The name is expanded (namespace and local name).
    logical                       :: is_valid=.true.     !< The name can match (its prefix is declared).
+   logical                       :: is_any=.false.      !< Any name matches (`*`).
 endtype name_pattern
 
 contains
@@ -330,6 +336,109 @@ contains
    prefix = name_prefix(tree_name(tag=tag, nt=nt, id=id))
    endfunction tree_prefix
 
+   subroutine tree_select(tag, nt, expression, namespaces, ids, column, message)
+   !< Select the tags matching a path *expression* (an XPath subset), returning their IDs in document order.
+   !<
+   !< Grammar: steps separated by `/` (the next step matches the direct children) or `//` (the descendants, at any
+   !< depth); a leading `/` anchors the first step to the root tags, a leading `//` or none searches it at any depth (as
+   !< *tree_find_all* does with a path). A step is a name test (a name, `*` for any name, `{uri}local` in Clark notation;
+   !< prefixes resolved by *namespaces* if passed, see *tree_find_all*) followed by predicates, applied in order:
+   !<
+   !< + `[@a]`: the tag has the attribute *a*;
+   !< + `[@a="v"]` (or `'v'`): the value of *a* (decoded, as *tree_attribute* returns it) is *v*;
+   !< + `[@a~="re"]`: the value of *a* matches the regular expression *re* (StringiFor `regex`, anywhere);
+   !< + `[n]`: the *n*-th tag (from 1) among its siblings that passed the previous predicates (as XPath: `//b[1]` is the
+   !<   first *b* child of each parent).
+   !<
+   !< Blanks are allowed around the predicate tokens only. A malformed expression (or regular expression) selects nothing:
+   !< *column* is the column of the problem (0 if there is none) and *message* says what it is.
+   !<
+   !< @note Not pure: the regular expressions of the predicates are compiled (StringiFor `regex%compile`).
+   type(xml_tag), allocatable,    intent(in)           :: tag(:)       !< Tags.
+   integer(I4P),                  intent(in)           :: nt           !< Number of tags.
+   character(*),                  intent(in)           :: expression   !< Path expression, e.g. `//event[@type="x"]/origin`.
+   character(*),                  intent(in), optional :: namespaces   !< Namespaces declarations of the names prefixes.
+   integer(I4P), allocatable,     intent(out)          :: ids(:)       !< Selected tags IDs, empty if there are none.
+   integer(I4P),                  intent(out)          :: column       !< Column of the problem, 0 if there is none.
+   character(len=:), allocatable, intent(out)          :: message      !< Problem message, empty if there is none.
+   type(xml_tag)                                       :: declarations !< Namespaces declarations, as attributes.
+   type(name_pattern)                                  :: pattern      !< Name test of the current step.
+   logical                                             :: is_descendant !< The current step matches descendants.
+   integer(I4P)                                        :: n            !< Expression length.
+   integer(I4P)                                        :: c            !< Current column.
+   integer(I4P)                                        :: start        !< First column of the current name test.
+   integer(I4P)                                        :: brace        !< Closing brace offset.
+
+   column = 0
+   message = ''
+   if (present(namespaces)) declarations = xml_tag(name='_', attributes_stream=namespaces)
+   ids = [0_I4P] ! the document
+   n = len(expression, kind=I4P)
+   if (n==0) then
+      call select_failed(expression, ids, column, message, 1_I4P, 'empty expression')
+      return
+   endif
+   c = 1
+   is_descendant = .true.
+   if (expression(1:1)=='/') then
+      is_descendant = expression(1:min(2, n))=='//'
+      c = merge(3_I4P, 2_I4P, is_descendant)
+   endif
+   steps: do
+      if (c>n) then
+         call select_failed(expression, ids, column, message, c, 'a step is missing at the end')
+         return
+      endif
+      ! name test
+      start = c
+      do while (c<=n)
+         if (expression(c:c)=='/'.or.expression(c:c)=='[') exit
+         if (expression(c:c)=='{') then
+            brace = index(expression(c:), '}')
+            if (brace==0) then
+               call select_failed(expression, ids, column, message, c, 'unterminated "{"')
+               return
+            endif
+            c = c + brace
+         else
+            c = c + 1
+         endif
+      enddo
+      if (c==start) then
+         call select_failed(expression, ids, column, message, c, 'a name or "*" expected')
+         return
+      endif
+      if (.not.is_name_test(expression(start:c-1))) then
+         call select_failed(expression, ids, column, message, start, 'invalid name "'//expression(start:c-1)//'"')
+         return
+      endif
+      if (expression(start:c-1)=='*') then
+         pattern = name_pattern(name='*', is_any=.true.)
+      else
+         pattern = name_pattern_of(name=expression(start:c-1), declarations=declarations, is_mapped=present(namespaces))
+      endif
+      if (is_descendant) then
+         ids = descendants_named(tag=tag, nt=nt, contexts=ids, pattern=pattern)
+      else
+         ids = children_named(tag=tag, nt=nt, parents=ids, pattern=pattern, is_first=.false.)
+      endif
+      ! predicates
+      do while (c<=n)
+         if (expression(c:c)/='[') exit
+         call select_predicate(tag, nt, expression, c, ids, column, message)
+         if (column>0) return
+      enddo
+      if (c>n) exit steps
+      ! separator (a name test stops only at "/" or "[", a predicate is followed by anything)
+      if (expression(c:c)/='/') then
+         call select_failed(expression, ids, column, message, c, 'expected "/" or "["')
+         return
+      endif
+      is_descendant = expression(c:min(c+1, n))=='//'
+      c = c + merge(2_I4P, 1_I4P, is_descendant)
+   enddo steps
+   endsubroutine tree_select
+
    pure function tags_indexes(nt) result(indexes)
    !< Return the tags indexes [1:nt].
    integer(I4P), intent(in)  :: nt         !< Number of tags.
@@ -340,6 +449,272 @@ contains
    endfunction tags_indexes
 
    ! private procedures
+   subroutine select_failed(expression, ids, column, message, at, what)
+   !< Report a problem of a selector expression at column *at*, selecting nothing.
+   character(*),                  intent(in)    :: expression !< Path expression.
+   integer(I4P), allocatable,     intent(inout) :: ids(:)     !< Selected tags IDs, emptied.
+   integer(I4P),                  intent(out)   :: column     !< Column of the problem.
+   character(len=:), allocatable, intent(out)   :: message    !< Problem message.
+   integer(I4P),                  intent(in)    :: at         !< Column of the problem.
+   character(*),                  intent(in)    :: what       !< Problem.
+
+   column = at
+   message = 'select: '//what//' at column '//trim(str(at, no_sign=.true.))//' of "'//expression//'"'
+   if (allocated(ids)) deallocate(ids)
+   allocate(ids(0))
+   endsubroutine select_failed
+
+   pure subroutine skip_blanks(expression, c)
+   !< Skip the blanks of *expression* from column *c*.
+   character(*), intent(in)    :: expression !< Path expression.
+   integer(I4P), intent(inout) :: c          !< Current column.
+
+   do while (c<=len(expression, kind=I4P))
+      if (expression(c:c)/=' ') exit
+      c = c + 1
+   enddo
+   endsubroutine skip_blanks
+
+   subroutine select_predicate(tag, nt, expression, c, ids, column, message)
+   !< Parse the predicate of a selector expression at column *c* (a `[`), moving *c* after it, and filter the selected
+   !< tags by it (see *tree_select*); a problem empties *ids* and sets *column* and *message*.
+   type(xml_tag), allocatable,    intent(in)    :: tag(:)     !< Tags.
+   integer(I4P),                  intent(in)    :: nt         !< Number of tags.
+   character(*),                  intent(in)    :: expression !< Path expression.
+   integer(I4P),                  intent(inout) :: c          !< Current column.
+   integer(I4P), allocatable,     intent(inout) :: ids(:)     !< Selected tags IDs.
+   integer(I4P),                  intent(inout) :: column     !< Column of the problem, 0 if there is none.
+   character(len=:), allocatable, intent(inout) :: message    !< Problem message.
+   character(len=:), allocatable                :: attribute  !< Attribute name.
+   character(len=:), allocatable                :: value      !< Attribute value, or regular expression.
+   character(len=REGEX_MSG_LEN)                 :: regex_msg  !< Regular expression problem (a character(*) dummy).
+   character                                    :: operator_  !< Kind: `@` (presence), `=`, `~` (regex), `#` (position).
+   integer(I4P)                                 :: n          !< Expression length.
+   integer(I4P)                                 :: open_      !< Column of the `[`.
+   integer(I4P)                                 :: first      !< First column of a token.
+   integer(I4P)                                 :: quote      !< Closing quote offset.
+   integer(I4P)                                 :: position   !< Position of a `[n]` predicate.
+   integer                                      :: regex_stat !< Regular expression compile status.
+   type(regex)                                  :: re         !< Compiled regular expression.
+
+   n = len(expression, kind=I4P)
+   regex_msg = ''
+   attribute = ''
+   value = ''
+   position = 0
+   open_ = c
+   c = c + 1
+   call skip_blanks(expression, c)
+   if (c>n) then
+      call select_failed(expression, ids, column, message, open_, 'unterminated "["')
+      return
+   endif
+   if (expression(c:c)=='@') then
+      c = c + 1
+      first = c
+      do while (c<=n)
+         if (index(' =~]', expression(c:c))>0) exit
+         c = c + 1
+      enddo
+      attribute = expression(first:c-1)
+      if (.not.is_name(attribute)) then
+         call select_failed(expression, ids, column, message, first, 'invalid attribute name "'//attribute//'"')
+         return
+      endif
+      call skip_blanks(expression, c)
+      if (c>n) then
+         call select_failed(expression, ids, column, message, open_, 'unterminated "["')
+         return
+      endif
+      operator_ = '@'
+      if (expression(c:c)=='=') then
+         operator_ = '='
+         c = c + 1
+      elseif (expression(c:min(c+1, n))=='~=') then
+         operator_ = '~'
+         c = c + 2
+      elseif (expression(c:c)/=']') then
+         call select_failed(expression, ids, column, message, c, 'expected "]", "=" or "~="')
+         return
+      endif
+      if (operator_/='@') then
+         call skip_blanks(expression, c)
+         if (c>n) then
+            call select_failed(expression, ids, column, message, open_, 'unterminated "["')
+            return
+         endif
+         if (expression(c:c)/='"'.and.expression(c:c)/="'") then
+            call select_failed(expression, ids, column, message, c, 'a quoted value expected')
+            return
+         endif
+         quote = index(expression(c+1:), expression(c:c))
+         if (quote==0) then
+            call select_failed(expression, ids, column, message, c, 'unterminated string')
+            return
+         endif
+         value = expression(c+1:c+quote-1)
+         if (operator_=='~') then
+            call re%compile(value, iostat=regex_stat, iomsg=regex_msg)
+            if (regex_stat/=0) then
+               call select_failed(expression, ids, column, message, c+int(regex_stat, I4P), &
+                                  'invalid regular expression ('//trim(regex_msg)//')')
+               return
+            endif
+         endif
+         c = c + quote + 1
+      endif
+   elseif (verify(expression(c:c), DIGITS)==0) then
+      operator_ = '#'
+      first = c
+      do while (c<=n)
+         if (verify(expression(c:c), DIGITS)/=0) exit
+         c = c + 1
+      enddo
+      if (c-first>MAX_POSITION_DIGITS) then
+         call select_failed(expression, ids, column, message, first, 'position too large')
+         return
+      endif
+      read(expression(first:c-1), *) position
+      if (position<1) then
+         call select_failed(expression, ids, column, message, first, 'a position starts from 1')
+         return
+      endif
+   else
+      call select_failed(expression, ids, column, message, c, 'expected "@" or a position')
+      return
+   endif
+   call skip_blanks(expression, c)
+   if (c>n) then
+      call select_failed(expression, ids, column, message, open_, 'unterminated "["')
+      return
+   endif
+   if (expression(c:c)/=']') then
+      call select_failed(expression, ids, column, message, c, 'expected "]"')
+      return
+   endif
+   c = c + 1
+   select case(operator_)
+   case('#')
+      ids = siblings_at(tag=tag, nt=nt, ids=ids, position=position)
+   case('~')
+      ids = tree_matching(tag=tag, nt=nt, ids=ids, re=re, on='attribute', attribute=attribute, whole=.false.)
+   case default
+      ids = attribute_filtered(tag=tag, nt=nt, ids=ids, attribute=attribute, is_valued=operator_=='=', value=value)
+   endselect
+   endsubroutine select_predicate
+
+   pure function attribute_filtered(tag, nt, ids, attribute, is_valued, value) result(filtered)
+   !< Return the IDs of *ids* (in their order) having the attribute *attribute* (valued *value*, if *is_valued*).
+   type(xml_tag), allocatable,    intent(in) :: tag(:)      !< Tags.
+   integer(I4P),                  intent(in) :: nt          !< Number of tags.
+   integer(I4P),                  intent(in) :: ids(:)      !< Tags IDs to filter.
+   character(*),                  intent(in) :: attribute   !< Attribute name.
+   logical,                       intent(in) :: is_valued   !< The attribute value is checked.
+   character(len=:), allocatable, intent(in) :: value       !< Attribute value (with *is_valued*).
+   integer(I4P), allocatable                 :: filtered(:) !< Filtered IDs.
+   integer(I4P), allocatable                 :: buffer(:)   !< Filtered IDs found.
+   integer(I4P)                              :: n           !< Number of filtered IDs.
+   integer(I4P)                              :: i           !< Counter.
+
+   allocate(buffer(size(ids, dim=1)))
+   n = 0
+   do i=1, size(ids, dim=1)
+      if (ids(i)<1.or.ids(i)>nt) cycle
+      if (.not.tag(ids(i))%is_attribute_present(name=attribute)) cycle
+      if (is_valued) then
+         if (tag(ids(i))%get_attribute(name=attribute)/=value) cycle
+      endif
+      n = n + 1
+      buffer(n) = ids(i)
+   enddo
+   filtered = buffer(1:n)
+   endfunction attribute_filtered
+
+   pure function descendants_named(tag, nt, contexts, pattern) result(ids)
+   !< Return the IDs (in document order) of the tags matching *pattern* that are descendants of any of *contexts*.
+   !<
+   !< @note A child ID is greater than its parent one, but a subtree is not a range of IDs (a built document numbers tags
+   !< in insertion order): one forward sweep flags the tags in a subtree of the contexts, a descendant has a flagged
+   !< parent.
+   type(xml_tag), allocatable, intent(in) :: tag(:)      !< Tags.
+   integer(I4P),               intent(in) :: nt          !< Number of tags.
+   integer(I4P),               intent(in) :: contexts(:) !< Context IDs (distinct), 0 for the document.
+   type(name_pattern),         intent(in) :: pattern     !< Tag name to match.
+   integer(I4P), allocatable              :: ids(:)      !< Descendants IDs.
+   integer(I4P), allocatable              :: buffer(:)   !< Matching descendants found.
+   logical, allocatable                   :: is_in(:)    !< Flag of the tags in a subtree of the contexts.
+   integer(I4P)                           :: n           !< Number of matching descendants found.
+   integer(I4P)                           :: p           !< Counter.
+   integer(I4P)                           :: t           !< Tag ID.
+   integer(I4P)                           :: parent_id   !< Parent ID.
+
+   allocate(buffer(nt))
+   allocate(is_in(0:nt))
+   is_in = .false.
+   do p=1, size(contexts, dim=1)
+      if (contexts(p)>=0.and.contexts(p)<=nt) is_in(contexts(p)) = .true.
+   enddo
+   n = 0
+   do t=1, nt
+      parent_id = tag(t)%get_parent_id()
+      if (parent_id<0.or.parent_id>=t) cycle ! not a well-formed tree: never a descendant
+      if (.not.is_in(parent_id)) cycle
+      is_in(t) = .true.
+      if (is_matching(tag=tag, nt=nt, id=t, pattern=pattern)) then
+         n = n + 1
+         buffer(n) = t
+      endif
+   enddo
+   ids = buffer(1:n)
+   endfunction descendants_named
+
+   pure function siblings_at(tag, nt, ids, position) result(selected)
+   !< Return the IDs of *ids* (in document order) that are the *position*-th among the ones of *ids* with the same parent.
+   type(xml_tag), allocatable, intent(in) :: tag(:)      !< Tags.
+   integer(I4P),               intent(in) :: nt          !< Number of tags.
+   integer(I4P),               intent(in) :: ids(:)      !< Tags IDs (in document order).
+   integer(I4P),               intent(in) :: position    !< Position among the siblings, from 1.
+   integer(I4P), allocatable              :: selected(:) !< Selected IDs.
+   integer(I4P), allocatable              :: buffer(:)   !< Selected IDs found.
+   integer(I4P), allocatable              :: count_(:)   !< Number of IDs met for each parent.
+   integer(I4P)                           :: n           !< Number of selected IDs.
+   integer(I4P)                           :: i           !< Counter.
+   integer(I4P)                           :: p           !< Parent ID.
+
+   allocate(buffer(size(ids, dim=1)))
+   allocate(count_(0:nt))
+   count_ = 0
+   n = 0
+   do i=1, size(ids, dim=1)
+      if (ids(i)<1.or.ids(i)>nt) cycle
+      p = tag(ids(i))%get_parent_id()
+      if (p<0.or.p>nt) cycle
+      count_(p) = count_(p) + 1
+      if (count_(p)==position) then
+         n = n + 1
+         buffer(n) = ids(i)
+      endif
+   enddo
+   selected = buffer(1:n)
+   endfunction siblings_at
+
+   pure function is_name_test(test) result(is_valid)
+   !< Return true if *test* is a valid name test of a selector step: `*`, a name, or `{uri}local`.
+   character(*), intent(in) :: test     !< Name test (not empty).
+   logical                  :: is_valid !< Check result.
+   integer(I4P)             :: brace    !< Closing brace position.
+
+   if (test=='*') then
+      is_valid = .true.
+   elseif (test(1:1)=='{') then
+      brace = index(test, '}')
+      is_valid = brace>0
+      if (is_valid) is_valid = index(test(brace+1:), '{')==0.and.is_name(test(brace+1:))
+   else
+      is_valid = index(test, '{')==0.and.index(test, '}')==0.and.is_name(test)
+   endif
+   endfunction is_name_test
+
    pure function find_tags(tag, nt, name, path, parent, namespaces, is_first) result(ids)
    !< Return the IDs of the tags (in document order) matching *name* or *path* (see *tree_find_all*), only the first one
    !< if *is_first*.
@@ -512,7 +887,9 @@ contains
    character(len=:), allocatable          :: uri         !< Tag namespace.
    logical                                :: is_declared !< The tag namespace is declared.
 
-   if (.not.pattern%is_valid) then
+   if (pattern%is_any) then
+      is_match = .true.
+   elseif (.not.pattern%is_valid) then
       is_match = .false.
    elseif (.not.pattern%is_expanded) then
       is_match = tag(id)%is_named(pattern%name)

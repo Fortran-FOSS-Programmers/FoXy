@@ -82,6 +82,7 @@ Defined in `src/lib/foxy_xml_file.f90`. Holds a flat `tag(:)` array with hierarc
 | `xfile%content(id=)` | Return the direct text of the tag with ID `id`, as `content(name)` |
 | `xfile%find([name=], [path=], [parent=], [namespaces=])` | Return the ID of the first matching tag, `0` if none |
 | `xfile%find_all([name=], [path=], [parent=], [namespaces=])` | Return the IDs of all matching tags, in document order. Names match literally, except `{uri}local` (Clark notation: local name in namespace `uri`, any prefix) and, with `namespaces=` (declarations as in XML, `'xmlns="uri1" xmlns:p="uri2"'`), every name, its prefix resolved by them. See [namespaces](#namespaces) |
+| `xfile%select(expression, [namespaces=], [iostat=], [iomsg=])` | Return the IDs (document order) selected by a path expression, an XPath subset: `/` children, `//` descendants, `*`, `[@k]`, `[@k="v"]`, `[@k~="re"]`, `[n]` (among siblings); a leading `/` anchors to the roots. Malformed: no IDs, `iostat=XML_MALFORMED`, `iomsg` with the column. Not pure. See [querying](./querying#path-selector) |
 | `xfile%matching(re, [ids=], [on=], [attribute=], [whole=])` | Return the IDs (of `ids`, or all) whose name (`on='name'`, default), content (`on='content'`) or attribute value (`attribute=`) matches the compiled StringiFor `regex` `re`, a part or the whole (`whole=.true.`); also `idx%matching` (names, attributes) |
 | `xfile%children(id)` | Return the IDs of the direct children of tag `id` (`0`: root tags) |
 | `xfile%tags_number()` | Return the number of tags: IDs are `1` to `tags_number()` |
@@ -148,7 +149,7 @@ file. Positions are 1-based byte offsets (`integer(I8P)`).
 | Method | Description |
 |--------|-------------|
 | `idx%scan(filename, [stop_at=], [chunk_size=], [iostat=], [iomsg=], [sanitize_attributes_value=])` | Index a file, read in chunks (default 64 KiB); with `stop_at` the scan stops after the start tag of the first tag with that name (e.g. `AppendedData`, before raw binary data); errors as `xfile%parse` |
-| `idx%find(...)`, `idx%find_all(...)`, `idx%children(id)`, `idx%attribute(id, name)`, `idx%tags_number()`, `idx%attributes_number(id)`, `idx%attribute_name(id, a)`, `idx%name(id)`, `idx%parent(id)`, `idx%level(id)`, `idx%prefix(id)`, `idx%local_name(id)`, `idx%namespace(id)` | The `xml_file` queries, same arguments and results |
+| `idx%find(...)`, `idx%find_all(...)`, `idx%select(...)`, `idx%children(id)`, `idx%attribute(id, name)`, `idx%tags_number()`, `idx%attributes_number(id)`, `idx%attribute_name(id, a)`, `idx%name(id)`, `idx%parent(id)`, `idx%level(id)`, `idx%prefix(id)`, `idx%local_name(id)`, `idx%namespace(id)` | The `xml_file` queries, same arguments and results |
 | `idx%get_attribute(...)`, `idx%get_content(...)` | The `xml_file` [typed values](#typed-values); `get_content` reads the content from the file |
 | `idx%content(id, [iostat=], [iomsg=])` | Read the content of tag `id` from the file, as `xfile%content(id=)`; `''` for a self-closing or unclosed tag |
 | `idx%text_range(id, first, last)` | Byte range of the text of tag `id` (up to its first child); `last < first` if empty |

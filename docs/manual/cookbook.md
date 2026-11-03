@@ -119,6 +119,15 @@ IDs follow the document order, so a plain loop visits the tree depth first; `chi
 
 `content` returns the direct text: references decoded, CDATA literal, comments and child tags out.
 
+### Select tags with a path expression
+
+<<< @/examples/snippets/select_path.f90
+
+<<< @/examples/output/select_path.ansi{ansi}
+
+One call for what would be `find_all` plus loops: steps (`/` children, `//` descendants), `*`, attribute tests
+(`[@k]`, `[@k="v"]`, `[@k~="re"]`) and positions among siblings (`[n]`). See [Querying](/guide/querying#path-selector).
+
 ### Filter tags with a regular expression
 
 <<< @/examples/snippets/regex_filter.f90
