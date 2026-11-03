@@ -97,6 +97,10 @@ call doc%set_content(id=1_I4P, value=3.14159_R8P, fmt='(F6.3)')
 test_passed(4) = test_passed(4).and.doc%content('v')=='3.142'
 call doc%set_content(id=1_I4P, value=1._R8P, fmt='(I5)', iostat=iostat, iomsg=iomsg)
 test_passed(4) = test_passed(4).and.iostat==XML_BAD_VALUE.and.index(iomsg, '(I5)')>0.and.doc%content('v')=='3.142'
+call doc%set_content(id=1_I4P, value=100_I4P, fmt='(I2)', iostat=iostat) ! too wide for the field: asterisks
+test_passed(4) = test_passed(4).and.iostat==XML_BAD_VALUE.and.doc%content('v')=='3.142'
+call doc%set_content(id=1_I4P, values=[1._R8P, 1000._R8P], fmt='(F5.2)', iostat=iostat)
+test_passed(4) = test_passed(4).and.iostat==XML_BAD_VALUE.and.doc%content('v')=='3.142'
 print "(A,L1)", 'Is fmt= honoured, a bad format reported? ', test_passed(4)
 
 ! the typed set_content replaces the children, as the text one

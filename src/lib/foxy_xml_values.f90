@@ -426,7 +426,8 @@ contains
    iomsg = ''
    if (present(fmt)) then
       write(buffer, fmt, iostat=ios) value
-      if (ios/=0) then
+      if (ios==0) ios = merge(1, 0, is_overflow(buffer)) ! asterisks: the value does not fit (ifx also writes them
+      if (ios/=0) then                                    ! for a real with an I edit descriptor)
          iostat = XML_BAD_VALUE
          iomsg = 'cannot write a integer with the format "'//fmt//'"'
          text = ''
@@ -452,7 +453,8 @@ contains
    iomsg = ''
    if (present(fmt)) then
       write(buffer, fmt, iostat=ios) value
-      if (ios/=0) then
+      if (ios==0) ios = merge(1, 0, is_overflow(buffer)) ! asterisks: the value does not fit (ifx also writes them
+      if (ios/=0) then                                    ! for a real with an I edit descriptor)
          iostat = XML_BAD_VALUE
          iomsg = 'cannot write a integer with the format "'//fmt//'"'
          text = ''
@@ -478,7 +480,8 @@ contains
    iomsg = ''
    if (present(fmt)) then
       write(buffer, fmt, iostat=ios) value
-      if (ios/=0) then
+      if (ios==0) ios = merge(1, 0, is_overflow(buffer)) ! asterisks: the value does not fit (ifx also writes them
+      if (ios/=0) then                                    ! for a real with an I edit descriptor)
          iostat = XML_BAD_VALUE
          iomsg = 'cannot write a integer with the format "'//fmt//'"'
          text = ''
@@ -504,7 +507,8 @@ contains
    iomsg = ''
    if (present(fmt)) then
       write(buffer, fmt, iostat=ios) value
-      if (ios/=0) then
+      if (ios==0) ios = merge(1, 0, is_overflow(buffer)) ! asterisks: the value does not fit (ifx also writes them
+      if (ios/=0) then                                    ! for a real with an I edit descriptor)
          iostat = XML_BAD_VALUE
          iomsg = 'cannot write a integer with the format "'//fmt//'"'
          text = ''
@@ -532,7 +536,8 @@ contains
    iomsg = ''
    if (present(fmt)) then
       write(buffer, fmt, iostat=ios) value
-      if (ios/=0) then
+      if (ios==0) ios = merge(1, 0, is_overflow(buffer)) ! asterisks: the value does not fit (ifx also writes them
+      if (ios/=0) then                                    ! for a real with an I edit descriptor)
          iostat = XML_BAD_VALUE
          iomsg = 'cannot write a real with the format "'//fmt//'"'
          text = ''
@@ -561,7 +566,8 @@ contains
    iomsg = ''
    if (present(fmt)) then
       write(buffer, fmt, iostat=ios) value
-      if (ios/=0) then
+      if (ios==0) ios = merge(1, 0, is_overflow(buffer)) ! asterisks: the value does not fit (ifx also writes them
+      if (ios/=0) then                                    ! for a real with an I edit descriptor)
          iostat = XML_BAD_VALUE
          iomsg = 'cannot write a real with the format "'//fmt//'"'
          text = ''
@@ -837,4 +843,11 @@ contains
       n = n + 1
    enddo
    endfunction tokens_number
+   pure function is_overflow(buffer) result(is_over)
+   !< Return true if a formatted value is all asterisks: the value does not fit the field of the format.
+   character(*), intent(in) :: buffer  !< Formatted value.
+   logical                  :: is_over !< Check result.
+
+   is_over = len_trim(buffer)>0.and.verify(trim(adjustl(buffer)), '*')==0
+   endfunction is_overflow
 endmodule foxy_xml_values

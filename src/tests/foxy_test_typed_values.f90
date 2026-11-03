@@ -5,7 +5,7 @@ program foxy_test_typed_values
 !< Typed accessors: attributes and contents as numbers (every kind, scalars and lists) and logicals, from the DOM and from
 !< the index (the same checks, in *foxy_test_typed_values.inc*); malformed values, missing tags and attributes reported;
 !< a large list read from a file.
-use, intrinsic :: ieee_arithmetic, only : ieee_is_nan
+use, intrinsic :: ieee_arithmetic, only : ieee_class, ieee_is_nan, ieee_negative_zero, operator(==)
 use foxy, only : I1P, I2P, I4P, I8P, R4P, R8P, xml_file, xml_index, xml_writer, XML_BAD_VALUE, XML_NOT_FOUND
 
 implicit none
@@ -81,7 +81,7 @@ test_passed(10) = test_passed(10).and.st(5)==0.and.i8==-huge(i8)-1_I8P
 call xfile%get_attribute(id=1_I4P, name='f', value=r8, iostat=st(6))
 test_passed(10) = test_passed(10).and.st(6)==0.and.r8==transfer(1_I8P, r8)
 call xfile%get_attribute(id=1_I4P, name='g', value=r8, iostat=st(7))
-test_passed(10) = test_passed(10).and.st(7)==0.and.r8==0._R8P.and.sign(1._R8P, r8)<0._R8P
+test_passed(10) = test_passed(10).and.st(7)==0.and.ieee_class(r8)==ieee_negative_zero ! not sign(): ifx -assume nominus0
 call xfile%get_attribute(id=1_I4P, name='h', value=i2, iostat=st(8))
 test_passed(10) = test_passed(10).and.st(8)==0.and.i2==huge(i2)
 i2 = 7_I2P ; call xfile%get_attribute(id=1_I4P, name='i', value=i2, iostat=st(9))

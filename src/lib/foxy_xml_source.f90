@@ -91,7 +91,7 @@ contains
       encoding%name = detected
       if (len(declared)>0.and..not.is_same_family(declared_canonical, detected)) then
          encoding%problem = 'encoding "'//declared//'" declared, but the source is '//detected
-      elseif (.not.is_marked.and.detected(1:6)=='UTF-16') then
+      elseif (.not.is_marked.and.index(detected, 'UTF-16')==1) then
          encoding%problem = 'a UTF-16 source must start with a byte order mark'
       endif
    elseif (len(declared_canonical)>0) then
