@@ -12,7 +12,9 @@ title: Editing
 
 `add_tag(tag, [parent=], [id=])` appends an `xml_tag` as the last child of `parent` (one level deeper, indented two
 more spaces), or as a root tag without `parent`; `id` returns its ID (`0` if `parent` is not a tag). Tags are appended,
-so the IDs of a built document follow the insertion order. See [Single tags](./tags) for `xml_tag`.
+so the IDs of a built document follow the insertion order. With `before=` (or `after=`) the tag is inserted right before
+(after) a sibling, after its whole subtree for `after`: it takes that place in the document order and the following
+IDs are renumbered. See [Single tags](./tags) for `xml_tag`.
 
 ## Editing by ID
 
@@ -25,6 +27,7 @@ so the IDs of a built document follow the insertion order. See [Single tags](./t
 | `set_attribute(id, name, value \| values, [fmt=], [iostat=], [iomsg=])` | adds the attribute (last) or replaces its value: text, a number, a logical or a list, as `set_content` |
 | `delete_attribute(id, name, [iostat=], [iomsg=])` | deletes an attribute |
 | `delete_tag([name=], [id=])` | deletes the first tag named `name`, or tag `id`, with its subtree |
+| `set_name(id, name, [iostat=], [iomsg=])` | renames a tag; `XML_MALFORMED` if `name` is not an XML name |
 | `free()` | empties the document |
 
 `iostat` is `XML_NOT_FOUND` for a tag or attribute that does not exist and `XML_MALFORMED` for an invalid attribute

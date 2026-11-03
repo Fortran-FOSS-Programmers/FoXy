@@ -13,8 +13,10 @@ For a restart, `solver` changes its case: a longer run with a finer time step, n
   removes one.
 - `delete_tag(name=)` or `delete_tag(id=)` removes a tag with its subtree. The following tags are renumbered: find IDs
   again after a deletion.
-- `add_tag(tag, parent=, id=)` appends an `xml_tag` as the last child of `parent` (a root tag without `parent`) and
-  returns its ID, so the new tag can get children of its own.
+- `add_tag(tag, parent=, id=)` appends an `xml_tag` as the last child of `parent` (a root tag without `parent`), and
+  `add_tag(tag, after=)` (or `before=`) inserts it next to a sibling: here `restart` goes right after `time`. It returns
+  the ID, so the new tag can get children of its own; an insertion renumbers the following tags.
+- `set_name(id, name)` renames a tag (the new name must be an XML name).
 - `save` writes the document: the prolog kept from the source (declaration and comments), the tags, a final new line.
 
 ## Running it

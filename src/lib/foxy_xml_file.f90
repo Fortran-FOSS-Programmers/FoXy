@@ -90,6 +90,7 @@ type, public:: xml_file
                                set_content_I8P_1, &
                                set_content_R4P_1, &
                                set_content_R8P_1 !< Set the content of a tag (text, number, list).
+      procedure, pass(self) :: set_name   !< Rename the tag with a given ID.
       procedure, pass(self) :: stringify  !< Convert the whole file data into a string.
       procedure, pass(self) :: tags_number !< Return the number of tags.
       ! private methods
@@ -123,6 +124,8 @@ type, public:: xml_file
       procedure, pass(self), private :: set_content_R4P_1
       procedure, pass(self), private :: set_content_R8P_1
       procedure, pass(self), private :: delete_subtree      !< Delete a tag and its subtree, renumbering the others.
+      procedure, pass(self), private :: last_in_subtree     !< Return the greatest ID of a subtree.
+      procedure, pass(self), private :: make_room           !< Move the tags from an ID on by one place.
       procedure, pass(self), private :: append_inline_body  !< Append a tag text, children and their tails, without layout.
       procedure, pass(self), private :: direct_text         !< Return a tag text plus its children tails (raw).
       procedure, pass(self), private :: is_mixed            !< Check if a tag has mixed content.
@@ -193,26 +196,50 @@ type, extends(xml_builder) :: dom_builder
 endtype dom_builder
 contains
    ! public methods
-   elemental subroutine add_tag(self, tag, parent, id)
+   elemental subroutine add_tag(self, tag, parent, id, before, after)
    !< Add tag to XML file: as the last child of the tag with ID *parent* or, if *parent* is not passed (or 0), as a root tag;
-   !< its own children (if any) are not kept.
+   !< with *before* (or *after*), as the sibling right before (after) the tag with that ID. Its own children (if any) are
+   !< not kept.
    !<
-   !< @note Tags IDs are the tags indexes into the tags array: the added tag ID is the new number of tags. Tags are
-   !< appended, thus in a built document IDs follow the insertion order (a child ID is always greater than its parent one,
-   !< as *delete_tag* requires); a parsed document keeps the document order.
+   !< @note Tags IDs are the tags indexes into the tags array. Appended, the tag gets the new number of tags as ID: in a
+   !< built document IDs follow the insertion order. Inserted (*before*, *after*), it takes the place of the sibling (or
+   !< the place after the sibling subtree) and the following tags are renumbered, so that a parsed document keeps the
+   !< document order; a child ID is always greater than its parent one, as *delete_tag* requires.
    !< @note The tags array capacity is doubled when full, thus adding n tags costs O(n) tags copies, not O(n^2): only the
    !< first *nt* elements are tags, the others are spare capacity.
-   !< @note If *parent* is not a tag ID, the tag is not added (*id* is 0).
+   !< @note The tag is not added (*id* is 0) if *parent* is not a tag ID, if *before* (or *after*) is not a tag ID or not a
+   !< child of *parent* (when passed), or if both *before* and *after* are passed.
    class(xml_file), intent(inout)         :: self       !< XML file.
    type(xml_tag),   intent(in)            :: tag        !< XML tag.
    integer(I4P),    intent(in),  optional :: parent     !< Parent tag ID, 0 for a root tag.
    integer(I4P),    intent(out), optional :: id         !< ID of the added tag, 0 if not added.
+   integer(I4P),    intent(in),  optional :: before     !< ID of the sibling the tag is inserted before.
+   integer(I4P),    intent(in),  optional :: after      !< ID of the sibling the tag is inserted after.
    type(xml_tag), allocatable             :: tag_new(:) !< New (extended) tags array.
    integer(I4P)                           :: parent_    !< Parent tag ID, local variable.
+   integer(I4P)                           :: sibling    !< Sibling ID.
+   integer(I4P)                           :: k          !< ID (place) of the new tag.
 
-   parent_ = 0_I4P ; if (present(parent)) parent_ = parent
    if (present(id)) id = 0_I4P
+   if (present(before).and.present(after)) return
+   parent_ = 0_I4P ; if (present(parent)) parent_ = parent
    if (parent_<0.or.parent_>self%nt) return
+   k = self%nt + 1
+   sibling = 0
+   if (present(before).or.present(after)) then
+      if (present(before)) sibling = before
+      if (present(after)) sibling = after
+      if (sibling<1.or.sibling>self%nt) return
+      if (present(parent)) then
+         if (parent/=self%tag(sibling)%get_parent_id()) return
+      endif
+      parent_ = self%tag(sibling)%get_parent_id()
+      if (present(before)) then
+         k = sibling
+      else
+         k = self%last_in_subtree(sibling) + 1
+      endif
+   endif
    if (.not.allocated(self%tag)) then
       allocate(self%tag(1:INITIAL_CAPACITY))
    elseif (self%nt==size(self%tag, dim=1)) then
@@ -220,19 +247,86 @@ contains
       tag_new(1:self%nt) = self%tag(1:self%nt)
       call move_alloc(from=tag_new, to=self%tag)
    endif
+   if (k<=self%nt) call self%make_room(k)
    self%nt = self%nt + 1
-   self%tag(self%nt) = tag
-   call self%tag(self%nt)%set(id=self%nt, parent_id=parent_)
-   if (allocated(self%tag(self%nt)%child_id)) deallocate(self%tag(self%nt)%child_id)
-   self%tag(self%nt)%children_number = 0_I4P
+   self%tag(k) = tag
+   call self%tag(k)%set(id=k, parent_id=parent_)
+   if (allocated(self%tag(k)%child_id)) deallocate(self%tag(k)%child_id)
+   self%tag(k)%children_number = 0_I4P
    if (parent_>0) then
-      call self%tag(self%nt)%set(level=self%tag(parent_)%get_level()+1, indent=self%tag(parent_)%get_indent()+2)
-      call self%tag(parent_)%add_child_id(child_id=self%nt)
+      call self%tag(k)%set(level=self%tag(parent_)%get_level()+1, indent=self%tag(parent_)%get_indent()+2)
+      if (sibling==0) then
+         call self%tag(parent_)%add_child_id(child_id=k)
+      elseif (present(before)) then
+         call insert_child(self%tag(parent_), child=k, at=sibling+1, is_before=.true.)
+      else
+         call insert_child(self%tag(parent_), child=k, at=sibling, is_before=.false.)
+      endif
    else
-      call self%tag(self%nt)%set(level=1_I4P)
+      call self%tag(k)%set(level=1_I4P)
    endif
-   if (present(id)) id = self%nt
+   if (present(id)) id = k
    endsubroutine add_tag
+
+   pure function last_in_subtree(self, id) result(last)
+   !< Return the greatest ID of the subtree of the tag with ID *id* (the tag included): children IDs are greater than their
+   !< parent one, so a forward sweep collects the subtree.
+   class(xml_file), intent(in) :: self       !< XML file.
+   integer(I4P),    intent(in) :: id         !< Tag ID.
+   integer(I4P)                :: last       !< Greatest ID of the subtree.
+   logical, allocatable        :: is_in(:)   !< Flag of the subtree tags.
+   integer(I4P)                :: t          !< Counter.
+   integer(I4P)                :: parent_id  !< Parent ID.
+
+   allocate(is_in(self%nt), source=.false.)
+   is_in(id) = .true.
+   last = id
+   do t=id+1, self%nt
+      parent_id = self%tag(t)%get_parent_id()
+      if (parent_id>=id.and.parent_id<t) then
+         if (is_in(parent_id)) then
+            is_in(t) = .true.
+            last = t
+         endif
+      endif
+   enddo
+   endfunction last_in_subtree
+
+   pure subroutine make_room(self, k)
+   !< Move the tags from ID *k* on by one place, renumbering every reference to them (IDs, parents, children lists).
+   class(xml_file), intent(inout) :: self !< XML file (with spare capacity for one more tag).
+   integer(I4P),    intent(in)    :: k    !< First ID moved.
+   integer(I4P)                   :: t    !< Counter.
+   integer(I4P)                   :: p    !< Parent ID.
+
+   do t=self%nt, k, -1
+      self%tag(t+1) = self%tag(t)
+   enddo
+   do t=1, self%nt+1
+      if (t==k) cycle
+      if (t>k) call self%tag(t)%set(id=t)
+      p = self%tag(t)%get_parent_id()
+      if (p>=k) call self%tag(t)%set(parent_id=p+1)
+      if (self%tag(t)%children_number>0) where (self%tag(t)%child_id>=k) self%tag(t)%child_id = self%tag(t)%child_id + 1
+   enddo
+   endsubroutine make_room
+
+
+   pure subroutine insert_child(parent, child, at, is_before)
+   !< Insert *child* in the children list of *parent*, before (or after) the child with ID *at*.
+   type(xml_tag), intent(inout) :: parent    !< Parent tag.
+   integer(I4P),  intent(in)    :: child     !< Child ID.
+   integer(I4P),  intent(in)    :: at        !< ID of the sibling.
+   logical,       intent(in)    :: is_before !< Insert before the sibling, otherwise after.
+   integer(I4P)                 :: c         !< Position of the sibling in the list.
+
+   do c=1, parent%children_number
+      if (parent%child_id(c)==at) exit
+   enddo
+   if (.not.is_before) c = c + 1
+   parent%child_id = [parent%child_id(1:c-1), child, parent%child_id(c:parent%children_number)]
+   parent%children_number = parent%children_number + 1
+   endsubroutine insert_child
 
    pure function attribute(self, id, name) result(value)
    !< Return the value of the attribute named *name* of the tag with ID *id*.
@@ -1010,6 +1104,33 @@ contains
    endif
    call self%set_content_character(id=id, content=text, iostat=iostat, iomsg=iomsg)
    endsubroutine set_content_R8P_1
+
+   pure subroutine set_name(self, id, name, iostat, iomsg)
+   !< Rename the tag with ID *id* (its end tag follows); its namespace is resolved again from the new prefix.
+   !<
+   !< @note *iostat* is *XML_NOT_FOUND* if the tag does not exist, *XML_MALFORMED* if *name* is not an XML name (nothing is
+   !< changed); *iomsg* is unchanged on success.
+   class(xml_file),        intent(inout) :: self    !< XML file.
+   integer(I4P),           intent(in)    :: id      !< Tag ID.
+   character(*),           intent(in)    :: name    !< New name.
+   integer(I4P), optional, intent(out)   :: iostat  !< IO status.
+   character(*), optional, intent(inout) :: iomsg   !< IO message.
+   integer(I4P)                          :: iostat_ !< IO status, local variable.
+   character(len=:), allocatable         :: iomsg_  !< IO message, local variable.
+
+   iostat_ = 0
+   iomsg_ = ''
+   if (id<1.or.id>self%nt) then
+      iostat_ = XML_NOT_FOUND
+      iomsg_ = 'tag with ID '//trim(str(id, no_sign=.true.))//' not found'
+   elseif (.not.is_name(name)) then
+      iostat_ = XML_MALFORMED
+      iomsg_ = 'tag name "'//name//'" is not an XML name'
+   else
+      call self%tag(id)%set(name=name)
+   endif
+   call report(iostat_=iostat_, iomsg_=iomsg_, iostat=iostat, iomsg=iomsg)
+   endsubroutine set_name
 
    elemental function tags_number(self) result(number)
    !< Return the number of tags (IDs are 1 to the number of tags).

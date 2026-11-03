@@ -11,6 +11,10 @@ $ cat restart.xml
     <steps>1000</steps>
     <adaptive>true</adaptive>
   </time>
+  <restart>
+    <from>results.xml</from>
+    <step>500</step>
+  </restart>
   <fluid name="air">
     <density unit="kg/m3">1.225</density>
     <viscosity unit="Pa s">1.8e-5</viscosity>
@@ -21,9 +25,5 @@ $ cat restart.xml
   <boundary side="east" type="outflow"/>
   <boundary side="north" type="wall"/>
   <boundary side="south" type="wall"/>
-  <output>results.xml</output>
-  <restart>
-    <from>results.xml</from>
-    <step>500</step>
-  </restart>
+  <results>results.xml</results>
 </case>

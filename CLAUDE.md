@@ -97,8 +97,9 @@ source positions `pos(3)` (start, content, end), indentation, self-closing flag,
 `parse()`, `stringify()`, `save()`, `add_tag()`, `delete_tag(name=|id=)`, `content()`; edits by ID: `set_content`
 (children replaced; text raw, or typed `value=`/`values=` through `to_text` of `foxy_xml_values`: integers their
 digits, reals StringiFor `shortest`, `fmt=` optional), `set_attribute` (text escaped, or typed as `set_content`), `delete_attribute`, `tags_number`,
-`attributes_number`/`attribute_name` (the read ones also on `xml_index`). Deletions go through `delete_subtree`
-(renumbering, children after parents).
+`attributes_number`/`attribute_name` (the read ones also on `xml_index`), `set_name`, `add_tag(before=|after=)`
+(insertion at the document-order place: `make_room` renumbers the following tags, `insert_child` the parent list).
+Deletions go through `delete_subtree` (renumbering, children after parents).
 
 There is **one parser**, used everywhere:
 - the document parser: `xml_tokenizer%feed` (`foxy_xml_tokenizer`), a single-pass, quotes-aware tokenizer with the

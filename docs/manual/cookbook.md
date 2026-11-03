@@ -145,6 +145,14 @@ The prefixes of `namespaces=` replace the ones of the file for this query only.
 
 Attributes go in as a stream (`attributes_stream=`) or as name/value pairs; `parent=` nests, `id=` returns the new ID.
 
+### Insert a tag before or after another, rename a tag
+
+<<< @/examples/snippets/insert_tags.f90
+
+<<< @/examples/output/insert_tags.ansi{ansi}
+
+An insertion takes the place of the sibling in the document order: the tags after it are renumbered.
+
 ### Change a value and save
 
 <<< @/examples/snippets/edit_and_save.f90
