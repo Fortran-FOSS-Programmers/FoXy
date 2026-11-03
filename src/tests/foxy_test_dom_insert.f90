@@ -3,7 +3,8 @@ program foxy_test_dom_insert
 !< FoXy test.
 !<
 !< Inserting a tag before or after a sibling (the following IDs renumbered, document order and children lists kept, the
-!< document written and parsed back the same), renaming a tag; bad IDs and names reported.
+!< document written and parsed back the same), renaming a tag; bad IDs and names reported; the children lists read by
+!< `children(id)` equal to a sweep of the parents after edits.
 use foxy, only : I4P, xml_file, xml_tag, XML_MALFORMED, XML_NOT_FOUND
 
 implicit none
@@ -13,7 +14,7 @@ type(xml_file)              :: back               !< Document parsed back.
 integer(I4P)                :: id                 !< ID of an added tag.
 integer(I4P)                :: iostat             !< IO status.
 character(len=128)          :: iomsg              !< IO message.
-logical                     :: test_passed(6)     !< List of passed tests.
+logical                     :: test_passed(7)     !< List of passed tests.
 
 test_passed = .false.
 
@@ -68,6 +69,42 @@ call doc%set_name(id=2_I4P, name='1bad', iostat=iostat, iomsg=iomsg)
 test_passed(6) = test_passed(6).and.iostat==XML_MALFORMED.and.index(iomsg, '1bad')>0.and.doc%name(2)=='new'
 print "(A,L1)", 'Are bad IDs and names reported? ', test_passed(6)
 
+! children(id) reads the children list: after appends, insertions, deletions and set_content, the same as a sweep
+call doc%free()
+call doc%parse(string='<r><a><x/></a><b><y/><z/></b><c/></r>')
+call doc%add_tag(xml_tag(name='w'), parent=doc%find(name='a'))       ! appended under an earlier parent
+call doc%add_tag(xml_tag(name='v'), before=doc%find(name='z'))
+call doc%add_tag(xml_tag(name='u'), after=doc%find(name='b'))
+call doc%delete_tag(name='y')
+call doc%set_content(id=doc%find(name='b'), content='text')  ! its children deleted
+call doc%add_tag(xml_tag(name='t'), parent=doc%find(name='c'))
+test_passed(7) = same_children(doc).and.size(doc%children(doc%tags_number()+1))==0.and.size(doc%children(-1))==0
+print "(A,L1)", 'Are the children lists the parents of the tags? ', test_passed(7)
+
 print "(A,L1)", new_line('a')//'Are all tests passed? ', all(test_passed)
 if (.not.all(test_passed)) error stop 1
+contains
+   function same_children(doc) result(is_same)
+   !< Whether *children(id)* of every tag (and of the document, ID 0) are the tags whose parent it is, in ID order.
+   type(xml_file), intent(in) :: doc     !< Document.
+   logical                    :: is_same !< Check result.
+   integer(I4P), allocatable  :: swept(:) !< Children found by a sweep.
+   integer(I4P), allocatable  :: listed(:) !< Children read by children(id).
+   integer(I4P)               :: id, t   !< Counters.
+
+   is_same = .true.
+   do id=0, doc%tags_number()
+      allocate(swept(0))
+      do t=1, doc%tags_number()
+         if (doc%parent(t)==id) swept = [swept, t]
+      enddo
+      listed = doc%children(id)
+      if (size(listed)/=size(swept)) then
+         is_same = .false.
+      elseif (any(listed/=swept)) then
+         is_same = .false.
+      endif
+      deallocate(swept)
+   enddo
+   endfunction same_children
 endprogram foxy_test_dom_insert

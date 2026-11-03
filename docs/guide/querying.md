@@ -23,8 +23,8 @@ A parsed document is a flat array of tags in document order. A tag is known by i
 - `namespaces`: see [Namespaces](./namespaces).
 
 `find` stops at the first match of a name; the following path segments and `parent=` walk the children lists, so
-`find(name=, parent=)` in a loop costs the number of children, not of tags. `children(id)` sweeps all the tags: in a
-loop over a large document, prefer `find_all(name=, parent=)`.
+`find(name=, parent=)` in a loop costs the number of children, not of tags. `children(id)` reads the children list of
+the tag (its cost is the number of children); `children(0)`, the root tags, sweeps all the tags.
 
 ## Path selector
 

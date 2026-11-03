@@ -148,7 +148,8 @@ contains
    pure function tree_children(tag, nt, id) result(ids)
    !< Return the IDs of the direct children of the tag with ID *id*, in document order.
    !<
-   !< @note The ID 0 is the document root: its children are the root tags.
+   !< @note The ID 0 is the document root: its children are the root tags (a sweep of all the tags); a tag's children
+   !< are its children list, built by *tree_build_children* (the cost is the number of children).
    type(xml_tag), allocatable, intent(in) :: tag(:) !< Tags.
    integer(I4P),               intent(in) :: nt     !< Number of tags.
    integer(I4P),               intent(in) :: id     !< Tag ID.
@@ -158,6 +159,14 @@ contains
 
    if (id<0.or.id>nt) then
       allocate(ids(0))
+      return
+   endif
+   if (id>0) then
+      if (tag(id)%children_number>0) then
+         ids = tag(id)%child_id(1:tag(id)%children_number)
+      else
+         allocate(ids(0))
+      endif
       return
    endif
    allocate(is_child(nt)) ! a loop, not an implied-do mask: nvfortran evaluates the latter out of bounds
