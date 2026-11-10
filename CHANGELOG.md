@@ -4,6 +4,11 @@ All notable changes to this project are documented here.
 Versions follow [Semantic Versioning](https://semver.org/).
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.8.1] — 2026-11-10
+### Fixed
+- **writer**: Write a block of raw data without a temporary copy
+
+
 ## [0.8.0] — 2026-11-03
 ### Documentation
 - Audit the documentation against the code, add a cast and diagrams
