@@ -363,7 +363,11 @@ contains
    if (is_block_) then
       if (self%is_writable()) then
          if (allocated(self%pending)) call self%flush_pending
-         call self%put(indentation(self, self%depth)//string//new_line_(self))
+         ! three writes, not one concatenation: string can be a whole data array, and a temporary copy of it can be put on
+         ! the stack (ifx with -recursive overflows the default 8 MiB stack with a few MB of data)
+         call self%put(indentation(self, self%depth))
+         call self%put(string)
+         call self%put(new_line_(self))
       endif
    elseif (self%start_content(what='data')) then
       call self%put(string)
