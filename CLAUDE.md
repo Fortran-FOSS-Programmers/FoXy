@@ -249,7 +249,9 @@ must not depend on the compiler: explicit formats.
 GitHub Actions, built on two local composite actions (`.github/actions/setup-build-env`,
 `.github/actions/run-coverage-analysis`) shared in form across the FoBiS repos:
 
-- `ci.yml` — every branch push/PR: setup, `fetch`, tests with coverage (`rule --ex makecoverage-analysis`)
+- `ci.yml` — every branch push/PR: `fetch`, tests with coverage (`rule --ex makecoverage-analysis`), in the container
+  `ghcr.io/szaghi/fortran-toolchains:gnu-16.2` (gfortran 16.2, FoBiS, formal; set by `[scaffold] toolchain_image` in
+  `fobos`, as the build job of `docs.yml`: no `setup-build-env` step in either)
 - `docs.yml` — coverage + API docs (`formal`, via `rule-makedoc`) + VitePress site, deployed to GitHub Pages; it
   overwrites `docs/public/coverage.json` with the coverage badge
 - `release.yml` — on a `vX.Y.Z` tag: tarball + GitHub release with notes extracted from `CHANGELOG.md`
