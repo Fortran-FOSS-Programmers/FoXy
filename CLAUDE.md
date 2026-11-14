@@ -241,22 +241,22 @@ Every sample is a program in `docs/examples/src` (markers `!run ID CMD`, `!regio
 input files in `docs/examples/files`; `bash scripts/docs_examples.sh` rebuilds the library (`fobis build --mode
 foxy-static-gnu`), builds and runs them in one scratch dir (alphabetical file order: a run may read what an earlier one
 wrote), and regenerates `docs/examples/snippets` and `docs/examples/output`, included by the pages (`<<< @/examples/...`).
-Commit the regenerated files: `docs-examples.yml` reruns the script with gfortran 14 and fails on any diff. Outputs
+Commit the regenerated files: `docs-examples.yml` reruns the script in the gnu-16.2 image (gfortran 16.2) and fails on any diff. Outputs
 must not depend on the compiler: explicit formats.
 
 ## CI/CD
 
-GitHub Actions, built on two local composite actions (`.github/actions/setup-build-env`,
-`.github/actions/run-coverage-analysis`) shared in form across the FoBiS repos:
+Every workflow is a thin caller of a reusable workflow of `szaghi/fortran-toolchains` pinned at `@v1` (repo
+`~/fortran/fortran-toolchains`), rendered by `fobis scaffold sync` from the `fobos` `[scaffold]` section;
+`toolchain = linux-gnu` is the `gnu-16.2` image (gfortran 16.2, Open MPI 5.0.11, FoBiS, formal):
 
-- `ci.yml` — every branch push/PR: `fetch`, tests with coverage (`rule --ex makecoverage-analysis`), in the container
-  `ghcr.io/szaghi/fortran-toolchains:gnu-16.2` (gfortran 16.2, FoBiS, formal; set by `[scaffold] toolchain_image` in
-  `fobos`, as the build job of `docs.yml`: no `setup-build-env` step in either)
-- `docs.yml` — coverage + API docs (`formal`, via `rule-makedoc`) + VitePress site, deployed to GitHub Pages; it
-  overwrites `docs/public/coverage.json` with the coverage badge
-- `release.yml` — on a `vX.Y.Z` tag: tarball + GitHub release with notes extracted from `CHANGELOG.md`
-- `install.yml` — install smoke test (`scripts/install.sh`)
-- `docs-examples.yml` — `scripts/docs_examples.sh` must reproduce the committed `docs/examples` snippets and outputs
+- `ci.yml` — every branch push/PR: tests with coverage (`rule --ex makecoverage-analysis`)
+- `docs.yml` — after a green CI on the default branch: API docs (`formal`) + VitePress site, deployed to GitHub Pages,
+  with CI's coverage and badge (`docs/public/coverage.json`)
+- `fpm.yml` (`fpm = true`) — `fpm test` (the tests declared in `fpm.toml`) and `fpm build --profile release`
+- `docs-examples.yml` (`docs_examples = docs/examples`) — `scripts/docs_examples.sh` must leave `docs/examples` unchanged
+- `release.yml` — on a `vX.Y.Z` tag: tarball + GitHub release with notes extracted from `CHANGELOG.md`, then
+  `install.yml` installs it on a fresh runner with each build system (make, CMake, FoBiS, fpm)
 
 Running `fobis rule --ex makecoverage` locally also rewrites `docs/public/coverage.json`: do not commit that change.
 

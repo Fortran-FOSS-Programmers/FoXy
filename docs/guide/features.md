@@ -83,7 +83,7 @@ graph LR
 
 | Compiler | Status |
 |---|---|
-| GNU gfortran 14, 16 | tested (CI: gfortran 14) |
+| GNU gfortran 14, 16 | tested (CI: gfortran 16) |
 | Intel ifx 2025.3 | tested (build with `-heap-arrays`) |
 | NVIDIA nvfortran 26.5, 26.9 | tested (build with `-D_NVF`) |
 
