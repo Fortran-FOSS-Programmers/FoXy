@@ -19,3 +19,225 @@ git = "https://github.com/szaghi/StringiFor"
 
 [dependencies.PENF]
 git = "https://github.com/szaghi/PENF"
+
+# the tests live in src/tests (not fpm's test/): each one declared, run by `fpm test` from the project root
+# (they read src/tests/data); a new src/tests/foxy_test_*.f90 needs an entry here
+[build]
+auto-executables = false
+auto-examples = false
+auto-tests = false
+
+[[test]]
+name = "foxy_test_add_attributes"
+source-dir = "src/tests"
+main = "foxy_test_add_attributes.f90"
+
+[[test]]
+name = "foxy_test_add_tag"
+source-dir = "src/tests"
+main = "foxy_test_add_tag.f90"
+
+[[test]]
+name = "foxy_test_add_tag_nested"
+source-dir = "src/tests"
+main = "foxy_test_add_tag_nested.f90"
+
+[[test]]
+name = "foxy_test_attribute_values"
+source-dir = "src/tests"
+main = "foxy_test_attribute_values.f90"
+
+[[test]]
+name = "foxy_test_create_tag"
+source-dir = "src/tests"
+main = "foxy_test_create_tag.f90"
+
+[[test]]
+name = "foxy_test_delete_attributes"
+source-dir = "src/tests"
+main = "foxy_test_delete_attributes.f90"
+
+[[test]]
+name = "foxy_test_delete_content"
+source-dir = "src/tests"
+main = "foxy_test_delete_content.f90"
+
+[[test]]
+name = "foxy_test_delete_tag"
+source-dir = "src/tests"
+main = "foxy_test_delete_tag.f90"
+
+[[test]]
+name = "foxy_test_delete_tag_nested"
+source-dir = "src/tests"
+main = "foxy_test_delete_tag_nested.f90"
+
+[[test]]
+name = "foxy_test_dom_edit"
+source-dir = "src/tests"
+main = "foxy_test_dom_edit.f90"
+
+[[test]]
+name = "foxy_test_dom_insert"
+source-dir = "src/tests"
+main = "foxy_test_dom_insert.f90"
+
+[[test]]
+name = "foxy_test_encodings"
+source-dir = "src/tests"
+main = "foxy_test_encodings.f90"
+
+[[test]]
+name = "foxy_test_entities"
+source-dir = "src/tests"
+main = "foxy_test_entities.f90"
+
+[[test]]
+name = "foxy_test_events"
+source-dir = "src/tests"
+main = "foxy_test_events.f90"
+
+[[test]]
+name = "foxy_test_find_tag"
+source-dir = "src/tests"
+main = "foxy_test_find_tag.f90"
+
+[[test]]
+name = "foxy_test_indent_tag"
+source-dir = "src/tests"
+main = "foxy_test_indent_tag.f90"
+
+[[test]]
+name = "foxy_test_index"
+source-dir = "src/tests"
+main = "foxy_test_index.f90"
+
+[[test]]
+name = "foxy_test_line_ends"
+source-dir = "src/tests"
+main = "foxy_test_line_ends.f90"
+
+[[test]]
+name = "foxy_test_namespaces"
+source-dir = "src/tests"
+main = "foxy_test_namespaces.f90"
+
+[[test]]
+name = "foxy_test_parse_chunks"
+source-dir = "src/tests"
+main = "foxy_test_parse_chunks.f90"
+
+[[test]]
+name = "foxy_test_parse_comments"
+source-dir = "src/tests"
+main = "foxy_test_parse_comments.f90"
+
+[[test]]
+name = "foxy_test_parse_errors"
+source-dir = "src/tests"
+main = "foxy_test_parse_errors.f90"
+
+[[test]]
+name = "foxy_test_parse_file_missing"
+source-dir = "src/tests"
+main = "foxy_test_parse_file_missing.f90"
+
+[[test]]
+name = "foxy_test_parse_file_quakeml"
+source-dir = "src/tests"
+main = "foxy_test_parse_file_quakeml.f90"
+
+[[test]]
+name = "foxy_test_parse_file_simple"
+source-dir = "src/tests"
+main = "foxy_test_parse_file_simple.f90"
+
+[[test]]
+name = "foxy_test_parse_large"
+source-dir = "src/tests"
+main = "foxy_test_parse_large.f90"
+
+[[test]]
+name = "foxy_test_parse_mixed_content"
+source-dir = "src/tests"
+main = "foxy_test_parse_mixed_content.f90"
+
+[[test]]
+name = "foxy_test_parse_prolog"
+source-dir = "src/tests"
+main = "foxy_test_parse_prolog.f90"
+
+[[test]]
+name = "foxy_test_parse_robustness"
+source-dir = "src/tests"
+main = "foxy_test_parse_robustness.f90"
+
+[[test]]
+name = "foxy_test_parse_string_content"
+source-dir = "src/tests"
+main = "foxy_test_parse_string_content.f90"
+
+[[test]]
+name = "foxy_test_parse_string_nested_tags"
+source-dir = "src/tests"
+main = "foxy_test_parse_string_nested_tags.f90"
+
+[[test]]
+name = "foxy_test_parse_string_self_closing_nested"
+source-dir = "src/tests"
+main = "foxy_test_parse_string_self_closing_nested.f90"
+
+[[test]]
+name = "foxy_test_parse_string_simple"
+source-dir = "src/tests"
+main = "foxy_test_parse_string_simple.f90"
+
+[[test]]
+name = "foxy_test_parse_utf8"
+source-dir = "src/tests"
+main = "foxy_test_parse_utf8.f90"
+
+[[test]]
+name = "foxy_test_parse_wellformedness"
+source-dir = "src/tests"
+main = "foxy_test_parse_wellformedness.f90"
+
+[[test]]
+name = "foxy_test_regex"
+source-dir = "src/tests"
+main = "foxy_test_regex.f90"
+
+[[test]]
+name = "foxy_test_save"
+source-dir = "src/tests"
+main = "foxy_test_save.f90"
+
+[[test]]
+name = "foxy_test_select"
+source-dir = "src/tests"
+main = "foxy_test_select.f90"
+
+[[test]]
+name = "foxy_test_tag_parse"
+source-dir = "src/tests"
+main = "foxy_test_tag_parse.f90"
+
+[[test]]
+name = "foxy_test_typed_values"
+source-dir = "src/tests"
+main = "foxy_test_typed_values.f90"
+
+[[test]]
+name = "foxy_test_typed_writes"
+source-dir = "src/tests"
+main = "foxy_test_typed_writes.f90"
+
+[[test]]
+name = "foxy_test_write_tag"
+source-dir = "src/tests"
+main = "foxy_test_write_tag.f90"
+
+[[test]]
+name = "foxy_test_writer"
+source-dir = "src/tests"
+main = "foxy_test_writer.f90"
